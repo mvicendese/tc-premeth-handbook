@@ -1,0 +1,18 @@
+:host {
+  position: absolute;
+  height: 100vh;
+  width: 100vw;
+}
+
+mat-sidenav-container {
+  height: 100%;
+}
+
+mat-sidenav {
+  background-color: #eee;
+  width: 20rem;
+}
+
+mat-sidenav-content {
+  padding-left: 2rem;
+}

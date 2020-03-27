@@ -1,0 +1,15 @@
+.example-tree-invisible {
+  display: none;
+}
+
+.topic-tree ul,
+.topic-tree li {
+  margin-top: 0;
+  margin-bottom: 0;
+  list-style-type: none;
+}
+
+mat-expansion-panel {
+  margin-top: 0.2rem;
+  width: 80%;
+}

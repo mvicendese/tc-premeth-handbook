@@ -1,0 +1,265 @@
+import {Component, Injectable, OnDestroy, OnInit, ViewEncapsulation} from '@angular/core';
+import {AppStateService} from '../app-state.service';
+import {BehaviorSubject, combineLatest, Observable, of, Subscription} from 'rxjs';
+import {SubjectClassService} from '../common/model-services/subject-class.service';
+import {filter, first, map, pluck, shareReplay, skipWhile, switchMap} from 'rxjs/operators';
+import {SubjectClass} from '../common/model-types/subject-class';
+import {ActivationStart, Router, UrlSegment} from '@angular/router';
+import {FlatTreeControl} from '@angular/cdk/tree';
+import {MatTreeFlatDataSource, MatTreeFlattener} from '@angular/material/tree';
+import {Unit} from '../common/model-types/unit';
+import {UnitBlock} from '../common/model-types/unit-block';
+import {getModelRefId, ModelRef} from '../common/model-base/model-ref';
+
+export interface MenuNode {
+  readonly name: string;
+  readonly level: number;
+  readonly children?: MenuNode[];
+  readonly routerLink?: any[];
+  readonly isActiveForUrl?: (segments: UrlSegment[]) => boolean;
+}
+
+export interface FlattenedMenuNode extends MenuNode {
+  expandable: boolean;
+}
+
+export function isEqualNodes(a: MenuNode | FlattenedMenuNode, b?: MenuNode | FlattenedMenuNode) {
+  return !!b
+      && b.name === a.name
+      && b.level === a.level;
+
+}
+
+export function flattenMenuNode(node: MenuNode, level: number): FlattenedMenuNode {
+  return {
+    expandable: Array.isArray(node.children),
+    name: node.name,
+    routerLink: node.routerLink,
+    level
+  };
+}
+
+function isActiveMenuNode(node: MenuNode, url: UrlSegment[]) {
+  return node.isActiveForUrl && node.isActiveForUrl(url);
+}
+
+/**
+ * Gets the path of nodes from the root of the tree which are active
+ *
+ * @param tree: MenuNode[]
+ * @param url: UrlSegment[]
+ * The absolute route from the root of the application
+ */
+function getActiveMenuNodes(tree: MenuNode[], url: UrlSegment[]): MenuNode[] {
+  return tree.reduce((acc, node) => {
+    if (acc.length > 0) {
+      return acc;
+    }
+    if (node.children) {
+      const activeChild = getActiveMenuNodes(node.children, url);
+      if (activeChild.length > 0) {
+        return [node, ...activeChild];
+      }
+    }
+    return isActiveMenuNode(node, url) ? [node] : [];
+  }, [] as MenuNode[]);
+}
+
+function unitsMenu(allUnits: readonly Unit[], level: number = 0): MenuNode {
+  return {
+    name: 'Units',
+    level,
+    children: allUnits.map(unit => unitMenuNode(unit, level + 1))
+  };
+}
+
+function isUnitDetailsUrl(unit: ModelRef<Unit>, url: UrlSegment[]) {
+  return url.length >= 2
+      && url[0].path === 'units'
+      && url[1].path === getModelRefId(unit);
+}
+
+function isUnitBlockDetailsUrl(block: UnitBlock, url: UrlSegment[]) {
+  return isUnitDetailsUrl(block.unit, url)
+      && url.length >= 4
+      && url[2].path === 'blocks'
+      && url[3].path === block.id;
+}
+
+function isClassDetailsUrl(cls: SubjectClass, url: UrlSegment[]) {
+  return url[0].path === 'classes'
+      && url[1].path === cls.id;
+}
+
+function unitMenuNode(unit: Unit, level: number): MenuNode {
+  return {
+    name: unit.name,
+    level,
+    children: unit.blocks.map(block => unitBlockMenuNode(block, level + 1)),
+    routerLink: ['/units', unit.id],
+    isActiveForUrl: (url) => isUnitDetailsUrl(unit, url)
+  };
+}
+
+function unitBlockMenuNode(block: UnitBlock, level: number): MenuNode {
+  return {
+    name: block.name,
+    level,
+    routerLink: ['/units', getModelRefId(block.unit), 'blocks', block.id],
+    isActiveForUrl: (url) => isUnitBlockDetailsUrl(block, url)
+  };
+}
+
+function classesMenu(allClasses: readonly SubjectClass[], level: number = 0): MenuNode {
+  return {
+    name: 'Classes',
+    level,
+    children: allClasses.map(cls => classMenuNode(cls, level + 1)),
+  };
+}
+
+function classMenuNode(subjectClass: SubjectClass, level: number): MenuNode {
+  return {
+    name: subjectClass.classCode,
+    level,
+    routerLink: ['/classes', subjectClass.id],
+    isActiveForUrl: (url: UrlSegment[]) => isClassDetailsUrl(subjectClass, url)
+  };
+}
+
+@Component({
+  selector: 'app-sidebar-menu',
+  template: `
+    <header>
+      <button mat-button [matMenuTriggerFor]="menu">Menu</button>
+
+      <mat-menu #menu="matMenu">
+        <button mat-menu-item (click)="openSubjectModal()">Set subject...</button>
+      </mat-menu>
+    </header>
+    <main>
+      <mat-tree [dataSource]="treeData" [treeControl]="treeControl">
+        <mat-tree-node *matTreeNodeDef="let node"
+                       matTreeNodePadding
+                       [class.active]="isActiveNode(node) | async">
+          <button mat-icon-button disabled></button>
+          <ng-container *ngTemplateOutlet="maybeLink; context: {node: node}"></ng-container>
+        </mat-tree-node>
+
+        <mat-tree-node *matTreeNodeDef="let node; when: menuNodeHasChild" matTreeNodePadding
+                       [class.active]="isActiveNode(node) | async">
+          <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.name">
+            <mat-icon class="mat-icon-rtl-mirror">
+              {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+            </mat-icon>
+          </button>
+          <ng-container *ngTemplateOutlet="maybeLink; context: {node: node}"></ng-container>
+        </mat-tree-node>
+      </mat-tree>
+    </main>
+
+    <ng-template #maybeLink let-node="node">
+      <ng-container [ngSwitch]="node.routerLink != null">
+        <a *ngSwitchCase="true" [routerLink]="node.routerLink">{{node.name}}</a>
+        <ng-container *ngSwitchDefault>{{node.name}}</ng-container>
+      </ng-container>
+    </ng-template>
+  `,
+  styleUrls: [
+    './app-sidebar-menu.component.scss'
+  ]
+})
+export class AppSidebarMenuComponent implements OnInit, OnDestroy {
+  private subscriptions: Subscription[] = [];
+
+  readonly allClasses$ = this.appState.allClasses$.pipe(
+    shareReplay(1)
+  );
+
+  readonly allUnits$ = this.appState.subject$.pipe(
+    skipWhile(subject => subject == null),
+    map(subject => subject.units),
+    shareReplay(1)
+  );
+
+  readonly menuData$ = combineLatest([this.allClasses$, this.allUnits$]).pipe(
+    map(([allClasses, allUnits]) => [
+      classesMenu(allClasses),
+      unitsMenu(allUnits)
+    ]),
+    shareReplay(1)
+  );
+
+  readonly activeNodes$ = combineLatest([
+    this.router.events.pipe(
+      filter((event): event is ActivationStart => event instanceof ActivationStart)
+    ),
+    this.menuData$
+  ]).pipe(
+    map(([activationStart, menuData]) => {
+      const snapshot = activationStart.snapshot;
+      const url = [].concat(
+        ...snapshot.pathFromRoot.map(path => path.url)
+      );
+      return getActiveMenuNodes(menuData, url);
+    }),
+    shareReplay(1)
+  );
+
+  readonly treeControl = new FlatTreeControl<MenuNode>(
+    node => node.level,
+    (node) => Array.isArray(node.children) && node.children.length > 0
+  );
+
+  readonly treeFlattener = new MatTreeFlattener(
+    flattenMenuNode,
+    node => node.level,
+    node => node.expandable,
+    node => node.children
+  );
+
+  readonly treeData = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
+
+  constructor(
+    readonly router: Router,
+    readonly appState: AppStateService,
+  ) {
+  }
+
+  ngOnInit() {
+    this.subscriptions.push(
+      this.menuData$.subscribe(menuData => {
+        this.treeData.data = menuData;
+      })
+    );
+    this.subscriptions.push(
+      this.activeNodes$.subscribe(activeNodes => {
+        this.treeControl.collapseAll();
+        activeNodes.forEach(activeNode => {
+          const node = this.treeControl.dataNodes.find(node => isEqualNodes(activeNode, node))
+          this.treeControl.expand(node);
+        });
+      })
+    );
+  }
+
+  ngOnDestroy() {
+    this.subscriptions
+      .filter(subscription => !subscription.closed)
+      .forEach(subscription => subscription.unsubscribe());
+  }
+
+  openSubjectModal() {
+    throw new Error('not implemented');
+  }
+
+  menuNodeHasChild = (index: number, node: { expandable: boolean }) => node.expandable;
+  menuNodeIsLink = (index: number, node: { routerLink?: any[] }) => Array.isArray(node.routerLink);
+
+  isActiveNode(node: MenuNode): Observable<boolean> {
+    return this.activeNodes$.pipe(
+      map(activeNodes => activeNodes.some(activeNode => isEqualNodes(activeNode, node))),
+      first()
+    );
+  }
+}
