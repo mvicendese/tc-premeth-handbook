@@ -47,26 +47,41 @@ class SubjectNode(MP_Node):
 	def subject(self):
 		if self.node_type == 'subject':
 			return Subject.objects.get(pk=self.id)
+		elif self.node_type in ['unit', 'block', 'lesson', 'lessonoutcome']:
+			return self.get_ancestors().filter(node_type='subject').get().subject()
 		else:
-			return self.get_ancestors().filter(node_type='subject', id=self.id).get().unit()
+			return None
 
 	def unit(self):
 		if self.node_type == 'unit':
 			return Unit.objects.get(pk=self.id)
+		elif self.node_type in ['block', 'lesson', 'lessonoutcome']:
+			return self.get_ancestors().get(node_type='unit').unit()
 		else:
-			return self.get_ancestors().filter(node_type='unit', id=self.id).get().unit()
+			return None
 
 	def block(self):
 		if self.node_type == 'block':
 			return Block.objects.get(pk=self.id)
+		elif self.node_type in ['lesson', 'lessonoutcome']:
+			return self.get_ancestors().filter(node_type='block').get().block()
 		else:
-			return self.get_ancestors().filter(node_type='block', id=self.id).get().unit()
+			return None
 
 	def lesson(self):
 		if self.node_type == 'lesson':
 			return Lesson.objects.get(pk=self.id)
+		elif self.node_type in ['lessonoutcome']:
+			return self.get_ancestors().filter(node_type='lesson').get().lesson()
 		else:
-			return self.get_ancestors().filter(node_type='lesson', pk=self.id).get().unit()
+			return None
+
+	def lessonoutcome(self):
+		if self.node_type == 'lessonoutcome':
+			return LessonOutcoem.objects.get(pk=self.id)
+		else:
+			return None
+
 
 	class LinkedManager(models.Manager):
 		"""

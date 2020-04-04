@@ -32,7 +32,7 @@ def create_unit_descendent_assessments(apps, import_unit):
 def create_block_assessments(apps, import_block):
 	Assessment = apps.get_model('assessments', 'Assessment')
 	BlockAssessmentSchema = apps.get_model('assessments', 'BlockAssessmentSchema')
-	BlockAssessmentAttempt = apps.get_model('assessments', 'BlockAssessmentAttempt')
+	RatedAttempt = apps.get_model('assessments', 'RatedAttempt')
 
 	try:
 		schema = BlockAssessmentSchema.objects.get(node_id=import_block.id)
@@ -46,7 +46,8 @@ def create_block_assessments(apps, import_block):
 		school_id=get_tc_school(apps).id,
 		node_id=import_block.id,
 		type='block-assessment',
-		maximum_available_mark=60
+		maximum_available_rating=60,
+		minimum_pass_mark=30
 	)
 	schema.save()
 
@@ -63,11 +64,11 @@ def create_block_assessments(apps, import_block):
 		)
 		assessment.save()
 
-		BlockAssessmentAttempt.objects.bulk_create(
-			BlockAssessmentAttempt(
+		RatedAttempt.objects.bulk_create(
+			RatedAttempt(
 				id=import_attempt.id,
 				assessment=assessment,
-				raw_mark=import_attempt.raw_mark,
+				rating=import_attempt.raw_mark,
 				date=import_attempt.date
 			)
 			for import_attempt in import_block_assessment.attempts
@@ -77,7 +78,7 @@ def create_block_assessments(apps, import_block):
 def create_prelearning_assessment(apps, import_lesson):
 	Assessment = apps.get_model('assessments', 'Assessment')
 	LessonPrelearningAssessmentSchema = apps.get_model('assessments', 'LessonPrelearningAssessmentSchema')
-	LessonPrelearningAssessmentAttempt = apps.get_model('assessments', 'LessonPrelearningAssessmentAttempt')
+	CompletionAttempt = apps.get_model('assessments', 'CompletionAttempt')
 
 	try:
 		schema = LessonPrelearningAssessmentSchema.objects.get(node_id=import_lesson.id)
@@ -106,12 +107,12 @@ def create_prelearning_assessment(apps, import_lesson):
 		)
 		assessment.save()
 
-		attempt = LessonPrelearningAssessmentAttempt(
+		attempt = CompletionAttempt(
 			id=uuid4(),
 			assessment=assessment,
 			attempt_number=1,
 			date=prelearning_assessment.date,
-			completed=(prelearning_assessment.rating or 0) > 0
+			is_completed=(prelearning_assessment.rating or 0) > 0
 		)
 		attempt.save()
 
@@ -124,7 +125,7 @@ def create_block_descendent_assessments(apps, import_block):
 def create_lesson_outcome_self_assessments(apps, import_lesson_outcome):
 	Assessment = apps.get_model('assessments', 'Assessment')
 	LessonOutcomeSelfAssessmentSchema = apps.get_model('assessments', 'LessonOutcomeSelfAssessmentSchema')
-	LessonOutcomeSelfAssessmentAttempt = apps.get_model('assessments', 'LessonOutcomeSelfAssessmentAttempt')
+	RatedAttempt = apps.get_model('assessments', 'RatedAttempt')
 
 	try:
 		schema = LessonOutcomeSelfAssessmentSchema.objects.get(node_id=import_lesson_outcome.id)
@@ -153,7 +154,7 @@ def create_lesson_outcome_self_assessments(apps, import_lesson_outcome):
 		)
 		assessment.save()
 
-		attempt = LessonOutcomeSelfAssessmentAttempt(
+		attempt = RatedAttempt(
 			id=uuid4(),
 			assessment=assessment,
 			attempt_number=1,
