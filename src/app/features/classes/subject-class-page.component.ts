@@ -1,14 +1,10 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
-import {filter, first, map, pluck, reduce, scan, shareReplay, switchMap, tap} from 'rxjs/operators';
-import {BehaviorSubject, concat, merge, NEVER, Observable, of, race, Subscription} from 'rxjs';
-import {SubjectClass} from '../../common/model-types/subject-class';
+import {Component, OnDestroy} from '@angular/core';
+import {filter, map, pluck, shareReplay, switchMap, tap} from 'rxjs/operators';
+import {Observable, Subscription} from 'rxjs';
 import {ActivatedRoute} from '@angular/router';
 import {AppStateService} from '../../app-state.service';
-import {getModelRefId, ModelRef} from '../../common/model-base/model-ref';
-import {Student} from '../../common/model-types/student';
-import {Unit} from '../../common/model-types/unit';
-import {SubjectResult} from '../../common/model-types/subject-result';
-import {StudentUnitTestResult} from '../../common/model-types/student-unit-test-result';
+import {modelRefId} from '../../common/model-base/model-ref';
+import {SubjectClass} from '../../common/model-types/schools';
 
 interface UnitResultTableRow {
   unitName: string;
@@ -65,11 +61,11 @@ export class SubjectClassPageComponent implements OnDestroy {
       return this.appState.subject$.pipe(
         filter(subject => subject != null),
         tap(subject => {
-          if (subject.id !== getModelRefId(cls.subject)) {
+          if (subject.id !== modelRefId(cls.subject)) {
             throw new Error(`Not a class of AppState\'s subject '${subject.name}`);
           }
         }),
-        map(subject => new SubjectClass({...cls, subject}))
+        map(subject => ({...cls, subject}))
       );
     }),
     shareReplay(1)

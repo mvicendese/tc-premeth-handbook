@@ -1,36 +1,58 @@
-import {PersonParams} from './person';
-import {Model, ModelParams} from '../model-base/model';
-import {Student, StudentParams} from './student';
-import {Teacher, TeacherParams} from './teacher';
+import json, {isJsonObject, JsonObject, parseError} from '../json';
+import {BaseModel, Model, modelProperties} from '../model-base/model';
+import {Student, Teacher} from './schools';
+import {modelRefFromJson} from '../model-base/model-ref';
 
-
-export interface UserParams extends ModelParams {
-  readonly person: TeacherParams | StudentParams;
+export interface Person extends Model {
+  readonly type: 'student' | 'teacher';
+  readonly id: string;
+  readonly name: string;
 }
 
-export class User extends Model implements UserParams {
-  readonly type = 'user';
-  readonly person: Teacher | Student;
-
-  constructor(readonly params: UserParams) {
-    super(params);
-    switch (params.person.type) {
-      case 'student':
-        this.person = new Student(params.person);
-        break;
-      case 'teacher':
-        this.person = new Teacher(params.person);
-        break;
-      default:
-        throw new Error('Invalid person in user object');
+function personFromJson(object: unknown): Person {
+  let type: string;
+  if (isJsonObject(object)) {
+    type = json.string(object.type);
+    if (!['student', 'teacher'].includes(type)) {
+      throw parseError(`Unexpected model type for Person '${type}`);
     }
   }
 
+  return json.object<Person>({
+    ...modelProperties(type),
+    name: json.string
+  }, object);
+}
+
+export interface UserParams extends Model {
+  readonly person: Person;
+}
+
+function userParamsFromJson(obj: unknown): UserParams {
+  return json.object<UserParams>({
+    ...modelProperties('user'),
+    person: personFromJson,
+  }, obj);
+}
+
+export class User extends BaseModel implements UserParams {
+  static fromJson(obj: unknown): User {
+    const params = userParamsFromJson(obj);
+    return new User(params);
+  }
+
+  readonly person: Person;
+
+  constructor(readonly params: UserParams) {
+    super(params);
+    this.person = params.person;
+ }
+
   get isTeacher() {
-    return this.person instanceof Teacher;
+    return this.person.type === 'teacher';
   }
 
   get isStudent() {
-    return this.person instanceof Student;
+    return this.person.type === 'student';
   }
 }

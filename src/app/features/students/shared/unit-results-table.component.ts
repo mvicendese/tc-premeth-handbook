@@ -1,19 +1,15 @@
 import {Component, Input, OnDestroy, OnInit} from '@angular/core';
-import {Student} from '../../../common/model-types/student';
 import {AppStateService} from '../../../app-state.service';
 import {mark} from '@angular/compiler-cli/src/ngtsc/perf/src/clock';
 import {BehaviorSubject, combineLatest, concat, Observable, of, Subscription, zip} from 'rxjs';
 import {concatMap, filter, first, map, shareReplay, switchMap} from 'rxjs/operators';
-import {StudentUnitTestResult} from '../../../common/model-types/student-unit-test-result';
-import {getModelRefId, ModelRef} from '../../../common/model-base/model-ref';
-import {Unit} from '../../../common/model-types/unit';
-import {SubjectResult} from '../../../common/model-types/subject-result';
-import {Subject} from '../../../common/model-types/subject';
+import {Subject, Unit} from '../../../common/model-types/subjects';
+import {Student} from '../../../common/model-types/schools';
 
 interface TableState {
   readonly subject: Subject;
-  readonly subjectResult: SubjectResult;
   readonly student: Student;
+  readonly subjectResult: any;
 }
 
 export function isTableState(obj: Partial<TableState>): obj is TableState {
@@ -26,7 +22,7 @@ export function isTableState(obj: Partial<TableState>): obj is TableState {
 interface TableRowData {
   readonly unit: Unit;
   readonly student: Student;
-  readonly result: StudentUnitTestResult;
+  readonly result: any;
 }
 
 export function tableDatas(state: Partial<TableState>): TableRowData[] {

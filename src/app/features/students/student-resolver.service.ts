@@ -1,9 +1,8 @@
 import {Injectable} from '@angular/core';
 import {ActivatedRouteSnapshot, Resolve, RouterStateSnapshot} from '@angular/router';
-import {Student} from '../../common/model-types/student';
 import {Observable} from 'rxjs';
-import {Subject} from '../../common/model-types/subject';
 import {StudentService} from '../../common/model-services/students.service';
+import {Student} from '../../common/model-types/schools';
 
 
 @Injectable({providedIn: 'root'})

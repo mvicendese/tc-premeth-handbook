@@ -1,43 +1,43 @@
 import {isObservable, Observable, of, Operator, OperatorFunction} from 'rxjs';
 import {Injectable, Provider} from '@angular/core';
 import {map, scan} from 'rxjs/operators';
-import {JsonObject} from './model-key-transform';
+import json, {Decoder, isJsonObject, JsonObject, JsonObjectProperties} from '../json';
 
-export interface ModelParams {
+export interface Model extends JsonObject {
   readonly type: string;
   readonly id: string;
 }
 
-export function parsModeParams(obj: JsonObject) {
-  return {
-    type: obj.type,
-    id: obj.id
-  };
-}
-
-
-export function isModelParams<T extends Model>(type: T['type'], obj: unknown): obj is ModelParams {
-  return obj != null && typeof obj === 'object'
-      && typeof (obj as any).id === 'string'
-      && (obj as any).type === type;
-}
-
-export abstract class Model {
-  abstract readonly type: string;
+export abstract class BaseModel implements Model {
+  readonly type: string;
   readonly id: string;
+  readonly [k: string]: unknown;
 
-  protected constructor(readonly params: ModelParams) {
+  constructor(readonly params: Model) {
+    this.type = params.type;
     this.id = params.id;
   }
-
-  set<K extends keyof this>(prop: K, value: this[K]): this {
-    return new (Object.getPrototypeOf(this).constructor)({...this, [prop]: value});
-  }
 }
 
-export type ModelProjection<T extends Model> = Partial<T> & ModelParams;
+export function modelProperties(type: string): JsonObjectProperties<Model> {
+  return { type, id: json.string };
+}
 
-export function scanIntoModelMap<T extends Model>(): OperatorFunction<T, {[id: string]: T}> {
+export function modelFromJson(type: string, obj?: unknown): Decoder<Model> | Model {
+  return json.object(modelProperties(type), obj);
+}
+
+export function isModel<T extends Model>(type: T['type'], obj: unknown): obj is Model {
+  return isJsonObject(obj)
+    && (obj as any).type === type
+    && typeof (obj as any).id === 'string';
+}
+
+export interface ModelMap<T extends Model> {
+  [id: string]: T;
+}
+
+export function scanIntoModelMap<T extends Model>(): OperatorFunction<T, ModelMap<T>> {
   return scan(
     (acc, model) => ({...acc, [model.id]: model}),
     {} as {[k: string]: T}

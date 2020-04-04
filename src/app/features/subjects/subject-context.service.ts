@@ -1,8 +1,8 @@
 import {Injectable} from '@angular/core';
 import {BehaviorSubject} from 'rxjs';
-import {getModelRefId, ModelRef} from '../../common/model-base/model-ref';
+import {modelRefId, ModelRef} from '../../common/model-base/model-ref';
 import {map, tap} from 'rxjs/operators';
-import {SubjectService} from '../../common/model-services/subject.service';
+import {SubjectsService} from '../../common/model-services/subjects.service';
 import {Subject} from '../../common/model-types/subject';
 
 
@@ -11,7 +11,7 @@ export class SubjectContextService {
   private subjects = new BehaviorSubject<{[contextId: string]: Subject}>({});
 
   getSubject(ref: ModelRef<Subject>) {
-    const subjectId = getModelRefId(ref);
+    const subjectId = modelRefId(ref);
     return this.subjects.pipe(
       map(subjects => subjects[subjectId]),
       tap(subject => {
@@ -23,7 +23,7 @@ export class SubjectContextService {
   }
 
   constructor(
-    readonly subjectService: SubjectService
+    readonly subjectService: SubjectsService
   ) {}
 
   private loadSubject(ref: ModelRef<Subject>) {

@@ -1,17 +1,12 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
-import {filter, map, shareReplay, switchMap, tap} from 'rxjs/operators';
-import {Unit} from '../../common/model-types/unit';
-import {LessonSchema} from '../../common/model-types/lesson-schema';
+import {filter, shareReplay} from 'rxjs/operators';
 import {NestedTreeControl} from '@angular/cdk/tree';
 import {MatTreeNestedDataSource} from '@angular/material/tree';
 import {Subscription} from 'rxjs';
-import {UnitBlock} from '../../common/model-types/unit-block';
-import {LessonOutcome} from '../../common/model-types/lesson-outcome';
-import {SubjectService} from '../../common/model-services/subject.service';
 import {AppStateService} from '../../app-state.service';
+import {Block, LessonSchema, Unit} from '../../common/model-types/subjects';
 
-type TopicNode = Unit | UnitBlock | LessonSchema;
+type TopicNode = Unit | Block | LessonSchema;
 
 function getTopicNodeChildren(node: TopicNode): TopicNode[] {
   switch (node.type) {

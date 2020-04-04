@@ -1,16 +1,13 @@
-import {Injectable, OnInit} from '@angular/core';
-import {Subject} from './common/model-types/subject';
-import {BehaviorSubject, combineLatest, concat, merge, Observable, of, race, Subscription, timer} from 'rxjs';
-import {delay, distinctUntilChanged, filter, first, map, pluck, switchMap, switchMapTo, tap} from 'rxjs/operators';
-import {environment} from '../environments/environment';
-import {getModelRefId, ModelRef} from './common/model-base/model-ref';
-import {SubjectService} from './common/model-services/subject.service';
-import {Student} from './common/model-types/student';
+import {Injectable} from '@angular/core';
+import {BehaviorSubject, combineLatest, Observable, Unsubscribable} from 'rxjs';
+import {distinctUntilChanged, filter, map, pluck, switchMap} from 'rxjs/operators';
+import {ModelRef} from './common/model-base/model-ref';
 import {SubjectClassService} from './common/model-services/subject-class.service';
-import {SubjectClass} from './common/model-types/subject-class';
-import {SubjectResult} from './common/model-types/subject-result';
 import {User} from './common/model-types/user';
-import {ResponsePage} from './common/model-base/pagination';
+import {StudentService} from './common/model-services/students.service';
+import {ModelFetchQueue} from './common/model-base/fetch-queue';
+import {Subject} from './common/model-types/subjects';
+import {Student, SubjectClass} from './common/model-types/schools';
 
 export interface GlobalState {
   readonly user?: User;
@@ -21,8 +18,7 @@ export interface GlobalState {
   readonly student: Student | null;
 
   readonly allSubjectClasses: SubjectClass[];
-  readonly allStudents?: ResponsePage<Student>;
-
+  readonly selectedClass: SubjectClass | null;
 }
 
 @Injectable({providedIn: 'root'})
@@ -30,12 +26,16 @@ export class AppStateService {
   private readonly stateSubject = new BehaviorSubject<GlobalState>({
     year: 2020,
     student: null,
-    allSubjectClasses: []
+    allSubjectClasses: [],
+    selectedClass: null,
   });
 
   constructor(
     readonly subjectClassService: SubjectClassService,
+    readonly studentService: StudentService
   ) {}
+
+  readonly studentFetchQueue = new ModelFetchQueue(this.studentService);
 
   get user$(): Observable<User | undefined> {
     return this.stateSubject.pipe(pluck('user'));
@@ -56,12 +56,20 @@ export class AppStateService {
     );
   }
 
-  get allStudents$(): Observable<ResponsePage<Student>> {
+  get subjectClass$(): Observable<SubjectClass | null> {
     return this.stateSubject.pipe(
-      map(state => state.allStudents)
+      pluck('selectedClass'),
+      distinctUntilChanged()
     );
   }
 
+  get allResolvedStudents$(): Observable<{[studentId: string]: Student}> {
+    return this.studentFetchQueue.allResolved$;
+  }
+
+  loadStudent(ref: ModelRef<Student>): Observable<Student> {
+    return this.studentFetchQueue.queueFetch(ref);
+  }
 
   get allClasses$(): Observable<ReadonlyArray<SubjectClass>> {
     return this.stateSubject.pipe(
@@ -69,9 +77,14 @@ export class AppStateService {
     );
   }
 
+  get selectedClass(): Observable<SubjectClass | null> {
+    return this.stateSubject.pipe(
+      map(state => state.selectedClass)
+    );
+  }
 
-  watchClasses(): Subscription {
-    return combineLatest([
+  init(): Unsubscribable {
+    const allClassesSubscription = combineLatest([
       this.subject$.pipe(
         distinctUntilChanged(),
         filter((s): s is Subject => s != null)
@@ -83,9 +96,18 @@ export class AppStateService {
       }),
       map(page => page.results /* only ever one page of classes for a given subject year */)
     ).subscribe(classes => {
-      classes = classes.map(cls => cls.set('subject', this.stateSubject.value.subject));
+      classes = classes.map(cls => ({...cls, subject: this.stateSubject.value.subject}));
       this.setState('allSubjectClasses', classes);
     });
+
+    const studentFetchQueue = this.studentFetchQueue.init();
+
+    return {
+      unsubscribe: () => {
+        allClassesSubscription.unsubscribe();
+        studentFetchQueue.unsubscribe();
+      }
+    };
   }
 
   setState<K extends keyof GlobalState>(key: K, value: GlobalState[K]): void {

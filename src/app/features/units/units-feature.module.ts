@@ -10,6 +10,7 @@ import {ClassSharedModule} from '../classes/shared/class-shared.module';
 import {ReactiveFormsModule} from '@angular/forms';
 import {AssessmentsSharedModule} from '../assessments/shared/assessments-shared.module';
 import {LessonExpansionComponent} from './lesson-expansion.component';
+import {MatDividerModule} from '@angular/material/divider';
 
 export const routes: Routes = [
   {
@@ -33,6 +34,7 @@ export const routes: Routes = [
     MatTabsModule,
 
     MatExpansionModule,
+    MatDividerModule,
     ClassSharedModule,
     UnitsSharedModule,
     AssessmentsSharedModule

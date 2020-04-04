@@ -1,15 +1,16 @@
 
 import {Injectable} from '@angular/core';
 import {ModelService, ModelServiceBackend} from '../model-base/model-service';
-import {Student} from '../model-types/student';
-import {JsonObject} from '../model-base/model-key-transform';
 import {BehaviorSubject, defer, EMPTY, merge, NEVER, Observable, of, race, timer, Unsubscribable} from 'rxjs';
 import {map, mapTo, switchMap, switchMapTo, tap} from 'rxjs/operators';
-import {getModelRefId, ModelRef} from '../model-base/model-ref';
+import {modelRefId, ModelRef} from '../model-base/model-ref';
 import {ResponsePage} from '../model-base/pagination';
+import {Student} from '../model-types/schools';
 
 @Injectable({providedIn: 'root'})
 export class StudentService extends ModelService<Student> {
+  readonly fromJson = Student.fromJson;
+
   constructor(
     backend: ModelServiceBackend
   ) {
@@ -24,10 +25,4 @@ export class StudentService extends ModelService<Student> {
     Object.keys(params).forEach(k => params[k] === undefined && delete params[k]);
     return this.query('', {params});
   }
-
-  fromObject(obj: JsonObject) {
-    return new Student(obj as any);
-  }
-
-
 }

@@ -1,20 +1,19 @@
 import {Component, Input, OnDestroy} from '@angular/core';
-import {Student} from '../../../common/model-types/student';
 import {BehaviorSubject, defer, Observable} from 'rxjs';
-import {Unit} from '../../../common/model-types/unit';
-import {StudentUnitTestResult} from '../../../common/model-types/student-unit-test-result';
 import {first, map, pluck, shareReplay} from 'rxjs/operators';
+import {Student} from '../../../common/model-types/schools';
+import {Unit} from '../../../common/model-types/subjects';
 
 interface TableState {
   readonly students: Student[];
   readonly unit: Unit | null;
-  readonly studentResults: {[studentId: string]: StudentUnitTestResult};
+  readonly studentResults: {[studentId: string]: any};
 }
 
 export interface TableRowData {
   readonly student: Student;
   readonly unit: Unit;
-  readonly unitResult: StudentUnitTestResult | null;
+  readonly unitResult: any | null;
 }
 export function tableRows(state: TableState): TableRowData[] {
   if (state.unit == null) {
@@ -68,7 +67,7 @@ export class UnitResultsTableComponent implements OnDestroy {
   }
 
   @Input()
-  set studentResults(studentResults: {[studentId: string]: StudentUnitTestResult}) {
+  set studentResults(studentResults: {[studentId: string]: any}) {
     this.stateSubject.next({...this.stateSubject.value, studentResults});
   }
 

@@ -13,11 +13,6 @@ export const appRoutes: Routes = [
                         .then(module => module.SubjectsFeatureModule)
   },
   {
-    path: 'lessons',
-    loadChildren: () => import('./features/lessons/lessons-feature.module')
-                        .then(module => module.LessonsFeatureModule)
-  },
-  {
     path: 'students',
     loadChildren: () => import('./features/students/students-feature.module')
                         .then(module => module.StudentsFeatureModule)

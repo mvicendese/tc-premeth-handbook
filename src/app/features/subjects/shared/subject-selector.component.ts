@@ -1,10 +1,10 @@
 import {BehaviorSubject, of} from 'rxjs';
 import {ResponsePage} from '../../../common/model-base/pagination';
-import {Subject, SubjectIndex} from '../../../common/model-types/subject';
 import {Component, EventEmitter, Input, Output} from '@angular/core';
-import {SubjectService} from '../../../common/model-services/subject.service';
+import {SubjectsService} from '../../../common/model-services/subjects.service';
 import {FormControl} from '@angular/forms';
 import {map, switchMap} from 'rxjs/operators';
+import {SubjectIndex} from '../../../common/model-types/subjects';
 
 @Component({
   selector: 'app-subjects-selector',
@@ -51,7 +51,7 @@ export class SubjectSelectorComponent {
   }
 
   constructor(
-    readonly subjectService: SubjectService
+    readonly subjectService: SubjectsService
   ) {}
 }
 

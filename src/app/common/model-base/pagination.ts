@@ -1,12 +1,12 @@
 import {ModelServiceBackend} from './model-service';
 import {Observable} from 'rxjs';
-import {Model, ModelParams} from './model';
-import {isJsonObject, JsonObject} from './model-key-transform';
-import {map, switchMap} from 'rxjs/operators';
+import {Model} from './model';
+import {map} from 'rxjs/operators';
+import {Decoder, JsonObject} from '../json';
 
 export interface ResponsePageOptions<T> {
   params: { [k: string]: string | string[] };
-  useDecoder: (result: JsonObject) => T;
+  useDecoder: Decoder<T>;
 }
 
 export interface ResponsePageData extends JsonObject {
@@ -14,7 +14,7 @@ export interface ResponsePageData extends JsonObject {
   results: JsonObject[];
 }
 
-export class ResponsePage<T extends ModelParams> {
+export class ResponsePage<T extends Model> {
 
   get params() {
     return this.options.params;

@@ -1,16 +1,26 @@
 import {Inject, Injectable, InjectionToken} from '@angular/core';
-import {Model, ModelParams} from './model';
+import {Model} from './model';
 import {HttpClient, HttpErrorResponse} from '@angular/common/http';
-import {isModelRefId, ModelRef} from './model-ref';
-import {defer, iif, Observable, of, throwError, Unsubscribable} from 'rxjs';
+import {isRefId, ModelRef} from './model-ref';
+import {defer, iif, Observable, of, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {modelServiceResponsePageFactory, ResponsePage, ResponsePageOptions} from './pagination';
-import {JsonObject, transformKeys} from './model-key-transform';
+import {toLowerCamelCase, toUnderscoreCase, transformKeys} from './model-key-transform';
+import {Decoder, JsonObject} from '../json';
 
 export const API_BASE_HREF = new InjectionToken<string>('API_BASE_HREF');
 
+const STANDARD_HEADERS = {
+  'x-requested-with': 'XMLHttpRequest'
+};
+
+const DEFAULT_PARAMS = {
+  format: 'json'
+};
+
 @Injectable()
 export class ModelServiceBackend {
+
   constructor(
     readonly http: HttpClient,
 
@@ -18,37 +28,42 @@ export class ModelServiceBackend {
     readonly apiBaseHref: string
   ) {}
 
-  private readonly modelCacheHandlers = new WeakMap<ModelService<any>, ReadonlyArray<(model: Model) => void>>();
-
-  addCacheHandler<T extends Model = Model>(service: ModelService<any>, handler: (model: T) => void): Unsubscribable {
-    const cacheHandlers = this.getCacheHandlers(service);
-    this.modelCacheHandlers.set(service, [...cacheHandlers, handler]);
-
-    return {
-      unsubscribe: () => {
-        const cacheHandlers1 = [...this.getCacheHandlers(service)];
-        const index = cacheHandlers.indexOf(handler);
-        delete cacheHandlers1[index];
-
-        this.modelCacheHandlers.set(service, cacheHandlers1);
-      }
-    };
-  }
-
-  getCacheHandlers<T extends Model = Model>(service: ModelService<T>): ReadonlyArray<(model: T) => void> {
-    return (this.modelCacheHandlers.get(service) || []) as ReadonlyArray<(model: Model) => void>;
-  }
-
   get(path: string, params?: {[k: string]: string | string[]}): Observable<JsonObject> {
-    params = Object.assign({}, params, {format: 'json'});
+    params = Object.assign({}, DEFAULT_PARAMS, params);
     return this.http.get<JsonObject>([this.apiBaseHref, path].join(''), {
       params,
       observe: 'body',
-      headers: {
-        'x-requested-with': 'XMLHttpRequest'
-      }
+      headers: STANDARD_HEADERS
     }).pipe(
-      map((item) => transformKeys(item))
+      map((item) => transformKeys(item, toLowerCamelCase))
+    );
+  }
+
+  post(path: string, options: {body: JsonObject, params?: {[k: string]: string | string[] }}): Observable<JsonObject> {
+    const params = Object.assign({}, DEFAULT_PARAMS, options.params);
+
+    return this.http.post<JsonObject>([this.apiBaseHref, path].join(''), {
+      body: transformKeys(options.body, toUnderscoreCase),
+      observe: 'body',
+      headers: STANDARD_HEADERS,
+      params
+    }).pipe(
+      map(item => transformKeys(item, toLowerCamelCase))
+    );
+  }
+
+  put(path: string, id: string, options: {
+    body: JsonObject;
+    params?: {[k: string]: string | string[]}
+  }): Observable<JsonObject> {
+    const params = Object.assign({}, DEFAULT_PARAMS, options.params);
+    return this.http.put<JsonObject>([this.apiBaseHref, path, '/' + id].join(''), {
+      body: transformKeys(options.body, toUnderscoreCase),
+      observe: 'body',
+      headers: STANDARD_HEADERS,
+      params
+    }).pipe(
+      map(item => transformKeys(item, toLowerCamelCase))
     );
   }
 }
@@ -56,7 +71,7 @@ export class ModelServiceBackend {
 export abstract class ModelService<T extends Model> {
   private readonly createResponsePage = modelServiceResponsePageFactory(this.backend, this.path);
 
-  abstract fromObject(obj: JsonObject): T;
+  abstract fromJson(obj: JsonObject): T;
 
   protected constructor(
     protected backend: ModelServiceBackend,
@@ -65,11 +80,11 @@ export abstract class ModelService<T extends Model> {
 
   fetch(ref: ModelRef<T>): Observable<T> {
     return iif(
-      () => isModelRefId(ref),
+      () => isRefId(ref),
       defer(() => this.backend.get([this.path, ref].join('/'))).pipe(
-        map((params) => this.fromObject(params))
+        map((params) => this.fromJson(params))
       ),
-      of(this.fromObject(ref as JsonObject))
+      of(this.fromJson(ref as JsonObject))
     );
   }
 
@@ -80,14 +95,15 @@ export abstract class ModelService<T extends Model> {
     );
   }
 
-  query<U extends ModelParams = T>(path: string, options: {
-    params: {[k: string]: string | string[]};
-    useDecoder?: (obj: JsonObject) => U
-  }): Observable<ResponsePage<U>> {
+  query<U extends Model = T>(path: string,
+                             options: {
+                               params: {[k: string]: string | string[]};
+                               useDecoder?: Decoder<U>
+                             }): Observable<ResponsePage<U>> {
     path = this.path + path;
     const sOptions: ResponsePageOptions<U> = {
       ...options,
-      useDecoder: options && options.useDecoder || this.fromObject.bind(this)
+      useDecoder: options && options.useDecoder || this.fromJson.bind(this)
     };
 
     const params = options.params;
@@ -96,7 +112,7 @@ export abstract class ModelService<T extends Model> {
       .forEach(([key]) => delete params[key]);
 
     return this.backend.get(path, options && options.params).pipe(
-      /** FIXME: Theses types are _definitely_ wrong */
+      /** FIXME: Theses decoders are _definitely_ wrong */
       map(data => this.createResponsePage(path, sOptions as any, data) as any as ResponsePage<U>)
     );
   }
@@ -115,7 +131,7 @@ export abstract class ModelService<T extends Model> {
   }): Observable<U | null> {
     path = this.path + path;
     const params = options && options.params;
-    const decoder = options && options.useDecoder || this.fromObject.bind(this);
+    const decoder = options && options.useDecoder || this.fromJson.bind(this);
     return this.backend.get(path, params).pipe(
       map(obj => {
         if (!Array.isArray(obj.results)) {

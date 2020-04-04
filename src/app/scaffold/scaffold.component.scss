@@ -14,5 +14,7 @@ mat-sidenav {
 }
 
 mat-sidenav-content {
-  padding-left: 2rem;
+  padding: 0rem 2rem;
+  display: flex;
+  flex-direction: column;
 }

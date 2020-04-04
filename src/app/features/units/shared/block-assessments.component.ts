@@ -1,25 +1,22 @@
-import {Student} from '../../../common/model-types/student';
-import {Unit} from '../../../common/model-types/unit';
-import {StudentUnitTestResult} from '../../../common/model-types/student-unit-test-result';
 import {Component, Input, OnDestroy} from '@angular/core';
 import {BehaviorSubject} from 'rxjs';
 import {map, pluck, shareReplay} from 'rxjs/operators';
-import {UnitBlock} from '../../../common/model-types/unit-block';
-import {StudentBlockTestResult} from '../../../common/model-types/student-block-test-result';
+import {Student} from '../../../common/model-types/schools';
+import {Block, Unit} from '../../../common/model-types/subjects';
 
 interface TableState {
   readonly students: Student[];
   readonly unit: Unit | null;
-  readonly block: UnitBlock | null;
-  readonly studentResults: { [studentId: string]: StudentBlockTestResult[] };
+  readonly block: Block | null;
+  readonly studentResults: { [studentId: string]: any[] };
 }
 
 export interface TableRowData {
   readonly student: Student;
   readonly unit: Unit;
-  readonly block: UnitBlock;
+  readonly block: Block;
   /** The maximum result out of any of the individual block tests */
-  readonly maxBlockResult: StudentBlockTestResult | null;
+  readonly maxBlockResult: any | null;
 
   /** True if at least one attempt has been made at the block test. */
   readonly isAttempted: boolean;
@@ -28,13 +25,13 @@ export interface TableRowData {
   readonly numberOfAttempts: number;
 }
 
-function maxBlockResult(results: StudentBlockTestResult[]) {
+function maxBlockResult(results: any[]) {
   const resultsCopy = [...results];
   resultsCopy.sort((a, b) => b.markPercent - a.markPercent);
   return resultsCopy[0] || null;
 }
 
-function numberOfAttempts(results: StudentBlockTestResult[]) {
+function numberOfAttempts(results: any[]) {
   return results.length;
 }
 
@@ -115,7 +112,7 @@ export class BlockAssessmentsComponent implements OnDestroy {
   }
 
   @Input()
-  set studentResults(studentResults: {[studentId: string]: StudentBlockTestResult[] }) {
+  set studentResults(studentResults: {[studentId: string]: any[] }) {
     this.stateSubject.next({...this.stateSubject.value, studentResults: studentResults || {}});
   }
 
@@ -125,7 +122,7 @@ export class BlockAssessmentsComponent implements OnDestroy {
   }
 
   @Input()
-  set block(block: UnitBlock | null) {
+  set block(block: Block | null) {
     this.stateSubject.next({...this.stateSubject.value, block});
   }
 

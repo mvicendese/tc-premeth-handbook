@@ -1,10 +1,10 @@
 import {Component} from '@angular/core';
 import {AppStateService} from '../../app-state.service';
-import {SubjectIndex} from '../../common/model-types/subject';
 import {Observable} from 'rxjs';
 import {ResponsePage} from '../../common/model-base/pagination';
-import {SubjectService} from '../../common/model-services/subject.service';
+import {SubjectsService} from '../../common/model-services/subjects.service';
 import {map, publishReplay, shareReplay} from 'rxjs/operators';
+import {SubjectIndex} from '../../common/model-types/subjects';
 
 
 @Component({
@@ -37,7 +37,7 @@ export class SelectSubjectDialogComponent {
   );
 
   constructor(
-    readonly subjectsService: SubjectService,
+    readonly subjectsService: SubjectsService,
     readonly appState: AppStateService
   ) {}
 

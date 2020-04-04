@@ -1,9 +1,10 @@
-import {Component} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {UnitPageComponent} from './unit-page.component';
 import {ActivatedRoute} from '@angular/router';
-import {map, shareReplay} from 'rxjs/operators';
-import {combineLatest} from 'rxjs';
+import {filter, map, shareReplay} from 'rxjs/operators';
+import {combineLatest, Unsubscribable} from 'rxjs';
 import {UnitContextService} from './unit-context.service';
+import {AppStateService} from '../../app-state.service';
 
 
 @Component({
@@ -19,6 +20,7 @@ import {UnitContextService} from './unit-context.service';
               <span class="lesson-code">{{lesson.code}}</span> {{lesson.name}}
             </mat-panel-title>
           </mat-expansion-panel-header>
+
           <app-units-lesson-expansion [lesson]="lesson">
           </app-units-lesson-expansion>
         </mat-expansion-panel>
@@ -32,30 +34,25 @@ import {UnitContextService} from './unit-context.service';
     }
   `]
 })
-export class UnitBlockPageComponent {
-  readonly block$ = combineLatest([
-    this.unitPage.unit$,
-    this.route.paramMap.pipe(map(params => params.get('block_id')))
-  ]).pipe(
-    map(([unit, blockId]) => {
-      const block = unit.blocks.find(item => item.id === blockId);
-      if (block == null) {
-        throw new Error(`No block with id '${blockId}'`);
-      }
-      return block;
-    }),
+export class UnitBlockPageComponent implements OnInit, OnDestroy {
+  private resources: Unsubscribable[] = [];
+
+  readonly block$ = this.unitContext.block$.pipe(
+    filter(block => block != null),
     shareReplay(1)
   );
-
-  readonly allStudents$ = this.tableParams.students$.pipe(
-    shareReplay(1)
-  );
-
 
  constructor(
-    readonly unitPage: UnitPageComponent,
-    readonly tableParams: UnitContextService,
+    readonly unitContext: UnitContextService,
+    readonly appState: AppStateService,
     readonly route: ActivatedRoute
   ) {}
 
+  ngOnInit() {
+    this.resources.push(this.unitContext.useBlockRoute(this.route));
+  }
+
+  ngOnDestroy(): void {
+   this.resources.forEach(r => r.unsubscribe());
+  }
 }

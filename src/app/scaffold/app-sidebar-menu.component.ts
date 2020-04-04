@@ -1,15 +1,14 @@
-import {Component, Injectable, OnDestroy, OnInit, ViewEncapsulation} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {AppStateService} from '../app-state.service';
-import {BehaviorSubject, combineLatest, Observable, of, Subscription} from 'rxjs';
-import {SubjectClassService} from '../common/model-services/subject-class.service';
-import {filter, first, map, pluck, shareReplay, skipWhile, switchMap} from 'rxjs/operators';
-import {SubjectClass} from '../common/model-types/subject-class';
+import {combineLatest, Observable, Subscription} from 'rxjs';
+import {filter, first, map, shareReplay, skipWhile, withLatestFrom} from 'rxjs/operators';
 import {ActivationStart, Router, UrlSegment} from '@angular/router';
 import {FlatTreeControl} from '@angular/cdk/tree';
 import {MatTreeFlatDataSource, MatTreeFlattener} from '@angular/material/tree';
-import {Unit} from '../common/model-types/unit';
-import {UnitBlock} from '../common/model-types/unit-block';
-import {getModelRefId, ModelRef} from '../common/model-base/model-ref';
+import {ModelRef, modelRefId} from '../common/model-base/model-ref';
+import {FormControl, FormGroup} from '@angular/forms';
+import {Block, Unit} from '../common/model-types/subjects';
+import {SubjectClass} from '../common/model-types/schools';
 
 export interface MenuNode {
   readonly name: string;
@@ -76,10 +75,10 @@ function unitsMenu(allUnits: readonly Unit[], level: number = 0): MenuNode {
 function isUnitDetailsUrl(unit: ModelRef<Unit>, url: UrlSegment[]) {
   return url.length >= 2
       && url[0].path === 'units'
-      && url[1].path === getModelRefId(unit);
+      && url[1].path === modelRefId(unit);
 }
 
-function isUnitBlockDetailsUrl(block: UnitBlock, url: UrlSegment[]) {
+function isUnitBlockDetailsUrl(block: Block, url: UrlSegment[]) {
   return isUnitDetailsUrl(block.unit, url)
       && url.length >= 4
       && url[2].path === 'blocks'
@@ -101,11 +100,11 @@ function unitMenuNode(unit: Unit, level: number): MenuNode {
   };
 }
 
-function unitBlockMenuNode(block: UnitBlock, level: number): MenuNode {
+function unitBlockMenuNode(block: Block, level: number): MenuNode {
   return {
     name: block.name,
     level,
-    routerLink: ['/units', getModelRefId(block.unit), 'blocks', block.id],
+    routerLink: ['/units', modelRefId(block.unit), 'blocks', block.id],
     isActiveForUrl: (url) => isUnitBlockDetailsUrl(block, url)
   };
 }
@@ -138,6 +137,18 @@ function classMenuNode(subjectClass: SubjectClass, level: number): MenuNode {
       </mat-menu>
     </header>
     <main>
+      <form [formGroup]="form">
+        <mat-form-field>
+          <mat-label>Class group</mat-label>
+          <mat-select formGroupName="subjectClass">
+            <mat-option [value]="'all'">All students</mat-option>
+            <mat-option *ngFor="let cls of (allClasses$ | async)" [value]="cls.id">
+              {{cls.classCode}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </form>
+
       <mat-tree [dataSource]="treeData" [treeControl]="treeControl">
         <mat-tree-node *matTreeNodeDef="let node"
                        matTreeNodePadding
@@ -171,6 +182,11 @@ function classMenuNode(subjectClass: SubjectClass, level: number): MenuNode {
 })
 export class AppSidebarMenuComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = [];
+
+  readonly form = new FormGroup({
+    selectedSubject: new FormControl(null),
+    subjectClass: new FormControl({value: 'all'})
+  });
 
   readonly allClasses$ = this.appState.allClasses$.pipe(
     shareReplay(1)
@@ -236,10 +252,20 @@ export class AppSidebarMenuComponent implements OnInit, OnDestroy {
       this.activeNodes$.subscribe(activeNodes => {
         this.treeControl.collapseAll();
         activeNodes.forEach(activeNode => {
-          const node = this.treeControl.dataNodes.find(node => isEqualNodes(activeNode, node))
+          const node = this.treeControl.dataNodes.find(n => isEqualNodes(activeNode, n));
           this.treeControl.expand(node);
         });
       })
+    );
+
+    this.subscriptions.push(
+      this.form.valueChanges.pipe(
+        map(values => values.subjectClass),
+        withLatestFrom(this.allClasses$),
+        map(([selectedId, allClasses]) => {
+          return allClasses.find(cls => cls.id === selectedId) || null;
+        })
+      ).subscribe(subjectCls => this.appState.setState('selectedClass', subjectCls))
     );
   }
 

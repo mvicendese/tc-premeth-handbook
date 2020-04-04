@@ -6,6 +6,7 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatListModule} from '@angular/material/list';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
+import {LessonOutcomeResultsComponent} from './lesson-outcome-results.component';
 
 
 @NgModule({
@@ -14,15 +15,18 @@ import {MatIconModule} from '@angular/material/icon';
     ReactiveFormsModule,
 
     MatListModule,
+    MatListModule,
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
   ],
   declarations: [
-    LessonPrelearningResultsComponent
+    LessonPrelearningResultsComponent,
+    LessonOutcomeResultsComponent
   ],
   exports: [
-    LessonPrelearningResultsComponent
+    LessonPrelearningResultsComponent,
+    LessonOutcomeResultsComponent
   ]
 })
 export class AssessmentsSharedModule {

@@ -18,11 +18,6 @@ export const studentsRoutes: Routes = [
         path: '',
         component: StudentPageComponent
       },
-      {
-        path: 'lessons',
-        loadChildren: () => import('../lessons/lessons-feature.module')
-          .then(module => module.LessonsFeatureModule)
-      }
     ]
   }
 ];

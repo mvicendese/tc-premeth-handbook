@@ -1,31 +1,8 @@
-import {
-  asyncScheduler,
-  AsyncSubject,
-  BehaviorSubject, combineLatest, concat, defer,
-  EMPTY, merge,
-  Observable, of,
-  Subject,
-  Subscription,
-  throwError, timer,
-  Unsubscribable,
-  using, zip
-} from 'rxjs';
+import {AsyncSubject, BehaviorSubject, concat, defer, merge, Observable, of, Subject, throwError, Unsubscribable, zip} from 'rxjs';
 import {Model} from './model';
-import {getModelRefId, ModelRef} from './model-ref';
-import {
-  catchError,
-  concatMap,
-  delay,
-  distinctUntilChanged,
-  distinctUntilKeyChanged,
-  filter,
-  map, mapTo,
-  mergeMap,
-  sampleTime,
-  scan, tap, withLatestFrom
-} from 'rxjs/operators';
-import {fromIterable, fromPromise} from 'rxjs/internal-compatibility';
-import {ModelService, ModelServiceBackend} from './model-service';
+import {ModelRef, modelRefId} from './model-ref';
+import {catchError, filter, map, mergeMap, sampleTime, scan, tap} from 'rxjs/operators';
+import {ModelService} from './model-service';
 
 type BatchError = Error & { batchIds: string[] };
 
@@ -75,11 +52,11 @@ export class ModelFetchQueue<T extends Model> {
   }
 
   isPending(ref: ModelRef<T>) {
-    return this.pendingFetches.has(getModelRefId(ref));
+    return this.pendingFetches.has(modelRefId(ref));
   }
 
   getPending(ref: ModelRef<T>): Observable<T> {
-    const id = getModelRefId(ref);
+    const id = modelRefId(ref);
     if (this.isPending(id)) {
       return this.pendingFetches.get(id);
     }
@@ -87,7 +64,7 @@ export class ModelFetchQueue<T extends Model> {
   }
 
   protected addPending(ref: ModelRef<T>) {
-    const id = getModelRefId(ref);
+    const id = modelRefId(ref);
     this.pendingFetches.set(id, new AsyncSubject<T>());
     this.queueIdsSubject.next([...this.queueIds, id]);
   }
@@ -110,7 +87,7 @@ export class ModelFetchQueue<T extends Model> {
   }
 
   queueFetch(ref: ModelRef<T>): Observable<T> {
-    const id = getModelRefId(ref);
+    const id = modelRefId(ref);
 
     let resolveComplete;
     const complete = new Promise<T>((resolve, reject) => {
