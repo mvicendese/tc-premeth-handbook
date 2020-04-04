@@ -5,11 +5,12 @@ from api.base.serializers import BaseSerializer
 from api.schools.serializers import StudentSerializer
 
 from .models import (
-	Assessment,
-	UnitAssessmentSchema, UnitAssessmentAttempt,
-	BlockAssessmentSchema, BlockAssessmentAttempt,
-	LessonPrelearningAssessmentSchema, LessonPrelearningAssessmentAttempt,
-	LessonOutcomeSelfAssessmentSchema, LessonOutcomeSelfAssessmentAttempt
+	Assessment, 
+	RatedAttempt, CompletionAttempt,
+	UnitAssessmentSchema, 
+	BlockAssessmentSchema, 
+	LessonPrelearningAssessmentSchema, 
+	LessonOutcomeSelfAssessmentSchema, 
 )
 
 ################################
@@ -20,53 +21,31 @@ from .models import (
 
 
 class AttemptSerializer(serializers.Serializer):
+	@staticmethod
+	def for_assessment_type(assessment_type, *args, **kwargs):
+		if assessment_type in ['unit-assessment', 'block-assessment', 'lesson-outcome-self-assessment']:
+			return RatedAttemptSerializer(*args, **kwargs)
+		elif assessment_type == 'lesson-prelearning-assessment':
+			return CompletionAttemptSerializer(*args, **kwargs)
+		else:
+			raise ValueError(f'Unknown assessment type \'{assessment_type}\'')
+
 	assessment = serializers.UUIDField()
-	attempt_number = serializers.IntegerField()	
-	date = serializers.DateTimeField()
+	attempt_number = serializers.IntegerField(read_only=True)	
+	date = serializers.DateTimeField(read_only=True)
 
-class AttemptAggregateSerializer(serializers.Serializer):
-	pass
-
-class MarkedAttemptSerializer(AttemptSerializer):
+class RatedAttemptSerializer(AttemptSerializer):
 	raw_mark = serializers.IntegerField()
 	mark_percent = serializers.DecimalField(5,2)
 
+class CompletionAttemptSerializer(AttemptSerializer):
+	is_completed = serializers.BooleanField()
 
-class UnitAssessmentAttempt(MarkedAttemptSerializer):
-	class Meta:
-		model = UnitAssessmentAttempt
-		model_name = 'unit-assessment-attempt'
-
-
-class BlockAssessmentAttempt(MarkedAttemptSerializer): 
-	class Meta:
-		model = BlockAssessmentAttempt
-		model_name = 'block-assessment-attempt'
-
-
-#################################
-##
-## Assessment attempt aggregates
-##
-#################################
-
-class AssessmentAttemptAggregateSerializer(serializers.Serializer):
-	"""
-	Inlines information about all the attempts that have been
-	made on the assessment into the serialized assessment.
-	"""
-	pass
-
-class CompletedAttemptAggregateSerializer(AssessmentAttemptAggregateSerializer):
-	pass	
-
-class MarkedAttemptAggregatesSerializer(AttemptAggregateSerializer):
-	is_attempted = serializers.BooleanField()
-	best_raw_mark = serializers.IntegerField(allow_null=True)
-	best_mark_percent = serializers.DecimalField(5, 2, allow_null=True)
-	best_at = serializers.DateTimeField(allow_null=True)
-
-	attempts = MarkedAttemptSerializer(many=True, read_only=True)
+	def create(self, validated_data):
+		return CompletionAttempt.objects.create(
+			assessment=Assessment.objects.get(id=validated_data['assessment']),
+			is_completed=validated_data["is_completed"],
+		)
 
 #################################
 ##
@@ -75,109 +54,43 @@ class MarkedAttemptAggregatesSerializer(AttemptAggregateSerializer):
 #################################
 
 class ReportSerializer(serializers.Serializer):
+	@staticmethod
+	def for_assessment_type(assessment_type, *args, **kwargs):
+		if assessment_type in ['unit-assessment', 'block-assessment', 'lesson-outcome-self-assessment']:
+			return RatedReportSerializer(*args, **kwargs)
+		elif assessment_type == 'lesson-prelearning-assessment':
+			return CompletedReportSerializer(*args, **kwargs)
+		else:
+			raise ValueError(f'Unknown assessment type \'{assessment_type}\'')
+
+	type = serializers.CharField()
 	assessment_type = serializers.CharField()
 
 	subject_class = serializers.UUIDField(source='subject_class.id', allow_null=True)
 	generated_at  = serializers.DateTimeField()
 
+	school = serializers.UUIDField(source='assessment_schema.school.id')
+	subject = serializers.UUIDField(source='assessment_schema.subject.id')
+	node   = serializers.UUIDField(source='assessment_schema.node.id')
+
 	total_candidate_count = serializers.IntegerField()
+	candidate_ids = serializers.ListField(child=serializers.UUIDField())
+
 	attempted_candidate_count = serializers.IntegerField()
+	attempted_candidate_ids = serializers.ListField(child=serializers.UUIDField())
 
-	not_attempted_candidate_ids = serializers.ListField(child=serializers.UUIDField())
+	percent_attempted = serializers.FloatField()
 
-	def to_representation(self, instance):
-		schema_serializer = SchemaSerializer(instance.schema, type_suffix='-report')
-		representation = schema_serializer.data	
-		representation.update(super().to_representation(instance))
-		return representation
-
-class MarkedReportSerializer(serializers.Serializer):
-	pass
-
-class CompletedReportSerializer(serializers.Serializer):
-	percentage_complete = serializers.DecimalField(5, 3)
+class CompletedReportSerializer(ReportSerializer):
+	percent_completed = serializers.FloatField()
 
 	completed_candidate_count = serializers.IntegerField()
 	most_recent_completion_at = serializers.DateTimeField(allow_null=True)
 
 	completed_candidate_ids = serializers.ListField(child=serializers.UUIDField())
 
-class RatedReportSerializer(serializers.Serializer):
+class RatedReportSerializer(ReportSerializer):
 	pass
-
-###################################
-##
-## Schema
-## 
-###################################
-
-class SchemaSerializer(serializers.Serializer):
-	school = serializers.UUIDField(source='school.id')
-	subject = serializers.UUIDField(source='subject.id')
-	node   = serializers.UUIDField(source='node.id')
-
-	def __init__(self, *args, type_suffix='', **kwargs):
-		super().__init__(*args, **kwargs)
-		self.type_suffix = type_suffix
-
-	def to_representation(self, instance):
-		representation = {
-			'type': instance.type + self.type_suffix
-		}
-		representation.update(super().to_representation(instance))
-		return representation
-
-	def attempt_aggregates_to_representation(self, assessment):
-		raise NotImplementedError('attempt_aggregates_to_representation')
-
-class CompletedAssessmentSchemaSerializer(SchemaSerializer):
-	pass
-
-class RatedAssessmentSchemaSerializer(SchemaSerializer):
-	pass
-
-class MarkedAssessmentSchemaSerializer(SchemaSerializer):
-	pass
-
-###################################
-## 
-## Leaf types
-##
-###################################
-
-
-class UnitAssessmentSchemaSerializer(MarkedAssessmentSchemaSerializer):
-	unit = serializers.UUIDField()
-
-	def attempt_aggregates_to_representation(self, assessment):
-		return MarkedAttemptAggregateSerializer(assessment).data
-
-class BlockAssessmentSchemaSerializer(MarkedAssessmentSchemaSerializer):
-	block = serializers.UUIDField()
-
-class LessonPrelearningSchemaSerializer(CompletedAssessmentSchemaSerializer):
-	lesson = serializers.UUIDField()
-
-	def attempt_aggregates_to_representation(self, assessment):
-		return CompletedAttemptAggregateSerializer(assessment).data
-
-class LessonOutcomeSelfAssessmentSchemaSerializer(RatedAssessmentSchemaSerializer):
-	lesson_outcome = serializers.UUIDField()
-
-	def attempt_aggregates_to_representation(self, assessment):
-		return RatedAssessmentSchemaSerializer(assessment).data
-
-def schema_serializer_class_for_type(assessment_type):
-	if assessment_type == 'unit-assessment':
-		return UnitAssessmentSchemaSerializer	
-	elif assessment_type == 'block-assessment':
-		return BlockAssessmentSchemaSerializer
-	elif assessment_type == 'lesson-prelearning-assessment':
-		return LessonPrelearningSchemaSerializer
-	elif assessment_type == 'lesson-outcome-self-assessment':
-		return LessonOutcomeSelfAssessmentSchemaSerializer
-	else:
-		raise ValueError(f'Unrecognised assessment type \'{0}\'')
 
 ###################################
 ##
@@ -193,22 +106,63 @@ class AssessmentSerializer(serializers.Serializer):
 	Attributes from the schema are inlined into the assessment body.
 	"""
 
+	@staticmethod
+	def class_for_assessment_type(assessment_type):
+		if assessment_type is None:
+			return AssessmentSerializer
+
+		if assessment_type == 'unit-assessment':
+			return UnitAssessmentSerializer
+		elif assessment_type == 'block-assessment':
+			return BlockAssessmentSerializer
+		elif assessment_type == 'lesson-prelearning-assessment':
+			return LessonPrelearningAssessmentSerializer
+		elif assessment_type == 'lesson-outcome-self-assessment':
+			return LessonOutcomeSelfAssessmentSerializer
+		else:
+			raise ValueError(f'Unrecognised assessment type {assessment_type}')
+
+	type = serializers.CharField()
 	id = serializers.UUIDField()
 	student = serializers.UUIDField(source='student_id')
+
+	school = serializers.UUIDField(source='schema.school.id')
+	subject = serializers.UUIDField(source='schema.subject.id')
+	node   = serializers.UUIDField(source='schema.node.id')
 
 	def schema_serializer(self, instance):
 		serializer_cls = schema_serializer_class_for_type(instance.type)
 		return serializer_cls(instance.schema)
 
-	def to_representation(self, instance):
+class CompletionBasedAssessmentSerializer(AssessmentSerializer):
+	is_attempted = serializers.BooleanField()
+	attempted_at = serializers.DateTimeField(allow_null=True)
 
-		schema_serializer = self.schema_serializer(instance)
-		representation = schema_serializer.data
+	is_completed = serializers.BooleanField()
 
-		representation.update(super().to_representation(instance))
+class RatingsBasedAssessmentSerializer(AssessmentSerializer):
+	is_attempted = serializers.BooleanField()
+	attempted_at = serializers.DateTimeField()
 
-		representation.update(
-			schema_serializer.attempt_aggregates_to_representation(instance)
-		)
+	rating = serializers.FloatField()
+	rating_percent = serializers.FloatField()
 
-		return representation
+	best_raw_mark = serializers.IntegerField(allow_null=True)
+	best_mark_percent = serializers.FloatField()
+	best_at = serializers.DateTimeField(allow_null=True)
+
+	attempts = RatedAttemptSerializer(many=True, read_only=True, source='attempt_set')
+
+class UnitAssessmentSerializer(RatingsBasedAssessmentSerializer):
+	unit = serializers.UUIDField(source='schema.unit.id')
+
+class BlockAssessmentSerializer(RatingsBasedAssessmentSerializer):
+	block = serializers.UUIDField(source='schema.block.id')
+
+class LessonPrelearningAssessmentSerializer(CompletionBasedAssessmentSerializer):
+	lesson = serializers.UUIDField(source='schema.lesson.id')
+
+class LessonOutcomeSelfAssessmentSerializer(RatingsBasedAssessmentSerializer):
+	lesson_outcome = serializers.UUIDField(source='schema.lesson_outcome.id')
+
+
