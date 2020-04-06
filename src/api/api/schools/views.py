@@ -13,7 +13,6 @@ class StudentViewSet(viewsets.ModelViewSet):
 		qs = super().get_queryset()
 
 		resolve_ids = self.request.query_params.getlist('resolve')	
-		print('RESOLVE PARAM', resolve_ids)
 		if resolve_ids:
 			return qs.filter(id__in=resolve_ids)
 

@@ -65,9 +65,9 @@ class ReportSerializer(serializers.Serializer):
 
 	type = serializers.CharField()
 	assessment_type = serializers.CharField()
+	generated_at  = serializers.DateTimeField()
 
 	subject_class = serializers.UUIDField(source='subject_class.id', allow_null=True)
-	generated_at  = serializers.DateTimeField()
 
 	school = serializers.UUIDField(source='assessment_schema.school.id')
 	subject = serializers.UUIDField(source='assessment_schema.subject.id')
@@ -90,7 +90,8 @@ class CompletedReportSerializer(ReportSerializer):
 	completed_candidate_ids = serializers.ListField(child=serializers.UUIDField())
 
 class RatedReportSerializer(ReportSerializer):
-	pass
+	rating_average			= serializers.FloatField()
+	rating_std_deviation 	= serializers.FloatField(source='rating_std_dev')
 
 ###################################
 ##

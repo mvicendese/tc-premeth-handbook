@@ -9,7 +9,7 @@ class LessonOutcomeSerializer(BaseSerializer):
 	class Meta:
 		model = LessonOutcome
 		model_name = 'lesson-outcome'
-		fields = ('lesson', 'description')
+		fields = ('id', 'lesson', 'description')
 
 
 class LessonSerializer(BaseSerializer):
