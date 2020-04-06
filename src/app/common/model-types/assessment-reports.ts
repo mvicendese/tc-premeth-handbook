@@ -78,14 +78,18 @@ export function lessonPrelearningReportFromJson(obj: unknown): LessonPrelearning
 }
 
 export interface LessonOutcomeSelfAssessmentReport extends Report {
-  readonly averageRating: number;
+  ratingAverage: number;
+  ratingStdDeviation: number;
 }
 
 export function lessonOutcomeSelfAssessmentReportFromJson(obj: unknown): LessonOutcomeSelfAssessmentReport {
   return json.object<LessonOutcomeSelfAssessmentReport>({
     ...reportProperties('lesson-outcome-self-assessment'),
-    averageRating: json.number
+    ratingAverage: json.nullable(json.number),
+    ratingStdDeviation: json.nullable(json.number)
   }, obj);
 }
+
+export type AnyReport = LessonPrelearningReport | LessonOutcomeSelfAssessmentReport;
 
 

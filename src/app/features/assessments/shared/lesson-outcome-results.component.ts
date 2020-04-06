@@ -7,14 +7,21 @@ import {AssessmentsService} from '../../../common/model-services/assessments.ser
 @Component({
   selector: 'app-lesson-outcome-results',
   template: `
-    <h4>{{outcome.description}}</h4>
-    <mat-divider></mat-divider>
+    <ng-container>
+      <h4>{{outcome.description}}</h4>
+
+      <dl *ngIf="reports && reports[outcome.id] as report">
+        <dt>Average Rating</dt>
+        <dd>
+          <app-star-rating disabled [value]="report.averageRating"></app-star-rating>
+          ({{report.averageRating}})</dd>
+      </dl>
+
+      <mat-divider></mat-divider>
+    </ng-container>
   `
 })
 export class LessonOutcomeResultsComponent {
-  @Input() outcome: LessonOutcome;
-
-  constructor(
-    readonly assessmentsService: AssessmentsService
-  ) {}
+  @Input() outcome: LessonOutcome | undefined;
+  @Input() reports: {[outcomeId: string]: LessonOutcomeSelfAssessmentReport} = {};
 }

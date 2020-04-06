@@ -20,7 +20,7 @@ export interface ModelFetchQueueOptions {
 }
 
 export class ModelFetchQueue<T extends Model> {
-  static readonly DEFAULT_BATCH_SIZE = 5;
+  static readonly DEFAULT_BATCH_SIZE = 20;
   static readonly DEFAULT_SAMPLE_PERIOD = 50 /* ms */;
 
   private queueIdsSubject = new BehaviorSubject<string[]>([]);

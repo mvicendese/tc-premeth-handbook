@@ -2,10 +2,7 @@ import {ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Inp
 import {FormControl, FormGroup} from '@angular/forms';
 import {first, shareReplay, startWith, tap} from 'rxjs/operators';
 import {LessonPrelearningReport} from '../../../common/model-types/assessment-reports';
-import {ResponsePage} from '../../../common/model-base/pagination';
-import {StudentService} from '../../../common/model-services/students.service';
-import {Observable} from 'rxjs';
-import {ModelRef} from '../../../common/model-base/model-ref';
+import {ModelRef, modelRefId} from '../../../common/model-base/model-ref';
 import {AppStateService} from '../../../app-state.service';
 import {LessonSchema} from '../../../common/model-types/subjects';
 import {LessonPrelearningAssessment} from '../../../common/model-types/assessments';
@@ -28,45 +25,46 @@ import {Student} from '../../../common/model-types/schools';
     <div class="prelearning-assessment-students" [formGroup]="controlsForm">
       <mat-checkbox formControlName="hideComplete">Hide if prelearning complete</mat-checkbox>
 
-      <mat-list>
-        <mat-list-item *ngFor="let assessment of (assessments?.results || [])"
-                       [class.hidden]="hideComplete && assessment.isCompleted">
-          <div class="complete-col">
-            <ng-container *ngIf="assessment.isCompleted; then completeAssessmentButton; else clearAssessmentButton">
-            </ng-container>
+      <mat-list *ngIf="report && assessments">
+        <mat-list-item *ngFor="let candidate of report.candidateIds;"
+                       [class.hidden]="hideComplete && assessments[candidate]?.isCompleted">
+          <ng-container *ngIf="(assessments[candidate]) as assessment;">
+            <div class="complete-col">
+              <ng-container *ngIf="assessment.isCompleted; then completeAssessmentButton; else clearAssessmentButton">
+              </ng-container>
 
-            <ng-template #completeAssessmentButton>
-              <button mat-raised-button color="primary">
-                <mat-icon>check</mat-icon>
-              </button>
-            </ng-template>
+              <ng-template #completeAssessmentButton>
+                <button mat-raised-button color="primary">
+                  <mat-icon>check</mat-icon>
+                </button>
+              </ng-template>
 
-            <ng-template #clearAssessmentButton>
-              <button mat-raised-button color="warn" (click)="completeAssessment(assessment)">
-                <mat-icon>clear</mat-icon>
-              </button>
-            </ng-template>
-          </div>
+              <ng-template #clearAssessmentButton>
+                <button mat-raised-button color="warn" (click)="completeAssessment(assessment)">
+                  <mat-icon>clear</mat-icon>
+                </button>
+              </ng-template>
+            </div>
 
-          <div class="student-col">
-            <span *ngIf="students[assessment.student] as student; else noStudent">
-              {{student.fullName}}
-            </span>
-          </div>
-          <div class="completion-date-col">
-            <span *ngIf="assessment.isCompleted">
-              On: <span class="date">{{assessment.attemptedAt | date}}</span>
-            </span>
-          </div>
-          <div class="clear-completion-col">
-              <button *ngIf="assessment.isCompleted" mat-button color="warn">
-                CLEAR
-              </button>
-          </div>
+            <div class="student-col">
+              <span *ngIf="students[assessment.student] as student; else noStudent">
+                {{student.fullName}}
+              </span>
+            </div>
+            <div class="completion-date-col">
+              <span *ngIf="assessment.isCompleted">
+                On: <span class="date">{{assessment.attemptedAt | date}}</span>
+              </span>
+            </div>
+            <div class="clear-completion-col">
+                <button *ngIf="assessment.isCompleted" mat-button color="warn">
+                  CLEAR
+                </button>
+            </div>
+          </ng-container>
         </mat-list-item>
       </mat-list>
     </div>
-
     <ng-template #noStudent>>< STUDENT MISSING ></ng-template>
   `,
   styles: [`
@@ -86,7 +84,7 @@ export class LessonPrelearningResultsComponent implements OnChanges {
   @Input() lesson: LessonSchema | undefined;
 
   @Input() report: LessonPrelearningReport | undefined;
-  @Input() assessments: ResponsePage<LessonPrelearningAssessment>;
+  @Input() assessments: {[candidateId: string]: LessonPrelearningAssessment} = {};
 
   @Output() markCompleted = new EventEmitter<[ModelRef<LessonPrelearningAssessment>, boolean]>();
 
@@ -106,17 +104,20 @@ export class LessonPrelearningResultsComponent implements OnChanges {
   ) {}
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes.assessments && changes.assessments.currentValue) {
-      const assessments = changes.assessments.currentValue;
-      const studentRefs = new Set<ModelRef<Student>>(
-        assessments.results.map(assessment => assessment.student)
-      );
+    if (changes.report && changes.report.currentValue) {
+      const studentRefs: ModelRef<Student>[] = changes.report.currentValue.candidateIds;
       for (const ref of studentRefs) {
         this.appState.loadStudent(ref).pipe(first()).subscribe(student => {
+          if (!this.assessments[modelRefId(ref)]) {
+            // The student hasn't attempted the assessment.
+            this.assessments[modelRefId(ref)] = {
+              student: ref,
+              isCompleted: false
+            } as any;
+          }
           this.students[student.id] = student;
         });
       }
-
     }
   }
 

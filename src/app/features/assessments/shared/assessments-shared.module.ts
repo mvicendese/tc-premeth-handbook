@@ -7,12 +7,14 @@ import {MatListModule} from '@angular/material/list';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {LessonOutcomeResultsComponent} from './lesson-outcome-results.component';
+import {CommonComponentsModule} from '../../../common/components/common-components.module';
 
 
 @NgModule({
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    CommonComponentsModule,
 
     MatListModule,
     MatListModule,

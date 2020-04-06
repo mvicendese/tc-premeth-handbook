@@ -1,9 +1,8 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
-import {UnitPageComponent} from './unit-page.component';
 import {ActivatedRoute} from '@angular/router';
 import {filter, map, shareReplay} from 'rxjs/operators';
 import {combineLatest, Unsubscribable} from 'rxjs';
-import {UnitContextService} from './unit-context.service';
+import {BlockContextService, UnitContextService} from './unit-context.service';
 import {AppStateService} from '../../app-state.service';
 
 
@@ -32,24 +31,27 @@ import {AppStateService} from '../../app-state.service';
       width: 2rem;
       font-weight: 700;
     }
-  `]
+  `],
+  providers: [
+    BlockContextService
+  ]
 })
-export class UnitBlockPageComponent implements OnInit, OnDestroy {
+export class BlockPageComponent implements OnInit, OnDestroy {
   private resources: Unsubscribable[] = [];
 
-  readonly block$ = this.unitContext.block$.pipe(
-    filter(block => block != null),
+  readonly block$ = this.blockContext.block$.pipe(
     shareReplay(1)
   );
 
- constructor(
-    readonly unitContext: UnitContextService,
+  constructor(
     readonly appState: AppStateService,
-    readonly route: ActivatedRoute
+    readonly route: ActivatedRoute,
+    readonly blockContext: BlockContextService
   ) {}
 
   ngOnInit() {
-    this.resources.push(this.unitContext.useBlockRoute(this.route));
+    const blockId$ = this.route.paramMap.pipe(map(paramMap => paramMap.get('block_id')));
+    this.resources.push(this.blockContext.init(blockId$));
   }
 
   ngOnDestroy(): void {

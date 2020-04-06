@@ -32,7 +32,9 @@ export class StarRatingComponent {
   @Output() valueChange = new EventEmitter<number>();
 
   setCurrentValue(value: number) {
-    this.currentValueSubject.next(value);
+    if (!this.disabled) {
+      this.currentValueSubject.next(value);
+    }
   }
   resetCurrentValue() {
     this.currentValueSubject.next(this.lastCommittedValue);

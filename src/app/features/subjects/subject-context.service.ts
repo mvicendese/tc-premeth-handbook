@@ -3,7 +3,7 @@ import {BehaviorSubject} from 'rxjs';
 import {modelRefId, ModelRef} from '../../common/model-base/model-ref';
 import {map, tap} from 'rxjs/operators';
 import {SubjectsService} from '../../common/model-services/subjects.service';
-import {Subject} from '../../common/model-types/subject';
+import {Subject} from '../../common/model-types/subjects';
 
 
 @Injectable()

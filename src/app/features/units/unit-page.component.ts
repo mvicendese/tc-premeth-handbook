@@ -1,12 +1,8 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
-import {AppStateService} from '../../app-state.service';
-import {filter, first, map, scan, shareReplay, switchMap, tap, withLatestFrom} from 'rxjs/operators';
+import {map, shareReplay} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
-import {combineLatest, concat, merge, Observable, race, Unsubscribable} from 'rxjs';
-import {modelRefId, ModelRef} from '../../common/model-base/model-ref';
+import {Unsubscribable} from 'rxjs';
 import {UnitContextService} from './unit-context.service';
-import {Subject} from '../../common/model-types/subjects';
-import {SubjectClass} from '../../common/model-types/schools';
 
 @Component({
   selector: 'app-unit-page',
@@ -29,29 +25,18 @@ import {SubjectClass} from '../../common/model-types/schools';
 export class UnitPageComponent implements OnInit, OnDestroy {
   private readonly resources: Unsubscribable[] = [];
 
-  readonly unit$ = combineLatest([
-    this.appState.subject$.pipe(
-      filter((subject): subject is Subject => subject != null)
-    ),
-    this.route.paramMap.pipe(map(params => params.get('unit_id')))
-  ]).pipe(
-    map(([subject, unitId]) => subject.getUnit(unitId)),
+  readonly unit$ = this.unitContext.unit$.pipe(
     shareReplay(1)
   );
-
-  readonly allClasses$: Observable<readonly SubjectClass[]> = this.appState.allClasses$.pipe(
-    shareReplay(1)
-  );
-
 
   constructor(
-    readonly appState: AppStateService,
     readonly route: ActivatedRoute,
-    readonly contextService: UnitContextService
+    readonly unitContext: UnitContextService
   ) {}
 
   ngOnInit() {
-    this.resources.push(this.contextService.init());
+    const unitId$ = this.route.paramMap.pipe(map(params => params.get('unit_id')));
+    this.resources.push(this.unitContext.init(unitId$));
   }
 
   ngOnDestroy() {

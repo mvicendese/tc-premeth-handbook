@@ -1,25 +1,26 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, OnDestroy, OnInit} from '@angular/core';
 import {ResponsePage} from '../../common/model-base/pagination';
-import {LessonPrelearningReport, Report} from '../../common/model-types/assessment-reports';
+import {LessonOutcomeSelfAssessmentReport, LessonPrelearningReport, Report} from '../../common/model-types/assessment-reports';
 import {AppStateService} from '../../app-state.service';
-import {map, shareReplay, switchMap, tap, withLatestFrom} from 'rxjs/operators';
-import {UnitContextService} from './unit-context.service';
+import {map, shareReplay, startWith, switchMap, tap, withLatestFrom} from 'rxjs/operators';
+import {BlockContextService, LessonContextService} from './unit-context.service';
 import {AssessmentQuery, AssessmentsService} from '../../common/model-services/assessments.service';
-import {combineLatest, defer, Observable, of} from 'rxjs';
+import {combineLatest, defer, Observable, of, Unsubscribable} from 'rxjs';
 import {LessonSchema} from '../../common/model-types/subjects';
 import {LessonPrelearningAssessment} from '../../common/model-types/assessments';
-import {ModelRef} from '../../common/model-base/model-ref';
+import {ModelRef, modelRefId} from '../../common/model-base/model-ref';
 
 
 @Component({
   selector: 'app-units-lesson-expansion',
   template: `
+  <ng-container *ngIf="lesson$ | async as lesson">
     <mat-tab-group>
       <mat-tab label="Prelearning">
         <app-lesson-prelearning-results
-          [report]="prelearningReport$ | async"
-          [assessments]="prelearningAssessments$ | async"
-          (markCompleted)="markPrelearningAssessmentComplete($event)">
+            [report]="prelearningReport$ | async"
+            [assessments]="prelearningAssessments$ | async"
+            (markCompleted)="markPrelearningAssessmentComplete($event)">
         </app-lesson-prelearning-results>
       </mat-tab>
       <mat-tab label="Student outcomes" class="d-flex">
@@ -29,12 +30,16 @@ import {ModelRef} from '../../common/model-base/model-ref';
           </div>
           <div class="outcome-details flex-grow-2">
             <div *ngFor="let outcome of lesson.outcomes">
-              <app-lesson-outcome-results [outcome]="outcome"></app-lesson-outcome-results>
+              <app-lesson-outcome-results
+                [outcome]="outcome"
+                [reports]="lessonOutcomeReports$ | async">
+              </app-lesson-outcome-results>
             </div>
           </div>
         </div>
       </mat-tab>
     </mat-tab-group>
+  </ng-container>
   `,
   styles: [`
     .d-flex {
@@ -51,43 +56,48 @@ import {ModelRef} from '../../common/model-base/model-ref';
     .outcomes-content {
       margin-top: 2rem;
     }
-  `]
+  `],
+  providers: [
+    LessonContextService
+  ]
 })
-export class LessonExpansionComponent {
+export class LessonExpansionComponent implements OnInit, OnDestroy {
+  private resources: Unsubscribable[] = [];
+
   @Input() lesson: LessonSchema | undefined;
+
+  readonly lesson$ = this.lessonContext.lesson$.pipe(
+    shareReplay(1)
+  );
+  readonly prelearningReport$ = this.lessonContext.prelearningReport$.pipe(
+    shareReplay(1)
+  );
+  readonly prelearningAssessments$ = this.lessonContext.prelearningAssessments$.pipe(
+    shareReplay(1)
+  );
+  readonly lessonOutcomeReports$ = this.lessonContext.outcomeSelfAssessmentReports$.pipe(
+    startWith({}),
+    shareReplay(1)
+  );
 
   constructor(
     readonly appState: AppStateService,
-    readonly assessmentService: AssessmentsService
+    readonly assessmentService: AssessmentsService,
+    readonly lessonContext: LessonContextService
   ) {}
 
-  readonly assessmentQueryParams$: Observable<AssessmentQuery> = defer(() =>
-    combineLatest([
-      this.appState.subjectClass$,
-    ]).pipe(
-      map(([cls]) => ({
-        class: cls && cls.id || undefined,
-        student: undefined,
-        node: this.lesson
-      }))
-    )
-  );
+  ngOnInit() {
+    if (this.lesson === undefined) {
+      throw new Error(`Uninitialized 'lesson' on app-lesson-expansion`);
+    }
+    this.resources.push(this.lessonContext.init(modelRefId(this.lesson)));
+  }
 
-  readonly prelearningReport$: Observable<LessonPrelearningReport> = this.assessmentQueryParams$.pipe(
-    switchMap(params => {
-      return this.assessmentService.fetchReport('lesson-prelearning-assessment', { params });
-    }),
-    shareReplay(1)
-  );
+  ngOnDestroy() {
+    this.resources.forEach(r => r.unsubscribe());
+  }
 
-  readonly prelearningAssessments$: Observable<ResponsePage<LessonPrelearningAssessment>> = this.assessmentQueryParams$.pipe(
-    switchMap(params => {
-      return this.assessmentService.queryAssessments('lesson-prelearning-assessment', { params });
-    }),
-    shareReplay(1)
-  );
+  markPrelearningAssessmentComplete([assessment, isComplete]: [ModelRef<LessonPrelearningAssessment>, boolean]) {
 
-  markPrelearningAssessmentComplete([assessment, isCompleted]: [ModelRef<LessonPrelearningAssessment>, boolean]) {
-    this.assessmentService.markPrelearningAssessmentComplete(assessment, isCompleted);
   }
 }

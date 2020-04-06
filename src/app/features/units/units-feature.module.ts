@@ -4,7 +4,7 @@ import {UnitPageComponent} from './unit-page.component';
 import {CommonModule} from '@angular/common';
 import {UnitsSharedModule} from './shared/units-shared.module';
 import {MatTabsModule} from '@angular/material/tabs';
-import {UnitBlockPageComponent} from './unit-block-page.component';
+import {BlockPageComponent} from './block-page.component';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {ClassSharedModule} from '../classes/shared/class-shared.module';
 import {ReactiveFormsModule} from '@angular/forms';
@@ -19,7 +19,7 @@ export const routes: Routes = [
     children: [
       {
         path: 'blocks/:block_id',
-        component: UnitBlockPageComponent
+        component: BlockPageComponent
       }
     ]
   }
@@ -41,7 +41,7 @@ export const routes: Routes = [
   ],
   declarations: [
     UnitPageComponent,
-    UnitBlockPageComponent,
+    BlockPageComponent,
     LessonExpansionComponent
   ]
 })
