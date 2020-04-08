@@ -31,11 +31,8 @@ export class AppStateService {
   });
 
   constructor(
-    readonly subjectClassService: SubjectClassService,
-    readonly studentService: StudentService
+    readonly subjectClassService: SubjectClassService
   ) {}
-
-  readonly studentFetchQueue = new ModelFetchQueue(this.studentService);
 
   get user$(): Observable<User | undefined> {
     return this.stateSubject.pipe(pluck('user'));
@@ -63,14 +60,6 @@ export class AppStateService {
     );
   }
 
-  get allResolvedStudents$(): Observable<{[studentId: string]: Student}> {
-    return this.studentFetchQueue.allResolved$;
-  }
-
-  loadStudent(ref: ModelRef<Student>): Observable<Student> {
-    return this.studentFetchQueue.queueFetch(ref);
-  }
-
   get allClasses$(): Observable<ReadonlyArray<SubjectClass>> {
     return this.stateSubject.pipe(
       map(state => state.allSubjectClasses)
@@ -80,6 +69,26 @@ export class AppStateService {
   get selectedClass(): Observable<SubjectClass | null> {
     return this.stateSubject.pipe(
       map(state => state.selectedClass)
+    );
+  }
+
+  get selectedClassStudents(): Observable<{[studentId: string]: Student}> {
+    return combineLatest([
+      this.allClasses$,
+      this.selectedClass
+    ]).pipe(
+      map(([subjectClasses, selected]) => {
+        const students = {};
+        for (const cls of subjectClasses) {
+          if (selected === null || cls.id === selected.id) {
+            for (const student of cls.students) {
+              students[student.id] = student;
+            }
+          }
+        }
+        console.log('students', students);
+        return students;
+      })
     );
   }
 
@@ -100,12 +109,9 @@ export class AppStateService {
       this.setState('allSubjectClasses', classes);
     });
 
-    const studentFetchQueue = this.studentFetchQueue.init();
-
     return {
       unsubscribe: () => {
         allClassesSubscription.unsubscribe();
-        studentFetchQueue.unsubscribe();
       }
     };
   }

@@ -7,6 +7,7 @@ import {AppStateService} from '../../../app-state.service';
 import {LessonSchema} from '../../../common/model-types/subjects';
 import {LessonPrelearningAssessment} from '../../../common/model-types/assessments';
 import {Student} from '../../../common/model-types/schools';
+import {LessonContextService} from '../../units/unit-context.service';
 
 @Component({
   selector: 'app-lesson-prelearning-results',
@@ -30,23 +31,24 @@ import {Student} from '../../../common/model-types/schools';
                        [class.hidden]="hideComplete && assessments[candidate]?.isCompleted">
           <ng-container *ngIf="(assessments[candidate]) as assessment;">
             <div class="complete-col">
-              <ng-container *ngIf="assessment.isCompleted; then completeAssessmentButton; else clearAssessmentButton">
+              <ng-container *ngIf="!assessment.isCompleted; then completeAssessmentButton; else clearAssessmentButton">
               </ng-container>
 
               <ng-template #completeAssessmentButton>
                 <button mat-raised-button color="primary">
                   <mat-icon>check</mat-icon>
+                  Complete
                 </button>
               </ng-template>
 
               <ng-template #clearAssessmentButton>
-                <button mat-raised-button color="warn" (click)="completeAssessment(assessment)">
+                <button mat-raised-button (click)="completeAssessment(assessment)">
                   <mat-icon>clear</mat-icon>
                 </button>
               </ng-template>
             </div>
 
-            <div class="student-col">
+            <div class="student-col" *ngIf="students$ | async as students">
               <span *ngIf="students[assessment.student] as student; else noStudent">
                 {{student.fullName}}
               </span>
@@ -72,13 +74,22 @@ import {Student} from '../../../common/model-types/schools';
       display: none;
     }
 
+    .complete-col {
+      min-width: 10rem;
+      margin-right: 1rem;
+
+    }
+    .complete-col > button {
+      width: 100%;
+    }
+
     .student-col {
       flex-grow: 1;
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class LessonPrelearningResultsComponent implements OnChanges {
+export class LessonPrelearningResultsComponent {
   readonly visibleColumns = ['name'];
 
   @Input() lesson: LessonSchema | undefined;
@@ -88,7 +99,9 @@ export class LessonPrelearningResultsComponent implements OnChanges {
 
   @Output() markCompleted = new EventEmitter<[ModelRef<LessonPrelearningAssessment>, boolean]>();
 
-  readonly students: {[k: string]: Student} = {};
+  readonly students$ = this.lessonContext.students$.pipe(
+    shareReplay(1)
+  );
 
   readonly controlsForm = new FormGroup({
     hideComplete: new FormControl(true)
@@ -99,27 +112,9 @@ export class LessonPrelearningResultsComponent implements OnChanges {
   }
 
   constructor(
-    protected readonly appState: AppStateService,
+    protected readonly lessonContext: LessonContextService,
     protected readonly cd: ChangeDetectorRef
   ) {}
-
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes.report && changes.report.currentValue) {
-      const studentRefs: ModelRef<Student>[] = changes.report.currentValue.candidateIds;
-      for (const ref of studentRefs) {
-        this.appState.loadStudent(ref).pipe(first()).subscribe(student => {
-          if (!this.assessments[modelRefId(ref)]) {
-            // The student hasn't attempted the assessment.
-            this.assessments[modelRefId(ref)] = {
-              student: ref,
-              isCompleted: false
-            } as any;
-          }
-          this.students[student.id] = student;
-        });
-      }
-    }
-  }
 
   completeAssessment(assessment: LessonPrelearningAssessment) {
     this.markCompleted.emit([assessment, true]);

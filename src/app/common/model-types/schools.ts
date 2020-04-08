@@ -122,7 +122,7 @@ export interface SubjectClass extends Model {
   readonly subgroup: string;
   readonly classCode: string;
 
-  readonly students: StudentParams[];
+  readonly students: Student[];
 }
 
 export function subjectClassFromJson(obj: unknown): SubjectClass {

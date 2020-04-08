@@ -20,7 +20,14 @@ import {BehaviorSubject} from 'rxjs';
   `
 })
 export class StarRatingComponent {
-  @Input() disabled: boolean;
+  private _disabled: boolean;
+
+  @Input() set disabled(value: boolean | string) {
+    this._disabled = (value === '') || !!value;
+  }
+  get disabled() {
+    return this._disabled;
+  }
 
   readonly currentValueSubject = new BehaviorSubject<number | null>(null);
 
@@ -36,6 +43,7 @@ export class StarRatingComponent {
       this.currentValueSubject.next(value);
     }
   }
+
   resetCurrentValue() {
     this.currentValueSubject.next(this.lastCommittedValue);
   }
@@ -45,5 +53,4 @@ export class StarRatingComponent {
       this.valueChange.next(this.lastCommittedValue = this.currentValueSubject.value);
     }
   }
-
 }

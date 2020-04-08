@@ -257,6 +257,9 @@ export class LessonContextService {
     });
   }
 
+  readonly selectedClass$ = defer(() => this.appState.selectedClass);
+  readonly students$ = defer(() => this.appState.selectedClassStudents);
+
   readonly prelearningReport$: Observable<LessonPrelearningReport> = defer(() =>
     this.lesson$.pipe(
       switchMap(lesson => this.blockContext.getPrelearningReport(lesson))

@@ -8,6 +8,7 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {LessonOutcomeResultsComponent} from './lesson-outcome-results.component';
 import {CommonComponentsModule} from '../../../common/components/common-components.module';
+import {AssessmentDialogsModule} from '../dialogs/assessment-dialogs.module';
 
 
 @NgModule({
@@ -21,6 +22,8 @@ import {CommonComponentsModule} from '../../../common/components/common-componen
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
+
+    AssessmentDialogsModule
   ],
   declarations: [
     LessonPrelearningResultsComponent,

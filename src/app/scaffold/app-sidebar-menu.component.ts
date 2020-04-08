@@ -1,7 +1,7 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {AppStateService} from '../app-state.service';
 import {combineLatest, Observable, Subscription} from 'rxjs';
-import {filter, first, map, shareReplay, skipWhile, withLatestFrom} from 'rxjs/operators';
+import {filter, first, map, shareReplay, skipWhile, tap, withLatestFrom} from 'rxjs/operators';
 import {ActivationStart, Router, UrlSegment} from '@angular/router';
 import {FlatTreeControl} from '@angular/cdk/tree';
 import {MatTreeFlatDataSource, MatTreeFlattener} from '@angular/material/tree';
@@ -137,11 +137,11 @@ function classMenuNode(subjectClass: SubjectClass, level: number): MenuNode {
       </mat-menu>
     </header>
     <main>
-      <form [formGroup]="form">
+      <form [formGroup]="form"Control>
         <mat-form-field>
           <mat-label>Class group</mat-label>
-          <mat-select formGroupName="subjectClass">
-            <mat-option [value]="'all'">All students</mat-option>
+          <mat-select formControlName="subjectClass">
+            <mat-option [value]="null">All students</mat-option>
             <mat-option *ngFor="let cls of (allClasses$ | async)" [value]="cls.id">
               {{cls.classCode}}
             </mat-option>
@@ -265,7 +265,11 @@ export class AppSidebarMenuComponent implements OnInit, OnDestroy {
         map(([selectedId, allClasses]) => {
           return allClasses.find(cls => cls.id === selectedId) || null;
         })
-      ).subscribe(subjectCls => this.appState.setState('selectedClass', subjectCls))
+      ).subscribe(
+        subjectCls => {
+          this.appState.setState('selectedClass', subjectCls);
+        }
+      )
     );
   }
 
