@@ -35,8 +35,8 @@ class AttemptSerializer(serializers.Serializer):
 	date = serializers.DateTimeField(read_only=True)
 
 class RatedAttemptSerializer(AttemptSerializer):
-	raw_mark = serializers.IntegerField()
-	mark_percent = serializers.DecimalField(5,2)
+	rating = serializers.IntegerField()
+	rating_percent = serializers.FloatField()
 
 class CompletionAttemptSerializer(AttemptSerializer):
 	is_completed = serializers.BooleanField()
@@ -148,10 +148,6 @@ class RatingsBasedAssessmentSerializer(AssessmentSerializer):
 	rating = serializers.FloatField()
 	rating_percent = serializers.FloatField()
 
-	best_raw_mark = serializers.IntegerField(allow_null=True)
-	best_mark_percent = serializers.FloatField()
-	best_at = serializers.DateTimeField(allow_null=True)
-
 	attempts = RatedAttemptSerializer(many=True, read_only=True, source='attempt_set')
 
 class UnitAssessmentSerializer(RatingsBasedAssessmentSerializer):
@@ -164,6 +160,6 @@ class LessonPrelearningAssessmentSerializer(CompletionBasedAssessmentSerializer)
 	lesson = serializers.UUIDField(source='schema.lesson.id')
 
 class LessonOutcomeSelfAssessmentSerializer(RatingsBasedAssessmentSerializer):
-	lesson_outcome = serializers.UUIDField(source='schema.lesson_outcome.id')
+	lesson_outcome = serializers.UUIDField(source='schema.lessonoutcome.id')
 
 

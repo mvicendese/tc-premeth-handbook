@@ -78,7 +78,7 @@ class SubjectNode(MP_Node):
 
 	def lessonoutcome(self):
 		if self.node_type == 'lessonoutcome':
-			return LessonOutcoem.objects.get(pk=self.id)
+			return LessonOutcome.objects.get(pk=self.id)
 		else:
 			return None
 

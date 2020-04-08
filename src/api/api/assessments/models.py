@@ -56,7 +56,7 @@ class RatedAttempt(Attempt):
     def maximum_available_rating(self):
         return self.assessment.schema.maximum_available_rating
 
-    def percent_rating(self):
+    def rating_percent(self):
         return 100 * (self.rating / self.maximum_available_rating)
 
 
@@ -309,7 +309,6 @@ class AssessmentSchema(BaseModel):
     def objects_of_type(assessment_type):
         return _schema_cls_for_type(assessment_type).objects
 
-
 class CompletionBasedAssessmentSchema(AssessmentSchema):
     class Meta:
         abstract = True
@@ -319,7 +318,7 @@ class CompletionBasedAssessmentSchema(AssessmentSchema):
     report_cls   = CompletionBasedReport
 
     @classmethod
-    def annotate_assessments(self, assessment_set):
+    def annotate_assessments(cls, assessment_set):
         most_recent_attempts = (
             CompletionAttempt.objects
             .filter(assessment_id=models.OuterRef('id')).order_by('-attempt_number')
@@ -343,16 +342,21 @@ class RatingsBasedAssessmentSchema(AssessmentSchema):
     minimum_pass_mark = models.PositiveSmallIntegerField(null=True)
 
     @classmethod
-    def annotate_assessments(self, assessment_set):
+    def annotate_assessments(cls, assessment_set):
         most_recent_attempts = (
             RatedAttempt.objects
             .filter(assessment_id=models.OuterRef('id'))
             .order_by('-attempt_number')
         )    
+        leaf_schema_rel_name = f'schema_base__{cls.__name__.lower()}'
+
         return assessment_set.annotate(
+            maximum_available_rating=models.F(f'{leaf_schema_rel_name}__maximum_available_rating'),
             is_attempted=models.Exists(most_recent_attempts),
             attempted_at=models.Subquery(most_recent_attempts.values('date')[:1]),
             rating=models.Subquery(most_recent_attempts.values('rating')[:1]),
+
+            rating_percent=(models.F('rating') * 100) / models.F('maximum_available_rating')
         )
 
 ####################################
@@ -422,9 +426,8 @@ class Assessment(BaseModel):
 
     @property
     def schema(self):
-        schema_cls = _schema_cls_for_type(self.type)
+        schema_cls = _schema_cls_for_type(self.schema_base.type)
         return getattr(self.schema_base, schema_cls.__name__.lower())
-
 
     class QuerySet(models.QuerySet):
         
