@@ -17,7 +17,14 @@ Subject handbook for premethods
 3. In second terminal window, run the following commands
     - `cd ~/dev/tc-premeth-handbook/src/api`
     - `pip3 install -r requirements.txt`
-    - `python manage.py runserver`
+    - `python3 manage.py migrate` **
+    - `python3 manage.py runserver`
+    
+(\*\*) __Note__: If the output of the migrate command fails, then run:
+
+- `rm db.sqlite3` 
+    
+and then re-run the command.
     
 4. Go to 'http://localhost:8000/api' to check if the api server is running
 5. Navigate to 'http://localhost:4200'
