@@ -5,9 +5,28 @@ import {Observable} from 'rxjs';
 
 export type ModelRef<T extends Model> = string | Model | T;
 
-export interface ModelResolver<T extends Model> {
-  resolve(ref: ModelRef<T>): Observable<T>;
-}
+/**
+ * Represents a model where the properties in K (which are assumed to be of type `ModelRef` in T),
+ * are replaced by their corresponding server objects.
+ *
+ * ie. Given
+ *
+ *  interface MyModel extends Model {
+ *    myProp: ModelRef<SomeModel>;
+ *  }
+ *
+ *  then Resolve<MyModel, 'myProp'> would represent the interface
+ *
+ *  interface ResolvedMyModel extends Model {
+ *    myProp: Model | SomeModel;
+ *  }
+ *
+ *  Note that due to the partial nature of ModelRef, it is not possible for `Resolve` to
+ *  eliminate the `| Model` part of the declaration.
+ */
+export type Resolve<T extends Model, K extends keyof T> = {
+  [K1 in keyof T]: K1 extends K ? Exclude<T[K1], string> : T[K1];
+};
 
 export function isRefId(ref: unknown): ref is string {
   return typeof ref === 'string';

@@ -142,7 +142,7 @@ function classMenuNode(subjectClass: SubjectClass, level: number): MenuNode {
           <mat-label>Class group</mat-label>
           <mat-select formControlName="subjectClass">
             <mat-option [value]="null">All students</mat-option>
-            <mat-option *ngFor="let cls of (allClasses$ | async)" [value]="cls.id">
+            <mat-option *ngFor="let cls of (allSubjectClasses$ | async)" [value]="cls.id">
               {{cls.classCode}}
             </mat-option>
           </mat-select>
@@ -188,7 +188,7 @@ export class AppSidebarMenuComponent implements OnInit, OnDestroy {
     subjectClass: new FormControl({value: 'all'})
   });
 
-  readonly allClasses$ = this.appState.allClasses$.pipe(
+  readonly allSubjectClasses$ = this.appState.allSubjectClasses$.pipe(
     shareReplay(1)
   );
 
@@ -198,7 +198,7 @@ export class AppSidebarMenuComponent implements OnInit, OnDestroy {
     shareReplay(1)
   );
 
-  readonly menuData$ = combineLatest([this.allClasses$, this.allUnits$]).pipe(
+  readonly menuData$ = combineLatest([this.allSubjectClasses$, this.allUnits$]).pipe(
     map(([allClasses, allUnits]) => [
       classesMenu(allClasses),
       unitsMenu(allUnits)
@@ -261,7 +261,7 @@ export class AppSidebarMenuComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.form.valueChanges.pipe(
         map(values => values.subjectClass),
-        withLatestFrom(this.allClasses$),
+        withLatestFrom(this.allSubjectClasses$),
         map(([selectedId, allClasses]) => {
           return allClasses.find(cls => cls.id === selectedId) || null;
         })
@@ -284,7 +284,6 @@ export class AppSidebarMenuComponent implements OnInit, OnDestroy {
   }
 
   menuNodeHasChild = (index: number, node: { expandable: boolean }) => node.expandable;
-  menuNodeIsLink = (index: number, node: { routerLink?: any[] }) => Array.isArray(node.routerLink);
 
   isActiveNode(node: MenuNode): Observable<boolean> {
     return this.activeNodes$.pipe(

@@ -27,7 +27,8 @@
     "zone.js": "~0.10.2",
     "date-fns": "^2.11.0",
     "change-case": "^4.1.1",
-    "json-pointer": "^0.6.0"
+    "json-pointer": "^0.6.0",
+    "uuid": "^7.0.3"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "~0.900.5",

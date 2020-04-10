@@ -47,12 +47,17 @@ function object<T>(
 function objectFromProperties<T extends JsonObject>(properties: JsonObjectProperties<T>): (obj: JsonObject) => T {
   return (obj: JsonObject) => {
     const result = {};
-    for (const key of Object.keys(obj)) {
+
+    for (const objKey of Object.keys(obj)) {
+      if (properties[objKey] === undefined) {
+        throw parseError(`No decoder defined for property ${objKey}`);
+      }
+    }
+
+    for (const key of Object.keys(properties)) {
       withContext(key, () => {
-        const decoder = properties[key];
-        if (decoder === undefined) {
-          throw parseError(`No decoder defined for property ${key}`);
-        } else if (typeof decoder === 'function') {
+        const decoder = obj[key];
+        if (typeof decoder === 'function') {
           result[key] = (decoder as Decoder<T>)(obj[key]);
         } else {
           result[key] = decoder;

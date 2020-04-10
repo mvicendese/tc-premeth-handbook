@@ -41,6 +41,7 @@ export function personFromJson(obj: JsonObject): Person {
 
 export interface StudentParams extends Person {
   readonly type: 'student';
+  readonly school: ModelRef<School>;
   readonly studentCode: string;
 
   readonly yearLevel: number;
@@ -51,6 +52,7 @@ function studentParamsFromJson(obj: unknown): StudentParams {
   return json.object<StudentParams>({
     ...personProperties('student'),
     studentCode: json.string,
+    school: modelRefFromJson(schoolFromJson),
     yearLevel: json.number,
     compassNumber: json.number,
   }, obj);
@@ -62,8 +64,8 @@ export class Student extends BaseModel implements StudentParams {
     return new Student(params);
   }
 
-
   readonly type = 'student';
+  readonly school: ModelRef<School>;
 
   readonly firstName: string;
   readonly yearLevel: number;
@@ -79,6 +81,7 @@ export class Student extends BaseModel implements StudentParams {
     this.surname = params.surname;
     this.yearLevel = params.yearLevel;
     this.compassNumber = params.compassNumber;
+    this.school = params.school;
   }
 
   get group(): 'junior' | 'senior' {

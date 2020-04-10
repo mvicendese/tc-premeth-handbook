@@ -11,7 +11,7 @@ import {Subscription} from 'rxjs';
     <label>Show results for...</label>
     <mat-radio-group aria-label="Select class" [formControl]="filterControl" (blur)="onTouch()">
       <mat-radio-button value="all">All students</mat-radio-button>
-      <mat-radio-button *ngFor="let cls of allClasses$ | async"
+      <mat-radio-button *ngFor="let cls of allSubjectClasses$ | async"
                         [value]="cls.id">
         {{cls.classCode}}
       </mat-radio-button>
@@ -25,7 +25,7 @@ export class ClassTableFilterComponent implements ControlValueAccessor, OnDestro
   private subscriptions: Subscription[] = [];
 
   readonly filterControl = new FormControl('all');
-  readonly allClasses$ = this.appState.allClasses$.pipe(
+  readonly allSubjectClasses$ = this.appState.allSubjectClasses$.pipe(
     shareReplay(1)
   );
 
@@ -50,7 +50,7 @@ export class ClassTableFilterComponent implements ControlValueAccessor, OnDestro
   }
 
   writeValue(obj: any): void {
-    if (obj !== 'all-students') {
+    if (obj !== 'all-schools') {
 
     }
     this.filterControl.setValue(obj);

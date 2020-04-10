@@ -6,7 +6,7 @@ import {CommonModule} from '@angular/common';
 import {SubjectClassPageComponent} from './subject-class-page.component';
 import {MatCardModule} from '@angular/material/card';
 import {MatTableModule} from '@angular/material/table';
-import {StudentsSharedModule} from '../students/shared/students-shared.module';
+import {StudentsSharedModule} from '../schools/shared/students-shared.module';
 import {UnitsSharedModule} from '../units/shared/units-shared.module';
 import {SubjectClass} from '../../common/model-types/schools';
 

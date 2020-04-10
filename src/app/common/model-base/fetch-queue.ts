@@ -5,6 +5,10 @@ import {catchError, filter, map, mergeMap, sampleTime, scan, tap} from 'rxjs/ope
 import {ModelService} from './model-service';
 import {ModelResolveQueue, ResolveQueueOptions} from './resolve-queue';
 
+/**
+ * A fetch queue is just a simple [:ResolveQueue:] which fetches
+ * models by their ref.
+ */
 export class ModelFetchQueue<T extends Model> {
   readonly resolveQueue: ModelResolveQueue<T>;
 

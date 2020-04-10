@@ -14,11 +14,11 @@ export class StudentService extends ModelService<Student> {
   constructor(
     backend: ModelServiceBackend
   ) {
-    super(backend, '/students');
+    super(backend, '/schools');
   }
 
   /**
-   * Query students.
+   * Query schools.
    * @param params
    */
   students(params: {class?: string | string[], student?: string | string[]}): Observable<ResponsePage<Student>> {

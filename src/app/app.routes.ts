@@ -8,13 +8,8 @@ export const appRoutes: Routes = [
                         .then(module => module.ClassesFeatureModule)
   },
   {
-    path: 'subjects',
-    loadChildren: () => import('./features/subjects/subjects-feature.module')
-                        .then(module => module.SubjectsFeatureModule)
-  },
-  {
     path: 'students',
-    loadChildren: () => import('./features/students/students-feature.module')
+    loadChildren: () => import('./features/schools/students-feature.module')
                         .then(module => module.StudentsFeatureModule)
   },
   {

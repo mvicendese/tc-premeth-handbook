@@ -1,9 +1,7 @@
 import {Component} from '@angular/core';
 import {AppStateService} from '../../app-state.service';
-import {Observable} from 'rxjs';
-import {ResponsePage} from '../../common/model-base/pagination';
 import {SubjectsService} from '../../common/model-services/subjects.service';
-import {map, publishReplay, shareReplay} from 'rxjs/operators';
+import {map, shareReplay} from 'rxjs/operators';
 import {SubjectIndex} from '../../common/model-types/subjects';
 
 

@@ -222,6 +222,7 @@ export class Block extends BaseModel implements BlockParams {
  ********************************************/
 
 export interface LessonSchemaParams extends Model {
+  readonly subject: ModelRef<Subject>;
   readonly block: ModelRef<Block>;
 
   readonly code: string;
@@ -236,6 +237,7 @@ export interface LessonSchemaParams extends Model {
 function lessonSchemaParamsFromJson(obj: unknown): LessonSchemaParams {
   return json.object<LessonSchemaParams>({
     ...modelProperties('subject'),
+    subject: modelRefFromJson(Subject.fromJson),
     block: modelRefFromJson(Block.fromJson),
     code: json.string,
     name: json.string,
@@ -256,6 +258,7 @@ export class LessonSchema extends BaseModel implements LessonSchemaParams {
   readonly type = 'lesson';
   readonly [k: string]: unknown;
 
+  readonly subject: ModelRef<Subject>;
   readonly block: ModelRef<Block>;
 
   readonly code: string;
@@ -269,6 +272,7 @@ export class LessonSchema extends BaseModel implements LessonSchemaParams {
   constructor(params: LessonSchemaParams) {
     super(params);
 
+    this.subject = params.subject;
     this.block = params.block;
 
     this.code = params.code;
@@ -376,8 +380,5 @@ export function subjectNodeFromJson(node: unknown): SubjectNode {
   }, node);
 }
 
-export function toParam(node: SubjectNode) {
-  return node.id;
-}
 
 

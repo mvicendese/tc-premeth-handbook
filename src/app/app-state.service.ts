@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {BehaviorSubject, combineLatest, Observable, Unsubscribable} from 'rxjs';
+import {BehaviorSubject, combineLatest, defer, Observable, Unsubscribable} from 'rxjs';
 import {distinctUntilChanged, filter, map, pluck, switchMap} from 'rxjs/operators';
 import {ModelRef} from './common/model-base/model-ref';
 import {SubjectClassService} from './common/model-services/subject-class.service';
@@ -53,43 +53,46 @@ export class AppStateService {
     );
   }
 
-  get subjectClass$(): Observable<SubjectClass | null> {
+  get allSubjectClasses$(): Observable<ReadonlyArray<SubjectClass>> {
+    return this.stateSubject.pipe(
+      pluck('allSubjectClasses'),
+      distinctUntilChanged()
+    );
+  }
+
+  get activeSubjectClass$(): Observable<SubjectClass | null> {
     return this.stateSubject.pipe(
       pluck('selectedClass'),
       distinctUntilChanged()
     );
   }
 
-  get allClasses$(): Observable<ReadonlyArray<SubjectClass>> {
-    return this.stateSubject.pipe(
-      map(state => state.allSubjectClasses)
-    );
-  }
+  readonly allStudents$: Observable<Record<Student['id'], Student>> = defer(() =>
+    this.allSubjectClasses$.pipe(
+      map((classes) => this.createStudentMap(...classes))
+    )
+  );
 
-  get selectedClass(): Observable<SubjectClass | null> {
-    return this.stateSubject.pipe(
-      map(state => state.selectedClass)
-    );
-  }
-
-  get selectedClassStudents(): Observable<{[studentId: string]: Student}> {
-    return combineLatest([
-      this.allClasses$,
-      this.selectedClass
+  readonly studentsForActiveSubjectClass$: Observable<Record<Student['id'], Student>> = defer(() =>
+    combineLatest([
+      this.allSubjectClasses$,
+      this.activeSubjectClass$
     ]).pipe(
-      map(([subjectClasses, selected]) => {
-        const students = {};
-        for (const cls of subjectClasses) {
-          if (selected === null || cls.id === selected.id) {
-            for (const student of cls.students) {
-              students[student.id] = student;
-            }
-          }
+      map(([allClasses, selectedClass]) => {
+        if (selectedClass == null) {
+          return this.createStudentMap(...allClasses);
+        } else {
+          return this.createStudentMap(selectedClass);
         }
-        console.log('students', students);
-        return students;
       })
-    );
+    )
+  );
+
+  protected createStudentMap(...subjectClasses: readonly SubjectClass[]): Record<Student['id'], Student> {
+    const studentEntries = subjectClasses.flatMap((subjectClass) => {
+      return subjectClass.students.map(student => [student.id, student] as [Student['id'], Student]);
+    });
+    return Object.fromEntries(studentEntries);
   }
 
   init(): Unsubscribable {

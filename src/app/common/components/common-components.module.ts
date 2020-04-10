@@ -4,6 +4,7 @@ import {StarRatingComponent} from './star-rating.component';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {LoadingComponent} from './loading.component';
+import {TrafficLightComponent} from './traffic-light.component';
 
 
 @NgModule({
@@ -14,11 +15,13 @@ import {LoadingComponent} from './loading.component';
   ],
   declarations: [
     StarRatingComponent,
-    LoadingComponent
+    LoadingComponent,
+    TrafficLightComponent
   ],
   exports: [
     StarRatingComponent,
-    LoadingComponent
+    LoadingComponent,
+    TrafficLightComponent
   ]
 })
 export class CommonComponentsModule  {

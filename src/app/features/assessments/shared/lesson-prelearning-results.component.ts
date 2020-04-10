@@ -1,18 +1,20 @@
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges} from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
 import {first, shareReplay, startWith, tap} from 'rxjs/operators';
-import {LessonPrelearningReport} from '../../../common/model-types/assessment-reports';
-import {ModelRef, modelRefId} from '../../../common/model-base/model-ref';
+import {LessonOutcomeSelfAssessmentReport, LessonPrelearningReport} from '../../../common/model-types/assessment-reports';
+import {ModelRef, modelRefId, Resolve} from '../../../common/model-base/model-ref';
 import {AppStateService} from '../../../app-state.service';
 import {LessonSchema} from '../../../common/model-types/subjects';
-import {LessonPrelearningAssessment} from '../../../common/model-types/assessments';
+import {Assessment, LessonOutcomeSelfAssessment, LessonPrelearningAssessment} from '../../../common/model-types/assessments';
 import {Student} from '../../../common/model-types/schools';
-import {LessonContextService} from '../../units/unit-context.service';
+import {LessonStateService} from '../../units/lesson-state.service';
+import {CreateCompileFn} from '@angular/compiler-cli/ngcc/src/execution/api';
+import {ChangeCompletionStateEvent} from './prelearning-assessment-item.component';
 
 @Component({
   selector: 'app-lesson-prelearning-results',
   template: `
-    <div class="prelearning-assessment-aggregates" *ngIf="report">
+    <div class="report-container" *ngIf="report">
       <dl>
         <dt>Students Complete</dt>
         <dd>
@@ -21,70 +23,43 @@ import {LessonContextService} from '../../units/unit-context.service';
           </span>
         </dd>
       </dl>
+      <form class="table-controls" [formGroup]="controlsForm">
+        <mat-checkbox formControlName="hideComplete">Hide if prelearning complete</mat-checkbox>
+      </form>
     </div>
 
-    <div class="prelearning-assessment-students" [formGroup]="controlsForm">
-      <mat-checkbox formControlName="hideComplete">Hide if prelearning complete</mat-checkbox>
+    <mat-divider vertical></mat-divider>
 
-      <mat-list *ngIf="report && assessments">
-        <mat-list-item *ngFor="let candidate of report.candidateIds;"
-                       [class.hidden]="hideComplete && assessments[candidate]?.isCompleted">
-          <ng-container *ngIf="(assessments[candidate]) as assessment;">
-            <div class="complete-col">
-              <ng-container *ngIf="!assessment.isCompleted; then completeAssessmentButton; else clearAssessmentButton">
-              </ng-container>
-
-              <ng-template #completeAssessmentButton>
-                <button mat-raised-button color="primary">
-                  <mat-icon>check</mat-icon>
-                  Complete
-                </button>
-              </ng-template>
-
-              <ng-template #clearAssessmentButton>
-                <button mat-raised-button (click)="completeAssessment(assessment)">
-                  <mat-icon>clear</mat-icon>
-                </button>
-              </ng-template>
-            </div>
-
-            <div class="student-col" *ngIf="students$ | async as students">
-              <span *ngIf="students[assessment.student] as student; else noStudent">
-                {{student.fullName}}
-              </span>
-            </div>
-            <div class="completion-date-col">
-              <span *ngIf="assessment.isCompleted">
-                On: <span class="date">{{assessment.attemptedAt | date}}</span>
-              </span>
-            </div>
-            <div class="clear-completion-col">
-                <button *ngIf="assessment.isCompleted" mat-button color="warn">
-                  CLEAR
-                </button>
-            </div>
-          </ng-container>
+    <div class="assessments-container" [formGroup]="controlsForm">
+      <mat-list *ngIf="report">
+        <mat-list-item *ngFor="let candidateId of report.candidateIds;"
+                       [class.hidden]="hideComplete && assessments[candidateId]?.isComplete">
+          <ass-prelearning-assessment-item
+            [assessment]="assessments[candidateId]"
+            (completionStateChange)="completionStateChange.emit($event)">
+          </ass-prelearning-assessment-item>
         </mat-list-item>
       </mat-list>
     </div>
     <ng-template #noStudent>>< STUDENT MISSING ></ng-template>
   `,
   styles: [`
-    mat-list-item.hidden {
+    :host {
+      display: flex;
+    }
+    :host .report-container {
+      flex-grow: 1;
+    }
+    :host .assessments-container {
+      flex-grow: 2;
+    }
+
+    :host mat-list-item.hidden {
       display: none;
     }
 
-    .complete-col {
-      min-width: 10rem;
-      margin-right: 1rem;
-
-    }
     .complete-col > button {
       width: 100%;
-    }
-
-    .student-col {
-      flex-grow: 1;
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -95,13 +70,9 @@ export class LessonPrelearningResultsComponent {
   @Input() lesson: LessonSchema | undefined;
 
   @Input() report: LessonPrelearningReport | undefined;
-  @Input() assessments: {[candidateId: string]: LessonPrelearningAssessment} = {};
+  @Input() assessments: {[candidateId: string]: Resolve<LessonPrelearningAssessment, 'student'>} = {};
 
-  @Output() markCompleted = new EventEmitter<[ModelRef<LessonPrelearningAssessment>, boolean]>();
-
-  readonly students$ = this.lessonContext.students$.pipe(
-    shareReplay(1)
-  );
+  @Output() completionStateChange = new EventEmitter<ChangeCompletionStateEvent>();
 
   readonly controlsForm = new FormGroup({
     hideComplete: new FormControl(true)
@@ -112,15 +83,7 @@ export class LessonPrelearningResultsComponent {
   }
 
   constructor(
-    protected readonly lessonContext: LessonContextService,
+    protected readonly appState: AppStateService,
     protected readonly cd: ChangeDetectorRef
   ) {}
-
-  completeAssessment(assessment: LessonPrelearningAssessment) {
-    this.markCompleted.emit([assessment, true]);
-  }
-
-  clearCompletion(assessment: LessonPrelearningAssessment) {
-    this.markCompleted.emit([assessment, false]);
-  }
 }

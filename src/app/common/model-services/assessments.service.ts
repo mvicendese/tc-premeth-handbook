@@ -1,29 +1,35 @@
 /* tslint:disable:curly */
+
+import {v4 as uuid4} from 'uuid';
+
 import {ModelService, ModelServiceBackend} from '../model-base/model-service';
 import {Injectable} from '@angular/core';
 import {ModelRef, modelRefId} from '../model-base/model-ref';
 import {
-  LessonOutcomeSelfAssessmentReport, lessonOutcomeSelfAssessmentReportFromJson,
+  LessonOutcomeSelfAssessmentReport,
+  lessonOutcomeSelfAssessmentReportFromJson,
   LessonPrelearningReport,
   lessonPrelearningReportFromJson,
   Report
 } from '../model-types/assessment-reports';
 import {Observable} from 'rxjs';
 import {ResponsePage} from '../model-base/pagination';
-import {Block, LessonOutcome, LessonSchema, Subject, SubjectNode, Unit} from '../model-types/subjects';
+import {LessonSchema, SubjectNode} from '../model-types/subjects';
 import {
   Assessment,
   AssessmentType,
-  BlockAssessment,
-  blockAssessmentFromJson, LessonOutcomeSelfAssessment,
-  LessonPrelearningAssessment, lessonPrelearningAssessmentFromJson
+  blockAssessmentFromJson,
+  LessonOutcomeSelfAssessment,
+  LessonPrelearningAssessment,
+  lessonPrelearningAssessmentFromJson
 } from '../model-types/assessments';
 import json, {JsonObject} from '../json';
-import {AssessmentAttempt} from '../model-types/assessment-attempt';
 import {Student, SubjectClass} from '../model-types/schools';
+import {AnyAttempt, AssessmentAttempt, AssessmentAttemptType, CompletionBasedAssessmentAttempt,} from '../model-types/assessment-attempt';
+import {map} from 'rxjs/operators';
 
 export interface AssessmentQuery {
-  student?: ModelRef<Student> | null;
+  student?: ModelRef<Student>[] | ModelRef<Student> | null;
   class?: ModelRef<SubjectClass> | null;
   node?: ModelRef<SubjectNode> | null;
 
@@ -32,8 +38,13 @@ export interface AssessmentQuery {
 
 function assessmentQueryToParams(type: AssessmentType, query: AssessmentQuery): { [k: string]: string | string[] } {
   const params: { [k: string]: string | string[] } = { type };
-  if (query.student)
-    params.student = modelRefId(query.student);
+  if (query.student) {
+    if (Array.isArray(query.student)) {
+      params.student = query.student.map(modelRefId).join('|');
+    } else {
+      params.student = modelRefId(query.student);
+    }
+  }
   if (query.class)
     params.class = modelRefId(query.class);
   if (query.node)
@@ -88,27 +99,67 @@ export class AssessmentsService extends ModelService<Assessment> {
 
   queryAssessments(assessmentType: 'lesson-prelearning-assessment', options: { params: AssessmentQuery }): Observable<ResponsePage<LessonPrelearningAssessment>>;
   queryAssessments(assessmentType: 'lesson-outcome-self-assessment', options: { params: AssessmentQuery }): Observable<ResponsePage<LessonOutcomeSelfAssessment>>;
-  queryAssessments(assessmentType: AssessmentType, options: { params: AssessmentQuery }) {
+  queryAssessments<T extends Assessment>(
+      assessmentType: T['type'],
+      options: { params: AssessmentQuery }
+   ): Observable<ResponsePage<T>> {
     const params = assessmentQueryToParams(assessmentType, options.params);
     return this.query('', { params });
   }
 
   queryReports(assessmentType: 'lesson-prelearning-assessment',   options: { params: AssessmentQuery }): Observable<ResponsePage<LessonPrelearningReport>>;
   queryReports(assessmentType: 'lesson-outcome-self-assessment',  options: { params: AssessmentQuery }): Observable<ResponsePage<LessonOutcomeSelfAssessmentReport>>;
-  queryReports(assessmentType: AssessmentType,                    options: { params: AssessmentQuery }): Observable<ResponsePage<Report>> {
+  queryReports<T extends Report>(
+      assessmentType: T['assessmentType'],
+      options: { params: AssessmentQuery }
+  ): Observable<ResponsePage<T>> {
     const params = assessmentQueryToParams(assessmentType, options.params);
     return this.query('/reports', { params, useDecoder: this.reportFromJson.bind(this) });
   }
 
-  createAttempt(type: string, attempt: {assessment: ModelRef<Assessment>} & JsonObject) {
-    const assessmentId = modelRefId(attempt.assessment);
-    return this.backend.post([assessmentId, 'create_attempt'].join('/'), {
-      body: {type, ...attempt}
-    });
+  saveAssessment(type: 'lesson-prelearning-assessment', options: Partial<LessonPrelearningAssessment>): Observable<LessonPrelearningAssessment>;
+  saveAssessment(type: AssessmentType, options: Partial<Assessment>): Observable<Assessment> {
+    const id = options.id || uuid4();
+
+    const student = options.student;
+    if (student == null) {
+      throw new Error(`A 'student' is required`);
+    }
+
+    let node = options.node;
+    if (node == null) {
+      throw new Error(`A 'node' is required`);
+    }
+
+    return this.put(id, { type, id, student, node });
   }
 
-  markPrelearningAssessmentComplete(assessment: ModelRef<LessonPrelearningAssessment>, isCompleted: boolean) {
-    return this.createAttempt('lesson-prelearning-assessment-attempt', {assessment, isCompleted});
+  createAttempt(type: AssessmentType, attempt: Partial<CompletionBasedAssessmentAttempt>): Observable<CompletionBasedAssessmentAttempt>;
+  createAttempt(type: AssessmentType, attempt: Partial<AssessmentAttempt>): Observable<AssessmentAttempt> {
+    const assessment = attempt.assessment;
+    if (assessment == null) {
+      throw new Error('Assessment required');
+    }
+
+    let body: JsonObject;
+    if (['lesson-prelearning-assessment'].includes(type)) {
+      const completionState = (attempt as Partial<CompletionBasedAssessmentAttempt>).completionState;
+      if (completionState == null) {
+        throw new Error(`completionState required`);
+      }
+
+      body = CompletionBasedAssessmentAttempt.toJson({
+        type: AssessmentAttemptType.fromAssessmentType(type),
+        assessment,
+        completionState,
+      } as CompletionBasedAssessmentAttempt)
+    } else {
+      throw new Error(`Unexpected attempt type: ${attempt.type}`);
+    }
+    const assessmentId = modelRefId(attempt.assessment);
+    return this.post<AssessmentAttempt>([assessmentId, 'attempt'].join('/'), body, {
+      useDecoder: (item) => AnyAttempt.fromJson(item)
+    });
   }
 }
 

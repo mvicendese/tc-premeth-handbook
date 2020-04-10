@@ -1,7 +1,7 @@
 import {Model} from './model';
 import {AsyncSubject, BehaviorSubject, defer, merge, Observable, Subject, throwError, Unsubscribable} from 'rxjs';
 import {ResponsePage} from './pagination';
-import {catchError, filter, map, mergeMap, sampleTime, scan, tap} from 'rxjs/operators';
+import {catchError, filter, map, mapTo, mergeMap, sampleTime, scan, startWith, tap} from 'rxjs/operators';
 
 export type ResolveFunction<T extends Model> = (batchIds: readonly string[]) => Observable<{[batchId: string]: T}>;
 
@@ -25,8 +25,10 @@ export class ModelResolveQueue<T extends Model> {
   constructor(readonly resolve: ResolveFunction<T>) {}
 
   private queueIdsSubject = new BehaviorSubject<string[]>([]);
+
   private resolvedSubject = new Subject<[string, T]>();
   readonly pendingFetches = new Map<string, AsyncSubject<T>>();
+
 
   /**
    * An observable that emits each time a new value is resolved.
@@ -51,18 +53,27 @@ export class ModelResolveQueue<T extends Model> {
       merge(...currentPending),
       this.resolved$
     ).pipe(
-      scan((acc, [id, value]) => ({...acc, [id]: value}), {} as {[k: string]: T})
+      scan((acc, [id, value]) => ({...acc, [id]: value}), {} as {[k: string]: T}),
+      startWith({})
     );
   });
 
-  queue(id: string): Observable<T> {
+  queue(id: string, options: {force: boolean} = {force: false}): Observable<T> {
+    if (this.isPending(id) && options.force) {
+      this.pendingFetches.delete(id);
+    }
+
     if (!this.isPending(id)) {
       this.queuePending(id);
     }
     return this.pendingFetches.get(id) as Observable<T>;
   }
 
-  protected queueIds = this.queueIdsSubject.value;
+  queueAll(ids: string[]) {
+    ids.forEach(id => this.queue(id));
+  }
+
+  protected get queueIds() { return this.queueIdsSubject.value; }
 
   protected queuePending(id: string) {
     if (this.pendingFetches.has(id)) {

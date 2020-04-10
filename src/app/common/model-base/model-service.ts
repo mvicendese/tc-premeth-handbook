@@ -28,9 +28,19 @@ export class ModelServiceBackend {
     readonly apiBaseHref: string
   ) {}
 
-  get(path: string, params?: {[k: string]: string | string[]}): Observable<JsonObject> {
+  protected normalPath(path: string | string[]) {
+    const components = typeof path === 'string' ? [path] : path;
+    if (!/^\//.test(components[0] || '')) {
+      throw new Error(`First path component must begin with an '/'`)
+    }
+    return this.apiBaseHref + [...components]
+      .map(component => component.replace(/([^/])$/, '$1/'))
+      .join('');
+  }
+
+  get(path: string | string[], params?: {[k: string]: string | string[]}): Observable<JsonObject> {
     params = Object.assign({}, DEFAULT_PARAMS, params);
-    return this.http.get<JsonObject>([this.apiBaseHref, path].join(''), {
+    return this.http.get<JsonObject>(this.normalPath(path), {
       params,
       observe: 'body',
       headers: STANDARD_HEADERS
@@ -39,30 +49,38 @@ export class ModelServiceBackend {
     );
   }
 
-  post(path: string, options: {body: JsonObject, params?: {[k: string]: string | string[] }}): Observable<JsonObject> {
+  post(path: string | string[], body: JsonObject, options: {
+    params?: {[k: string]: string | string[]};
+  }): Observable<JsonObject> {
     const params = Object.assign({}, DEFAULT_PARAMS, options.params);
-
-    return this.http.post<JsonObject>([this.apiBaseHref, path].join(''), {
-      body: transformKeys(options.body, toUnderscoreCase),
-      observe: 'body',
-      headers: STANDARD_HEADERS,
-      params
-    }).pipe(
-      map(item => transformKeys(item, toLowerCamelCase))
+    return this.http.post<JsonObject>(
+      this.normalPath(path),
+      transformKeys(body, toUnderscoreCase),
+      {
+        observe: 'body',
+        headers: STANDARD_HEADERS,
+        params
+      }
+    ).pipe(
+      map(item => item.result as JsonObject),
+      map(item => transformKeys(item, toLowerCamelCase)),
     );
   }
 
-  put(path: string, id: string, options: {
-    body: JsonObject;
+  put(path: string | string[], body: JsonObject, options: {
     params?: {[k: string]: string | string[]}
-  }): Observable<JsonObject> {
+  } = {}): Observable<JsonObject> {
     const params = Object.assign({}, DEFAULT_PARAMS, options.params);
-    return this.http.put<JsonObject>([this.apiBaseHref, path, '/' + id].join(''), {
-      body: transformKeys(options.body, toUnderscoreCase),
-      observe: 'body',
-      headers: STANDARD_HEADERS,
-      params
-    }).pipe(
+    return this.http.put<JsonObject>(
+      this.normalPath(path),
+      transformKeys(body, toUnderscoreCase),
+      {
+        observe: 'body',
+        headers: STANDARD_HEADERS,
+        params
+      }
+    ).pipe(
+      map(item => item.result as JsonObject),
       map(item => transformKeys(item, toLowerCamelCase))
     );
   }
@@ -85,6 +103,26 @@ export abstract class ModelService<T extends Model> {
         map((params) => this.fromJson(params))
       ),
       of(this.fromJson(ref as JsonObject))
+    );
+  }
+
+  put<U = T>(path: string | string[], body: JsonObject, options: {
+    params?: {[k: string]: string | string[] },
+    useDecoder?: (obj: unknown) => U;
+  } = {}): Observable<U> {
+    const decoder = options.useDecoder || this.fromJson.bind(this);
+    return this.backend.put(path, body, options).pipe(
+      map(decoder)
+    );
+  }
+
+  post<U = T>(path: string, body: JsonObject, options: {
+    params?: {[k: string]: string | string[]},
+    useDecoder?: (obj: unknown) => U;
+  } = {}): Observable<U> {
+    const decoder = options.useDecoder || this.fromJson.bind(this);
+    return this.backend.post([this.path, path].join('/'), body, options).pipe(
+      map(decoder)
     );
   }
 

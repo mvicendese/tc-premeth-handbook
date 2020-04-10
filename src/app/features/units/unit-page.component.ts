@@ -2,7 +2,7 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {map, shareReplay} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
 import {Unsubscribable} from 'rxjs';
-import {UnitContextService} from './unit-context.service';
+import {UnitPageStateService} from './unit-page-state.service';
 
 @Component({
   selector: 'app-unit-page',
@@ -19,7 +19,7 @@ import {UnitContextService} from './unit-context.service';
     'unit-page.component.scss'
   ],
   viewProviders: [
-    UnitContextService
+    UnitPageStateService
   ]
 })
 export class UnitPageComponent implements OnInit, OnDestroy {
@@ -31,7 +31,7 @@ export class UnitPageComponent implements OnInit, OnDestroy {
 
   constructor(
     readonly route: ActivatedRoute,
-    readonly unitContext: UnitContextService
+    readonly unitContext: UnitPageStateService
   ) {}
 
   ngOnInit() {

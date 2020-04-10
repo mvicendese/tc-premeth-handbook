@@ -3,12 +3,13 @@ import {ResponsePage} from '../../common/model-base/pagination';
 import {LessonOutcomeSelfAssessmentReport, LessonPrelearningReport, Report} from '../../common/model-types/assessment-reports';
 import {AppStateService} from '../../app-state.service';
 import {map, shareReplay, startWith, switchMap, tap, withLatestFrom} from 'rxjs/operators';
-import {BlockContextService, LessonContextService} from './unit-context.service';
-import {AssessmentQuery, AssessmentsService} from '../../common/model-services/assessments.service';
-import {combineLatest, defer, Observable, of, Unsubscribable} from 'rxjs';
 import {LessonSchema} from '../../common/model-types/subjects';
 import {LessonPrelearningAssessment} from '../../common/model-types/assessments';
 import {ModelRef, modelRefId} from '../../common/model-base/model-ref';
+import {LessonStateService} from './lesson-state.service';
+import {Unsubscribable} from 'rxjs';
+import {ChangeCompletionStateEvent} from '../assessments/shared/prelearning-assessment-item.component';
+import {AssessmentsService} from '../../common/model-services/assessments.service';
 
 
 @Component({
@@ -20,7 +21,7 @@ import {ModelRef, modelRefId} from '../../common/model-base/model-ref';
         <app-lesson-prelearning-results
             [report]="prelearningReport$ | async"
             [assessments]="prelearningAssessments$ | async"
-            (markCompleted)="markPrelearningAssessmentComplete($event)">
+            (completionStateChange)="changePrelearningCompletionState($event)">
         </app-lesson-prelearning-results>
       </mat-tab>
       <mat-tab label="Student outcomes" class="d-flex">
@@ -32,7 +33,7 @@ import {ModelRef, modelRefId} from '../../common/model-base/model-ref';
             <div *ngFor="let outcome of lesson.outcomes">
               <app-lesson-outcome-results
                 [outcome]="outcome"
-                [reports]="lessonOutcomeReports$ | async">
+                [reports]="outcomeSelfAssessmentReports$ | async">
               </app-lesson-outcome-results>
             </div>
           </div>
@@ -58,7 +59,7 @@ import {ModelRef, modelRefId} from '../../common/model-base/model-ref';
     }
   `],
   providers: [
-    LessonContextService
+    LessonStateService
   ]
 })
 export class LessonExpansionComponent implements OnInit, OnDestroy {
@@ -66,38 +67,43 @@ export class LessonExpansionComponent implements OnInit, OnDestroy {
 
   @Input() lesson: LessonSchema | undefined;
 
-  readonly lesson$ = this.lessonContext.lesson$.pipe(
+  readonly lesson$ = this.lessonState.lesson$.pipe(
     shareReplay(1)
   );
-  readonly prelearningReport$ = this.lessonContext.prelearningReport$.pipe(
+  readonly prelearningReport$ = this.lessonState.prelearningReport$.pipe(
     shareReplay(1)
   );
-  readonly prelearningAssessments$ = this.lessonContext.prelearningAssessments$.pipe(
+  readonly prelearningAssessments$ = this.lessonState.prelearningAssessments$.pipe(
     shareReplay(1)
   );
-  readonly lessonOutcomeReports$ = this.lessonContext.outcomeSelfAssessmentReports$.pipe(
-    startWith({}),
+  readonly outcomeSelfAssessmentReports$ = this.lessonState.outcomeSelfAssessmentReports$.pipe(
     shareReplay(1)
   );
 
   constructor(
-    readonly appState: AppStateService,
-    readonly assessmentService: AssessmentsService,
-    readonly lessonContext: LessonContextService
+    readonly lessonState: LessonStateService,
+    readonly assessmentsService: AssessmentsService
   ) {}
 
   ngOnInit() {
     if (this.lesson === undefined) {
       throw new Error(`Uninitialized 'lesson' on app-lesson-expansion`);
     }
-    this.resources.push(this.lessonContext.init(modelRefId(this.lesson)));
+    this.resources.push(this.lessonState.init(modelRefId(this.lesson)));
+
+    this.resources.push(this.prelearningReport$.subscribe(report => {
+      report.candidateIds.forEach(candidateId => {
+        this.lessonState.loadPrelearningAssessment(candidateId);
+      })
+    }))
   }
 
   ngOnDestroy() {
     this.resources.forEach(r => r.unsubscribe());
   }
 
-  markPrelearningAssessmentComplete([assessment, isComplete]: [ModelRef<LessonPrelearningAssessment>, boolean]) {
-
+  changePrelearningCompletionState(evt: ChangeCompletionStateEvent): void {
+    this.lessonState.setPrelearningAssessmentCompletionState(evt.student, evt.completionState);
   }
+
 }

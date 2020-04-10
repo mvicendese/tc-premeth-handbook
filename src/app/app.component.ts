@@ -9,7 +9,7 @@ import {StudentService} from './common/model-services/students.service';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   viewProviders: [
-    {provide: AppStateService, useClass: AppStateService}
+    {provide: AppStateService, useClass: AppStateService},
   ]
 })
 export class AppComponent implements OnInit, OnDestroy {

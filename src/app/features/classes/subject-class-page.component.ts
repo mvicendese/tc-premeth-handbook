@@ -23,7 +23,7 @@ interface UnitResultTableRow {
         <div class="students-grid">
           <mat-card *ngFor="let student of subjectClass.students">
             <mat-card-title>
-              <a [routerLink]="['/students', student.id]">{{student.fullName}}</a>
+              <a [routerLink]="['/schools', student.id]">{{student.fullName}}</a>
             </mat-card-title>
             <mat-card-subtitle>Year level: {{student.yearLevel}}</mat-card-subtitle>
           </mat-card>

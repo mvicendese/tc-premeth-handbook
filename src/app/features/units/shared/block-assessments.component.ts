@@ -66,7 +66,7 @@ export function tableRows(state: TableState): TableRowData[] {
         <ng-container matColumnDef="student">
           <th mat-header-cell *matHeaderCellDef>Student</th>
           <td mat-cell *matCellDef="let element">
-            <a [routerLink]="['/students', element.student.id]">{{element.student.fullName}}</a>
+            <a [routerLink]="['/schools', element.student.id]">{{element.student.fullName}}</a>
           </td>
         </ng-container>
 

@@ -43,5 +43,4 @@ export class StudentViewHostComponent implements OnInit, OnDestroy {
       .filter(subscription => !subscription.closed)
       .forEach(subscription => subscription.unsubscribe());
   }
-
 }

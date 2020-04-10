@@ -9,6 +9,8 @@ import {MatIconModule} from '@angular/material/icon';
 import {LessonOutcomeResultsComponent} from './lesson-outcome-results.component';
 import {CommonComponentsModule} from '../../../common/components/common-components.module';
 import {AssessmentDialogsModule} from '../dialogs/assessment-dialogs.module';
+import {PrelearningAssessmentItemComponent} from './prelearning-assessment-item.component';
+import {MatButtonToggleModule} from '@angular/material/button-toggle';
 
 
 @NgModule({
@@ -21,13 +23,15 @@ import {AssessmentDialogsModule} from '../dialogs/assessment-dialogs.module';
     MatListModule,
     MatCheckboxModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatIconModule,
 
     AssessmentDialogsModule
   ],
   declarations: [
     LessonPrelearningResultsComponent,
-    LessonOutcomeResultsComponent
+    PrelearningAssessmentItemComponent,
+    LessonOutcomeResultsComponent,
   ],
   exports: [
     LessonPrelearningResultsComponent,

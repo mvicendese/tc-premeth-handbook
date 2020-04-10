@@ -1,13 +1,14 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
-import {filter, map, shareReplay} from 'rxjs/operators';
-import {combineLatest, Unsubscribable} from 'rxjs';
-import {BlockContextService, UnitContextService} from './unit-context.service';
-import {AppStateService} from '../../app-state.service';
+
+import {map, shareReplay} from 'rxjs/operators';
+import {Unsubscribable} from 'rxjs';
+
+import {BlockStateService} from './block-state.service';
 
 
 @Component({
-  selector: 'app-unit-block-page',
+  selector: 'app-unit-block-drawer',
   template: `
     <ng-container *ngIf="(block$ | async) as block">
       <h2>{{block.name}}</h2>
@@ -32,11 +33,11 @@ import {AppStateService} from '../../app-state.service';
       font-weight: 700;
     }
   `],
-  providers: [
-    BlockContextService
+  viewProviders: [
+    BlockStateService
   ]
 })
-export class BlockPageComponent implements OnInit, OnDestroy {
+export class BlockDrawerComponent implements OnInit, OnDestroy {
   private resources: Unsubscribable[] = [];
 
   readonly block$ = this.blockContext.block$.pipe(
@@ -44,9 +45,8 @@ export class BlockPageComponent implements OnInit, OnDestroy {
   );
 
   constructor(
-    readonly appState: AppStateService,
     readonly route: ActivatedRoute,
-    readonly blockContext: BlockContextService
+    readonly blockContext: BlockStateService
   ) {}
 
   ngOnInit() {

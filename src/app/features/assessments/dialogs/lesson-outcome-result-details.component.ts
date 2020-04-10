@@ -5,12 +5,12 @@ import {LessonOutcomeSelfAssessment} from '../../../common/model-types/assessmen
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {Student} from '../../../common/model-types/schools';
 import {LessonOutcomeSelfAssessmentReport} from '../../../common/model-types/assessment-reports';
-import {LessonContextService} from '../../units/unit-context.service';
 import {Observable} from 'rxjs';
 import {shareReplay} from 'rxjs/operators';
+import {LessonStateService} from '../../units/lesson-state.service';
 
 interface OutcomeResultDialogData {
-  readonly lessonContext: LessonContextService;
+  readonly lessonContext: LessonStateService;
   readonly outcome: LessonOutcome;
   readonly report: LessonOutcomeSelfAssessmentReport;
   readonly assessments: ResponsePage<LessonOutcomeSelfAssessment>;
