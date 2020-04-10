@@ -19,7 +19,7 @@ import {ChangeCompletionStateEvent} from './prelearning-assessment-item.componen
         <dt>Students Complete</dt>
         <dd>
           {{report.completedCandidateCount}} / {{report.totalCandidateCount}}
-          <span class="percentage">{{report.percentageComplete}}
+          <span class="percentage">{{report.percentCompleted}}
           </span>
         </dd>
       </dl>

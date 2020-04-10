@@ -89,7 +89,7 @@ export class PrelearningAssessmentItemComponent implements OnChanges {
       return 'indeterminate';
     }
     switch (this.assessment.completionState) {
-      case 'none':
+      case 'no':
         return 'stop';
       case 'partial':
         return 'wait';

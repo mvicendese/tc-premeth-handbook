@@ -89,11 +89,15 @@ export class ModelServiceBackend {
 export abstract class ModelService<T extends Model> {
   private readonly createResponsePage = modelServiceResponsePageFactory(this.backend, this.path);
 
-  abstract fromJson(obj: JsonObject): T;
+  /**
+   * The default decoder to use when processing results.
+   * @param obj
+   */
+  abstract fromJson(obj: unknown): T;
 
   protected constructor(
     protected backend: ModelServiceBackend,
-    readonly path: string,
+    readonly path: string
   ) {}
 
   fetch(ref: ModelRef<T>): Observable<T> {
@@ -102,24 +106,24 @@ export abstract class ModelService<T extends Model> {
       defer(() => this.backend.get([this.path, ref].join('/'))).pipe(
         map((params) => this.fromJson(params))
       ),
-      of(this.fromJson(ref as JsonObject))
+      of(this.fromJson(ref))
     );
   }
 
-  put<U = T>(path: string | string[], body: JsonObject, options: {
+  put<Result extends object = T>(path: string | string[], body: JsonObject, options: {
     params?: {[k: string]: string | string[] },
-    useDecoder?: (obj: unknown) => U;
-  } = {}): Observable<U> {
+    useDecoder?: (obj: unknown) => Result;
+  } = {}): Observable<Result> {
     const decoder = options.useDecoder || this.fromJson.bind(this);
     return this.backend.put(path, body, options).pipe(
       map(decoder)
     );
   }
 
-  post<U = T>(path: string, body: JsonObject, options: {
+  post<Result extends object = T>(path: string, body: JsonObject, options: {
     params?: {[k: string]: string | string[]},
-    useDecoder?: (obj: unknown) => U;
-  } = {}): Observable<U> {
+    useDecoder?: (obj: unknown) => Result;
+  } = {}): Observable<Result> {
     const decoder = options.useDecoder || this.fromJson.bind(this);
     return this.backend.post([this.path, path].join('/'), body, options).pipe(
       map(decoder)
@@ -133,13 +137,13 @@ export abstract class ModelService<T extends Model> {
     );
   }
 
-  query<U extends Model = T>(path: string,
-                             options: {
-                               params: {[k: string]: string | string[]};
-                               useDecoder?: Decoder<U>
-                             }): Observable<ResponsePage<U>> {
+  query<Result extends object = T>(path: string,
+               options: {
+                 params: {[k: string]: string | string[]};
+                 useDecoder?: Decoder<Result>
+               }): Observable<ResponsePage<Result>> {
     path = this.path + path;
-    const sOptions: ResponsePageOptions<U> = {
+    const sOptions: ResponsePageOptions<Result> = {
       ...options,
       useDecoder: options && options.useDecoder || this.fromJson.bind(this)
     };
@@ -151,7 +155,7 @@ export abstract class ModelService<T extends Model> {
 
     return this.backend.get(path, options && options.params).pipe(
       /** FIXME: Theses decoders are _definitely_ wrong */
-      map(data => this.createResponsePage(path, sOptions as any, data) as any as ResponsePage<U>)
+      map(data => this.createResponsePage(path, sOptions as any, data) as any as ResponsePage<Result>)
     );
   }
 

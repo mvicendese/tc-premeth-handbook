@@ -19,7 +19,7 @@ function personFromJson(object: unknown): Person {
   }
 
   return json.object<Person>({
-    ...modelProperties(type),
+    ...modelProperties<Person>(type as 'student' | 'teacher'),
     name: json.string
   }, object);
 }

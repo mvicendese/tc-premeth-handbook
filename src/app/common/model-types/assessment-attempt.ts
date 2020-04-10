@@ -1,7 +1,6 @@
 import {ModelRef, modelRefFromJson, modelRefId} from '../model-base/model-ref';
-import {AnyAssessment, Assessment, AssessmentType, CompletionState, completionStateFromJson} from './assessments';
-import {Model} from '../model-base/model';
-import json, {isJsonObject, JsonObject, parseError} from '../json';
+import {AnyAssessment, Assessment, AssessmentType, CompletionState} from './assessments';
+import json, {JsonObject} from '../json';
 
 export type AssessmentAttemptType
   = 'unit-assessment-attempt'
@@ -9,29 +8,34 @@ export type AssessmentAttemptType
   | 'lesson-prelearning-assessment-attempt'
   | 'lessonoutcome-self-assessment-attempt';
 
-export const AssessmentAttemptType = {
-  fromAssessmentType: (type: AssessmentType) => type + '-attempt' as AssessmentAttemptType,
-  toAssessmentType: (type: AssessmentAttemptType) => type.split('-attempt')[0] as AssessmentType,
-
-  fromJson: json.string
-};
-
 
 export interface AssessmentAttempt extends JsonObject {
   readonly type: AssessmentAttemptType;
+  readonly assessmentType
   readonly assessment: ModelRef<Assessment>;
   readonly attemptNumber: number;
   readonly date: Date;
 }
 
 export const AssessmentAttempt = {
-  properties: {
-    type: AssessmentAttemptType.fromJson,
+  properties: <T extends Assessment>(assessmentType: T['type']) => ({
+    type: assessmentType + '-attempt' as AssessmentAttemptType,
+    assessmentType: assessmentType,
     assessment: modelRefFromJson(AnyAssessment.fromJson),
     attemptNumber: json.number,
     date: json.date
-  }
+  })
 };
+
+export interface RatingBasedAssessmentAttempt extends AssessmentAttempt {
+}
+
+export const RatingBasedAssessmentAttempt = {
+  properties: <T extends Assessment>(assessmentType: T['type']) => ({
+    ...AssessmentAttempt.properties(assessmentType)
+  }),
+};
+
 
 export interface CompletionBasedAssessmentAttempt extends AssessmentAttempt {
   readonly completionState: CompletionState;
@@ -40,34 +44,53 @@ export interface CompletionBasedAssessmentAttempt extends AssessmentAttempt {
 }
 
 export const CompletionBasedAssessmentAttempt = {
-  properties: {
-    ...AssessmentAttempt.properties,
-    completionState: completionStateFromJson,
+  properties: <T extends Assessment>(assessmentType: T['type']) => ({
+    ...AssessmentAttempt.properties(assessmentType),
+    completionState: CompletionState.fromJson,
     isComplete: json.bool,
     isPartiallyComplete: json.bool
-  },
+  }),
   toJson: (obj: CompletionBasedAssessmentAttempt) => ({
-    type: obj.type,
+    type: obj.assessmentType + '-attempt',
+    assessmentType: obj.assessmentType,
     assessment: modelRefId(obj.assessment),
     completionState: obj.completionState,
   }),
-  fromJson: (obj: unknown) => json.object<CompletionBasedAssessmentAttempt>(CompletionBasedAssessmentAttempt.properties, obj)
 };
 
-export type AnyAttempt
-  = CompletionBasedAssessmentAttempt;
+export const BlockAssessmentAttempt = {
+  fromJson: (obj) => json.object(RatingBasedAssessmentAttempt.properties('block-assessment'), obj)
+};
+
+export const UnitAssessmentAttempt = {
+  fromJson: (obj) => json.object(RatingBasedAssessmentAttempt.properties('unit-assessment'), obj)
+};
+
+export const LessonPrelearningAssessmentAttempt = {
+  fromJson: (obj) => json.object(CompletionBasedAssessmentAttempt.properties('lesson-prelearning-assessment'), obj)
+};
+
+export const LessonOutcomeSelfAssessmentAttempt = {
+  fromJson: (obj) => json.object(RatingBasedAssessmentAttempt.properties('lesson-outcome-self-assessment'), obj)
+};
+
+export type AnyAttempt = CompletionBasedAssessmentAttempt | RatingBasedAssessmentAttempt;
 
 export const AnyAttempt = {
-  fromJson: (obj: unknown) => {
-    let attemptType: AssessmentAttemptType = undefined;
-    if (isJsonObject(obj)) {
-      attemptType = json.string(obj.type) as any;
+  fromJson: (object: unknown): AnyAttempt => {
+    function getAssessmentType(obj: unknown): AssessmentType {
+      return json.object({assessmentType: AssessmentType.fromJson}, obj).assessmentType;
     }
-    switch (attemptType) {
-      case 'lesson-prelearning-assessment-attempt':
-        return CompletionBasedAssessmentAttempt.fromJson(obj);
-      default:
-        throw parseError(`Unrecognised assessment type: ${attemptType}`);
-    }
+
+    return json.union(
+      getAssessmentType,
+      {
+        'unit-assessment': UnitAssessmentAttempt.fromJson,
+        'block-assessment': BlockAssessmentAttempt.fromJson,
+        'lesson-prelearning-assessment': LessonPrelearningAssessmentAttempt.fromJson,
+        'lesson-outcome-self-assessment': LessonOutcomeSelfAssessmentAttempt.fromJson
+      },
+      object
+    );
   }
 };

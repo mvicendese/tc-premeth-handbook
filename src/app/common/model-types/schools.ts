@@ -1,4 +1,4 @@
-import json, {Decoder, JsonObject, JsonObjectProperties} from '../json';
+import json, {JsonObject} from '../json';
 import {BaseModel, Model, modelProperties} from '../model-base/model';
 import {ModelRef, modelRefFromJson} from '../model-base/model-ref';
 import {Subject} from './subjects';
@@ -9,27 +9,29 @@ export interface School extends Model {
 }
 
 export function schoolFromJson(obj: unknown): School {
-  return json.object<School>({
-    ...modelProperties('school'),
+  return json.object({
+    ...modelProperties<School>('school'),
     name: json.string
   }, obj);
 }
 
 
 export interface Person extends Model {
+  readonly school: ModelRef<School>;
   readonly firstName: string;
   readonly surname: string;
   readonly fullName: string;
   readonly email: string;
 }
 
-function personProperties(type: string): JsonObjectProperties<Person> {
+function personProperties<T extends Person>(type: T['type']) {
   return {
-    ...modelProperties(type),
+    ...modelProperties<T>(type),
     firstName: json.string,
     surname: json.string,
     fullName: json.string,
-    email: json.string
+    email: json.string,
+    school: modelRefFromJson(schoolFromJson)
   };
 }
 
@@ -41,7 +43,6 @@ export function personFromJson(obj: JsonObject): Person {
 
 export interface StudentParams extends Person {
   readonly type: 'student';
-  readonly school: ModelRef<School>;
   readonly studentCode: string;
 
   readonly yearLevel: number;
@@ -50,9 +51,8 @@ export interface StudentParams extends Person {
 
 function studentParamsFromJson(obj: unknown): StudentParams {
   return json.object<StudentParams>({
-    ...personProperties('student'),
+    ...personProperties<StudentParams>('student'),
     studentCode: json.string,
-    school: modelRefFromJson(schoolFromJson),
     yearLevel: json.number,
     compassNumber: json.number,
   }, obj);
@@ -93,7 +93,7 @@ export class Student extends BaseModel implements StudentParams {
   }
 
   get email() {
-    return `${this.code}@tc.vic.edu.au`;
+    return `${this.studentCode}@tc.vic.edu.au`;
   }
 
   get compassLink() {
@@ -103,15 +103,12 @@ export class Student extends BaseModel implements StudentParams {
 
 export interface Teacher extends Person {
   readonly type: 'teacher';
-  readonly id: string;
   readonly teacherCode: string;
 }
 
 export function teacherFromJson(obj: unknown): Teacher {
   return json.object<Teacher>({
-    ...personProperties('teacher'),
-    name: json.string,
-    email: json.string,
+    ...personProperties<Teacher>('teacher'),
     teacherCode: json.string
   }, obj);
 }
@@ -130,7 +127,7 @@ export interface SubjectClass extends Model {
 
 export function subjectClassFromJson(obj: unknown): SubjectClass {
   return json.object<SubjectClass>({
-    ...modelProperties('class'),
+    ...modelProperties<SubjectClass>('class'),
     subject: modelRefFromJson(Subject.fromJson),
     year: json.number,
     teacher: modelRefFromJson(teacherFromJson),

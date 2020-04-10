@@ -21,7 +21,7 @@ interface OutcomeResultDialogData {
   selector: 'app-lesson-outcome-student-breakdown-dialog',
   template: `
     <h1 mat-dialog-title>
-      {{data.outcome.name}} student data
+      {{data.outcome.description}} student data
     </h1>
     <div mat-dialog-content>
       <mat-list>

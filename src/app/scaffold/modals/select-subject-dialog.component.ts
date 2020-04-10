@@ -3,6 +3,7 @@ import {AppStateService} from '../../app-state.service';
 import {SubjectsService} from '../../common/model-services/subjects.service';
 import {map, shareReplay} from 'rxjs/operators';
 import {SubjectIndex} from '../../common/model-types/subjects';
+import {modelRefId} from '../../common/model-base/model-ref';
 
 
 @Component({
@@ -43,7 +44,7 @@ export class SelectSubjectDialogComponent {
     if (value == null) {
       this.appState.setState('subject', null);
     } else {
-      this.subjectsService.fetch(value).subscribe(
+      this.subjectsService.fetch(modelRefId(value)).subscribe(
         (subject) => this.appState.setState('subject', subject)
       );
     }

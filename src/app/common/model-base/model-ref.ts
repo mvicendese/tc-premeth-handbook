@@ -1,9 +1,10 @@
+import json from '../json';
+
 import {Model} from './model';
 import {Decoder, isJsonObject, JsonObject, parseError} from '../json';
-import {Observable} from 'rxjs';
 
 
-export type ModelRef<T extends Model> = string | Model | T;
+export type ModelRef<T extends Model> = string | T;
 
 /**
  * Represents a model where the properties in K (which are assumed to be of type `ModelRef` in T),
@@ -18,11 +19,8 @@ export type ModelRef<T extends Model> = string | Model | T;
  *  then Resolve<MyModel, 'myProp'> would represent the interface
  *
  *  interface ResolvedMyModel extends Model {
- *    myProp: Model | SomeModel;
+ *    myProp: SomeModel;
  *  }
- *
- *  Note that due to the partial nature of ModelRef, it is not possible for `Resolve` to
- *  eliminate the `| Model` part of the declaration.
  */
 export type Resolve<T extends Model, K extends keyof T> = {
   [K1 in keyof T]: K1 extends K ? Exclude<T[K1], string> : T[K1];
@@ -36,6 +34,9 @@ export function isRefModel<T extends Model>(ref: ModelRef<T> | null): ref is T {
 }
 
 export function modelRefId(ref: ModelRef<any>): string {
+  if (ref === undefined) {
+    throw new Error(`Undefined ref`);
+  }
   if (isRefId(ref)) {
     return ref;
   } else {
@@ -43,25 +44,17 @@ export function modelRefId(ref: ModelRef<any>): string {
   }
 }
 
+
 export function modelRefFromJson<T extends Model>(fromObject: (obj: JsonObject) => T): Decoder<ModelRef<T>>;
 export function modelRefFromJson<T extends Model>(fromObject: (obj: JsonObject) => T, ref: ModelRef<T>): ModelRef<T>;
 export function modelRefFromJson<T extends Model>(fromObject: (obj: JsonObject) => T, ref?: ModelRef<T>): Decoder<ModelRef<T>> | ModelRef<T> {
-  const decoder = (obj: unknown) => {
-    if (typeof obj === 'string') {
-      return obj;
-    } else if (isJsonObject(obj)) {
-      return fromObject(obj);
-    }
-    throw parseError(`Expected a model ref`);
-  };
-
-  if (ref === undefined) {
-    return decoder;
-  } else {
-    return decoder(ref);
-  }
+  return json.union(
+    obj => typeof obj as "string" | "object",
+    {
+      string: (obj) => obj as ModelRef<T>,
+      object: fromObject
+    },
+    ref
+  );
 }
 
-export function unresolvedModelRefError(propName: string) {
-  return new Error(`Unresolved model reference ${propName}`);
-}

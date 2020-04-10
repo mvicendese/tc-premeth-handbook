@@ -1,6 +1,6 @@
 import {ModelServiceBackend} from './model-service';
 import {Observable} from 'rxjs';
-import {Model, ModelMap} from './model';
+import {Model} from './model';
 import {map} from 'rxjs/operators';
 import {Decoder, JsonObject} from '../json';
 import {modelRefId} from './model-ref';
@@ -15,7 +15,7 @@ export interface ResponsePageData extends JsonObject {
   results: JsonObject[];
 }
 
-export class ResponsePage<T extends Model> {
+export class ResponsePage<T extends object> {
 
   get params() {
     return this.options.params;
@@ -37,9 +37,15 @@ export class ResponsePage<T extends Model> {
     return this.data.results.map(result => this.options.useDecoder(result as JsonObject));
   }
 
-  resultMap<K extends keyof T = 'id'>(key?: (obj: T) => Extract<T[K], string>): ModelMap<T> {
+  resultMap<K extends keyof T>(key: (obj: T) => T[K]): Record<K, T> {
     const keyFn = key || modelRefId;
-    return Object.fromEntries( this.results.map(result => [keyFn(result), result]));
+    return Object.fromEntries( this.results.map(result => {
+      const key = keyFn(result);
+      if (key == null) {
+        throw new Error(`Key function should not return 'null' or 'undefined'`);
+      }
+      return [key, result]
+    }));
   }
 
   first() {

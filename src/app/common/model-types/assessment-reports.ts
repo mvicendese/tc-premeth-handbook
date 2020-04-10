@@ -1,5 +1,4 @@
-import json, {JsonObjectProperties} from '../json';
-import {Model, modelProperties} from '../model-base/model';
+import json from '../json';
 import {ModelRef, modelRefFromJson} from '../model-base/model-ref';
 import {School, schoolFromJson, Student, SubjectClass, subjectClassFromJson} from './schools';
 import {Subject, SubjectNode, subjectNodeFromJson} from './subjects';
@@ -11,15 +10,7 @@ export type AssessmentReportType
   | 'lesson-prelearning-assessment-report'
   | 'lesson-outcome-self-assessment-report';
 
-export function fromAssessmentType(assessmentType: AssessmentType): AssessmentReportType {
-  return [assessmentType, 'report'].join('-') as AssessmentReportType;
-}
-
-export function toAssessmentType(reportType: AssessmentReportType): AssessmentType {
-  return reportType.split('-report')[0] as AssessmentType;
-}
-
-export interface Report extends Model {
+export interface Report {
   readonly type: AssessmentReportType;
   readonly assessmentType: AssessmentType;
 
@@ -34,14 +25,14 @@ export interface Report extends Model {
   readonly totalCandidateCount: number;
   readonly candidateIds: ReadonlyArray<ModelRef<Student>>;
   readonly attemptedCandidateCount: number;
-  readonly attemptedCandidateIds: ReadonlyArray<Student>;
+  readonly attemptedCandidateIds: ReadonlyArray<ModelRef<Student>>;
 
   readonly percentAttempted: number;
 }
 
-export function reportProperties(assessmentType: AssessmentType): JsonObjectProperties<Report> {
-  return {
-    ...modelProperties(fromAssessmentType(assessmentType)),
+export const Report = {
+  properties: <T extends Report>(assessmentType: T['assessmentType']) => ({
+    type: (assessmentType + '-report') as T['type'],
     assessmentType,
     school: modelRefFromJson(schoolFromJson),
     subject: modelRefFromJson(Subject.fromJson),
@@ -55,8 +46,27 @@ export function reportProperties(assessmentType: AssessmentType): JsonObjectProp
     attemptedCandidateIds: json.array(modelRefFromJson(Student.fromJson)),
 
     percentAttempted: json.number
-  };
+  })
+};
+
+export interface UnitAssessmentReport extends Report {
 }
+
+export const UnitAssessmentReport = {
+  fromJson: json.object<UnitAssessmentReport>({
+    ...Report.properties('unit-assessment'),
+  })
+};
+
+export interface BlockAssessmentReport extends Report {
+
+}
+
+export const BlockAssessmentReport = {
+  fromJson: json.object<BlockAssessmentReport>({
+    ...Report.properties('block-assessment')
+  })
+};
 
 export interface LessonPrelearningReport extends Report {
   readonly percentCompleted: number;
@@ -64,12 +74,12 @@ export interface LessonPrelearningReport extends Report {
   readonly completedCandidateCount: number;
   readonly mostRecentCompletionAt: Date | null;
 
-  readonly completedCandidateIds: string[];
+  readonly completedCandidateIds: ModelRef<Student>[];
 }
 
 export function lessonPrelearningReportFromJson(obj: unknown): LessonPrelearningReport {
   return json.object<LessonPrelearningReport>({
-    ...reportProperties('lesson-prelearning-assessment'),
+    ...Report.properties('lesson-prelearning-assessment'),
     percentCompleted: json.number,
     completedCandidateCount: json.number,
     completedCandidateIds: json.array(modelRefFromJson(Student.fromJson)),
@@ -84,7 +94,7 @@ export interface LessonOutcomeSelfAssessmentReport extends Report {
 
 export function lessonOutcomeSelfAssessmentReportFromJson(obj: unknown): LessonOutcomeSelfAssessmentReport {
   return json.object<LessonOutcomeSelfAssessmentReport>({
-    ...reportProperties('lesson-outcome-self-assessment'),
+    ...Report.properties('lesson-outcome-self-assessment'),
     ratingAverage: json.nullable(json.number),
     ratingStdDeviation: json.nullable(json.number)
   }, obj);

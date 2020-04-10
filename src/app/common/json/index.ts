@@ -6,6 +6,7 @@ import object from './decoders/object';
 import string from './decoders/string';
 import tuple from './decoders/tuple';
 import date from './decoders/date';
+import union from './decoders/union';
 
 export default {
   array,
@@ -15,7 +16,8 @@ export default {
   number,
   object,
   string,
-  tuple
+  tuple,
+  union
 };
 
 export * from './types';

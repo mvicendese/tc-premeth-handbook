@@ -6,22 +6,22 @@ import {ModelService, ModelServiceBackend} from '../model-base/model-service';
 import {Injectable} from '@angular/core';
 import {ModelRef, modelRefId} from '../model-base/model-ref';
 import {
+  BlockAssessmentReport,
   LessonOutcomeSelfAssessmentReport,
   lessonOutcomeSelfAssessmentReportFromJson,
   LessonPrelearningReport,
   lessonPrelearningReportFromJson,
-  Report
+  Report, UnitAssessmentReport
 } from '../model-types/assessment-reports';
 import {Observable} from 'rxjs';
 import {ResponsePage} from '../model-base/pagination';
 import {LessonSchema, SubjectNode} from '../model-types/subjects';
 import {
+  AnyAssessment,
   Assessment,
   AssessmentType,
-  blockAssessmentFromJson,
   LessonOutcomeSelfAssessment,
   LessonPrelearningAssessment,
-  lessonPrelearningAssessmentFromJson
 } from '../model-types/assessments';
 import json, {JsonObject} from '../json';
 import {Student, SubjectClass} from '../model-types/schools';
@@ -58,34 +58,24 @@ function assessmentQueryToParams(type: AssessmentType, query: AssessmentQuery): 
 @Injectable({providedIn: 'root'})
 export class AssessmentsService extends ModelService<Assessment> {
 
-  fromJson(object: unknown): Assessment {
-    return json.object<Assessment>((obj) => {
-      switch (obj.type) {
-        case 'block-assessment':
-          return blockAssessmentFromJson(obj);
-        case 'lesson-prelearning-assessment':
-          return lessonPrelearningAssessmentFromJson(obj);
-        case 'unit-assessment':
-        // return new UnitAssessment(params);
-        case 'lesson-outcome-self-assessment':
-        // return lessonOutcomeSelfAssessmentFromJson(obj);
-        default:
-          throw new Error(`Unrecognised assessment type ${obj.type}`);
-      }
-    }, object);
+  fromJson(object: unknown): AnyAssessment {
+    return AnyAssessment.fromJson(object);
   }
 
   reportFromJson(object: unknown): Report {
-    return json.object<Report>((obj) => {
-      switch (obj.assessmentType) {
-        case 'lesson-prelearning-assessment':
-          return lessonPrelearningReportFromJson(obj);
-        case 'lesson-outcome-self-assessment':
-          return lessonOutcomeSelfAssessmentReportFromJson(obj);
-        default:
-          throw new Error(`Unrecognised assessment type ${obj.assessmentType}`);
-      }
-    }, object);
+    function getAssessmentType(obj: unknown): AssessmentType {
+      return json.object({assessmentType: AssessmentType.fromJson}, obj).assessmentType;
+    }
+    return json.union(
+      getAssessmentType,
+      {
+        'unit-assessment': UnitAssessmentReport.fromJson,
+        'block-assessment': BlockAssessmentReport.fromJson,
+        'lesson-prelearning-assessment': lessonPrelearningReportFromJson,
+        'lesson-outcome-self-assessment': lessonOutcomeSelfAssessmentReportFromJson
+      },
+      object
+    );
   }
 
   constructor(backend: ModelServiceBackend) {
@@ -149,7 +139,7 @@ export class AssessmentsService extends ModelService<Assessment> {
       }
 
       body = CompletionBasedAssessmentAttempt.toJson({
-        type: AssessmentAttemptType.fromAssessmentType(type),
+        assessmentType: type,
         assessment,
         completionState,
       } as CompletionBasedAssessmentAttempt)
