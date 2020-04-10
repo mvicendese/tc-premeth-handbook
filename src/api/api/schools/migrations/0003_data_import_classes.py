@@ -41,7 +41,7 @@ def create_classes(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('subjects', '0002_data_import_subjects'),
+        ('subjects', '0008_data_import_subjects'),
         ('schools',  '0002_data_import_teachers_students')
     ]
 

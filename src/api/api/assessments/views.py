@@ -1,11 +1,17 @@
+import re
+
+from uuid import UUID
+from django.http import Http404
 from django.shortcuts import render
 
 from rest_framework import status, generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from api.base.views import SaveableModelViewSet
+
 from api.subjects.models import SubjectNode
-from api.schools.models import SubjectClass
+from api.schools.models import SubjectClass, Student
 
 from .models import Assessment, AssessmentSchema, Report
 from .serializers import AssessmentSerializer, ReportSerializer, AttemptSerializer
@@ -25,10 +31,21 @@ def filter_student_params(assessment_set, query_params):
     return qs
 
 
-class AssessmentViewSet(viewsets.ReadOnlyModelViewSet):
+class AssessmentViewSet(SaveableModelViewSet):
     queryset             = Assessment.objects.all()
 
     def get_assessment_type(self):
+        if 'pk' in self.kwargs:
+            try:
+                assessment = Assessment.objects.get(pk=self.kwargs['pk'])
+                return assessment.type
+            except Assessment.DoesNotExist:
+                raw_type = self.request.data.get('type')
+                if re.search(r'-attempt', raw_type):
+                    return raw_type[:-len('-attempt')]
+                if re.search(r'-report', raw_type):
+                    return raw_type[:-len('-report')]
+
         return self.request.query_params.get('type', None)
 
     def get_serializer_class(self):
@@ -59,17 +76,19 @@ class AssessmentViewSet(viewsets.ReadOnlyModelViewSet):
         if assessment_type is not None:
             qs = qs.filter_type(assessment_type)
 
+        node = self.get_node_from_params()
+        if node is not None:
+            qs = qs.filter_node(node, include_descendents=True)
+
         student_param = self.request.query_params.get('student', None)
         if student_param is not None:
-            qs = qs.filter(student_id=student_param)
+            student_ids = student_param.split('|')
+            students = Student.objects.filter(id__in=student_ids)
+            qs = qs.filter_students(students)
 
         subject_class = self.get_subject_class_from_params()
         if subject_class is not None:
             qs = qs.filter_class(subject_class)
-
-        node = self.get_node_from_params()
-        if node is not None:
-            qs &= Assessment.objects.filter_node(node)
 
         return qs
 
@@ -77,7 +96,7 @@ class AssessmentViewSet(viewsets.ReadOnlyModelViewSet):
     def reports(self, request):
         assessment_type = self.get_assessment_type()
         if assessment_type is None:
-            return Response(errors={'type': 'Report must be run on an assessment type'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'errors': {'type': 'Report must be run on an assessment type'}}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             schemas = AssessmentSchema.objects_of_type(assessment_type)
@@ -88,9 +107,12 @@ class AssessmentViewSet(viewsets.ReadOnlyModelViewSet):
         if node is not None:
             schemas = schemas.filter_node(node, include_descendents=True)
             if not schemas.exists():
-                return Response(errors={
-                    'node': f'Node must be a parent node for at least one schema of type \'{assessment_type}\''
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {
+                        'errors': {'node': f'Node must be a parent node for at least one schema of type \'{assessment_type}\''}
+                    }, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         subject_class = self.get_subject_class_from_params()
 
@@ -107,9 +129,13 @@ class AssessmentViewSet(viewsets.ReadOnlyModelViewSet):
             'results': report_serializer.data
          })
 
-    @action(detail=True, methods=['post', 'put'])
-    def create_attempt(self, request, pk=None):
+    @action(detail=True, methods=['post'])
+    def attempt(self, request, pk=None):
         assessment = self.get_object()    
+        # If the object has not yet been created, then pretend we didn't find anything :)
+        # TODO: Consider adding enough information into the attempt to lazily create the assessment?
+        if assessment._state.adding:
+            raise Http404        
 
         data = {'assessment': assessment.id}
         data.update(request.data)

@@ -1,8 +1,11 @@
+from enum import Enum
 from uuid import uuid4, UUID
 
 from django.core import validators
 from django.core.exceptions import MultipleObjectsReturned
 from django.db import models
+
+from django.utils.translation import gettext_lazy as _
 
 from api.base.models import BaseModel
 
@@ -46,8 +49,26 @@ class Attempt(BaseModel):
 
     objects = AttemptManager()
 
+class CompletionState(models.TextChoices):
+    NONE        = 'no',       _('Not complete')
+    PARTIAL     = 'partial',    _('Partially complete')
+    COMPLETE    = 'complete',   _('Complete')
+
+
 class CompletionAttempt(Attempt):
-    is_completed = models.BooleanField()
+    completion_state = models.CharField(
+        max_length=8,
+        default=CompletionState.NONE
+    )
+
+    @property
+    def is_complete(self):
+        return self.completion_state == CompletionState.COMPLETE
+
+    @property
+    def is_partially_complete(self):
+        return self.completion_state == CompletionState.PARTIAL
+
 
 class RatedAttempt(Attempt):
     rating = models.PositiveSmallIntegerField()
@@ -168,7 +189,6 @@ class Report(BaseModel):
             self.id = uuid4()
 
         self.generation += 1
-        print(f'{self.assessment_schema.id} report generation: {self.generation}')
         candidate_set = self._snapshot_candidate_set()
 
         self.total_candidate_count = candidate_set.count()
@@ -229,6 +249,9 @@ class CompletionBasedReport(Report):
     completed_candidate_count = models.IntegerField(null=True)
     _completed_candidate_ids = models.TextField(default='')
 
+    partially_completed_candidate_count = models.IntegerField(null=True)
+    _partially_completed_candidate_ids = models.TextField(default='')
+
     @property
     def completed_candidate_ids(self):
         return (
@@ -241,15 +264,39 @@ class CompletionBasedReport(Report):
         self._completed_candidate_ids = ':'.join(id.hex for id in value)
 
     @property
+    def partially_completed_candidate_ids(self):
+        return (
+            set(UUID(hex=id) for id in self._partially_completed_caniddate_ids.split(':'))
+            if self._partially_completed_candidate_ids else []
+        )
+
+    @partially_completed_candidate_ids.setter
+    def partially_completed_candidate_ids(self, value): 
+        self._partially_completed_candidate_ids = ':'.join(id.hex for id in value)
+
+    @property
     def percent_completed(self):
         return (100 * self.completed_candidate_count) / self.total_candidate_count
 
+    @property
+    def percent_partial_completed(self):
+        return (100 * self.partially_completed_candidate_count) / self.total_candidate_count
+
     def generate(self):
         super().generate()
-        completed_assessments = self.assessment_set.filter(is_completed=True)
+
+        completed_assessments = self.assessment_set.filter(completion_state=CompletionState.COMPLETE)
         self.completed_candidate_count = completed_assessments.count()
         self.completed_candidate_ids = [assessment.student_id for assessment in completed_assessments]
+
+        partial_complete_assessments = self.assessment_set.filter(completion_state=CompletionState.PARTIAL)
+        self.partially_completed_candidate_count = partial_complete_assessments.count()
+        self.partially_completed_candidate_ids = [assessment.student_id for assessment in partial_complete_assessments]
+
         return self
+
+class StateMachineReport(Report):
+    pass
 
 
 ###################################
@@ -314,7 +361,10 @@ class CompletionBasedAssessmentSchema(AssessmentSchema):
         abstract = True
 
     marking_type = 'completion-based'
+
     attempt_cls  = CompletionAttempt
+    allow_partial_completion = False
+
     report_cls   = CompletionBasedReport
 
     @classmethod
@@ -323,11 +373,20 @@ class CompletionBasedAssessmentSchema(AssessmentSchema):
             CompletionAttempt.objects
             .filter(assessment_id=models.OuterRef('id')).order_by('-attempt_number')
         )
+
         return assessment_set.annotate(
-            is_attempted=models.Exists(most_recent_attempts),
+            last_attempt_id=models.Subquery(most_recent_attempts.values('id')[:1]),
+            is_attempted=models.Exists(most_recent_attempts.all()),
+
             attempted_at=models.Subquery(most_recent_attempts.values('date')[:1]),
-            is_completed=models.Subquery(most_recent_attempts.values('is_completed')[:1]),
+            completion_state=models.Subquery(most_recent_attempts.values('completion_state')[:1]),
         )
+
+    def assessment__is_complete(self, assessment):
+        return assessment.completion_state == CompletionState.COMPLETE
+
+    def assessment__is_partially_complete(self, assessment):
+        return assessment.completion_state == CompletionState.PARTIAL
 
 
 class RatingsBasedAssessmentSchema(AssessmentSchema):
@@ -359,6 +418,7 @@ class RatingsBasedAssessmentSchema(AssessmentSchema):
             rating_percent=(models.F('rating') * 100) / models.F('maximum_available_rating')
         )
 
+
 ####################################
 ##
 ## Leaf assessment types
@@ -381,6 +441,7 @@ class BlockAssessmentSchema(RatingsBasedAssessmentSchema):
 
 class LessonPrelearningAssessmentSchema(CompletionBasedAssessmentSchema):
     assessment_type     = 'lesson-prelearning-assessment'
+    allow_partial_completion = True
 
     @property
     def lesson(self):
@@ -433,13 +494,13 @@ class Assessment(BaseModel):
         
         def filter_node(self, subject_node, include_descendents=False):
             schemas = AssessmentSchema.objects.filter_node(subject_node, include_descendents)
-            return self.filter(schema_base__in=schemas)
+            return self.filter(schema_base__in=schemas.values('id'))
 
         def filter_class(self, subject_class):
             return self.filter(student__in=subject_class.students.all())
 
-        def filter_student(self, student_id):
-            return self.filter(student_id=student_id)
+        def filter_students(self, students):
+            return self.filter(student__in=students)
 
         def filter_type(self, assessment_type):
             qs = self.filter(type=assessment_type)
@@ -500,3 +561,10 @@ class Assessment(BaseModel):
             return cls.lesson_outcome_self_assessments
         else:
             raise ValueError(f'Invalid assessment type {assessment_type}')
+
+    def __getattr__(self, name):
+        schema = self.schema
+        if hasattr(schema, f'assessment__{name}'): 
+            schema_prop = getattr(schema, f'assessment__{name}')
+            return schema_prop(self)
+        raise AttributeError

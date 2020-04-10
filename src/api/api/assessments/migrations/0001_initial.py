@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('subjects', '0005_data_populate_subject_tree'),
+        ('subjects', '0009_data_prepopulate_subject_tree'),
         ('schools', '0007_auto_20200322_2131'),
     ]
 

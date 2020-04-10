@@ -7,7 +7,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('subjects', '0005_data_populate_subject_tree'),
+        ('subjects', '0004_subjectnode'),
     ]
 
     operations = [

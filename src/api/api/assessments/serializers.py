@@ -34,18 +34,28 @@ class AttemptSerializer(serializers.Serializer):
 	attempt_number = serializers.IntegerField(read_only=True)	
 	date = serializers.DateTimeField(read_only=True)
 
+	def to_representation(self, instance):
+		representation = {
+			'type': instance.assessment.type + '-attempt'
+		}
+		representation.update(super().to_representation(instance))
+		return representation
+
 class RatedAttemptSerializer(AttemptSerializer):
 	rating = serializers.IntegerField()
 	rating_percent = serializers.FloatField()
 
 class CompletionAttemptSerializer(AttemptSerializer):
-	is_completed = serializers.BooleanField()
+	completion_state 		= serializers.CharField()
+	is_complete 			= serializers.BooleanField(read_only=True)
+	is_partially_complete 	= serializers.BooleanField(read_only=True)
 
 	def create(self, validated_data):
 		return CompletionAttempt.objects.create(
 			assessment=Assessment.objects.get(id=validated_data['assessment']),
-			is_completed=validated_data["is_completed"],
+			completion_state=validated_data['completion_state']
 		)
+
 
 #################################
 ##
@@ -123,7 +133,7 @@ class AssessmentSerializer(serializers.Serializer):
 		else:
 			raise ValueError(f'Unrecognised assessment type {assessment_type}')
 
-	type = serializers.CharField()
+	type = serializers.CharField(read_only=True)
 	id = serializers.UUIDField()
 	student = serializers.UUIDField(source='student_id')
 
@@ -139,7 +149,10 @@ class CompletionBasedAssessmentSerializer(AssessmentSerializer):
 	is_attempted = serializers.BooleanField()
 	attempted_at = serializers.DateTimeField(allow_null=True)
 
-	is_completed = serializers.BooleanField()
+	is_complete = serializers.BooleanField()
+	is_partially_complete = serializers.BooleanField()
+
+	completion_state = serializers.CharField()
 
 class RatingsBasedAssessmentSerializer(AssessmentSerializer):
 	is_attempted = serializers.BooleanField()

@@ -12,6 +12,7 @@ from utils.importer import (
 	get_premeth_subject
 )
 
+
 def create_assessments(apps, shema_editor):
 	all_import_subjects = importer.subjects.Subject.all(subject_model=apps.get_model('subjects', 'Subject'))
 
@@ -107,12 +108,23 @@ def create_prelearning_assessment(apps, import_lesson):
 		)
 		assessment.save()
 
+		# enum class, safe to import.
+		from api.assessments.models import CompletionState
+		if (prelearning_assessment.rating or 0) == 0:
+			completion_state = CompletionState.NONE
+		elif prelearning_assessment.rating < 4:
+			completion_state = CompletionState.PARTIAL
+		else:
+			completion_state = CompletionState.COMPLETE
+
+		print('assessment rating', prelearning_assessment.rating, 'completion state', completion_state)
+
 		attempt = CompletionAttempt(
 			id=uuid4(),
 			assessment=assessment,
 			attempt_number=1,
 			date=prelearning_assessment.date,
-			is_completed=(prelearning_assessment.rating or 0) > 0
+			completion_state=completion_state
 		)
 		attempt.save()
 
@@ -172,8 +184,8 @@ def create_lesson_descendent_assessments(apps, import_lesson):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('assessments', '0001_initial'),
-        ('subjects', 	'0002_data_import_subjects'),
+        ('assessments', '0006_auto_20200409_1025'),
+        ('subjects', 	'0009_data_prepopulate_subject_tree'),
         ('schools', 	'0002_data_import_teachers_students'),
     ]
 
