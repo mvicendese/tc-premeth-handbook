@@ -13,4 +13,4 @@ class BaseSerializer(serializers.ModelSerializer):
 		return obj
 
 	class Meta:
-		fields = ('id', )
+		fields = ('id', 'created_at', 'updated_at')

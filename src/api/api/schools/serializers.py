@@ -5,12 +5,15 @@ from api.base.serializers import BaseSerializer
 from .models import Student, Teacher, SubjectClass
 
 class PersonSerializer(BaseSerializer):
+	school = serializers.UUIDField(source='school.id')
+
 	class Meta:
 		fields = BaseSerializer.Meta.fields + (
 					'first_name',
 					'surname',
 					'full_name',
-					'email'
+					'email',
+					'school'
 				 )
 
 

@@ -141,6 +141,9 @@ class AssessmentSerializer(serializers.Serializer):
 	subject = serializers.UUIDField(source='schema.subject.id')
 	node   = serializers.UUIDField(source='schema.node.id')
 
+	created_at = serializers.DateTimeField()
+	updated_at = serializers.DateTimeField(allow_null=True)
+	
 	def schema_serializer(self, instance):
 		serializer_cls = schema_serializer_class_for_type(instance.type)
 		return serializer_cls(instance.schema)

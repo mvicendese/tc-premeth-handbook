@@ -6,13 +6,16 @@ from .models import Subject, Unit, Block, Lesson, LessonOutcome
 
 
 class LessonOutcomeSerializer(BaseSerializer):
+	subject = serializers.UUIDField(read_only=True, source='subject.id')
 	class Meta:
 		model = LessonOutcome
 		model_name = 'lesson-outcome'
-		fields = ('id', 'lesson', 'description')
+		fields = BaseSerializer.Meta.fields + ('lesson', 'subject', 'description')
 
 
 class LessonSerializer(BaseSerializer):
+	subject = serializers.UUIDField(read_only=True, source='subject.id')
+
 	example_descriptions = serializers.ListField(child=serializers.CharField())
 	block = serializers.UUIDField(read_only=True, source='block_id')
 	outcomes = LessonOutcomeSerializer(source='lessonoutcome_set', many=True, read_only=True)
@@ -20,8 +23,8 @@ class LessonSerializer(BaseSerializer):
 	class Meta:
 		model = Lesson
 		model_name = 'lesson'
-		fields = (
-			'id',
+		fields = BaseSerializer.Meta.fields + (
+			'subject',
 			'block',
 			'code', 
 			'number', 
@@ -31,6 +34,8 @@ class LessonSerializer(BaseSerializer):
 		)
 
 class BlockSerializer(BaseSerializer):
+	subject = serializers.UUIDField(read_only=True, source='subject.id')
+
 	
 	unit = serializers.UUIDField(read_only=True, source='unit_id')
 	lessons = LessonSerializer(source='lesson_set', many=True, read_only=True)
@@ -38,8 +43,8 @@ class BlockSerializer(BaseSerializer):
 	class Meta:
 		model = Block
 		model_name = 'block'
-		fields = (
-			'id',
+		fields = BaseSerializer.Meta.fields + (
+			'subject',
 			'unit',
 			'name', 
 			'lessons'
@@ -54,8 +59,7 @@ class UnitSerializer(BaseSerializer):
 	class Meta:
 		model = Unit
 		model_name = 'unit'
-		fields = (
-			'id',
+		fields = BaseSerializer.Meta.fields + (
 			'name', 
 			'subject',
 			'blocks'
@@ -67,4 +71,4 @@ class SubjectSerializer(BaseSerializer):
 	class Meta:
 		model = Subject
 		model_name = 'subject'
-		fields = ('id', 'name', 'units')
+		fields = BaseSerializer.Meta.fields + ('name', 'units')

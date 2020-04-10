@@ -116,6 +116,12 @@ class SubjectNode(MP_Node):
 				self._node = SubjectNode.objects.get(pk=self.node_id)
 			return self._node
 
+		@property
+		def subject(self):
+			if not hasattr(self, '_subject'):
+				self._subject = Subject.objects.get(id=self.node.get_root().id)
+			return self._subject
+
 
 class Subject(SubjectNode.LinkedModel):
 	name = models.CharField(max_length=256)
