@@ -65,7 +65,6 @@ import {ChangeCompletionStateEvent} from './prelearning-assessment-item.componen
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LessonPrelearningResultsComponent {
-  readonly visibleColumns = ['name'];
 
   @Input() lesson: LessonSchema | undefined;
 

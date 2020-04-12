@@ -102,8 +102,8 @@ export class LessonExpansionComponent implements OnInit, OnDestroy {
     this.resources.forEach(r => r.unsubscribe());
   }
 
-  changePrelearningCompletionState(evt: ChangeCompletionStateEvent): void {
-    this.lessonState.setPrelearningAssessmentCompletionState(evt.student, evt.completionState);
+  async changePrelearningCompletionState(evt: ChangeCompletionStateEvent) {
+    await this.lessonState.setPrelearningAssessmentCompletionState(evt.student, evt.completionState);
   }
 
 }

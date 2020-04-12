@@ -1,9 +1,9 @@
 import {Model} from './model';
 import {AsyncSubject, BehaviorSubject, defer, merge, Observable, Subject, throwError, Unsubscribable} from 'rxjs';
 import {ResponsePage} from './pagination';
-import {catchError, filter, map, mapTo, mergeMap, sampleTime, scan, startWith, tap} from 'rxjs/operators';
+import {catchError, filter, map, mapTo, mergeMap, sampleTime, scan, shareReplay, startWith, tap} from 'rxjs/operators';
 
-export type ResolveFunction<T extends Model> = (batchIds: readonly string[]) => Observable<{[batchId: string]: T}>;
+export type ResolveFunction<T extends Model> = (batchIds: readonly string[]) => Observable<{ [batchId: string]: T }>;
 
 export interface ResolveQueueOptions {
   /**
@@ -22,7 +22,8 @@ export class ModelResolveQueue<T extends Model> {
   static readonly DEFAULT_BATCH_SIZE = 20;
   static readonly DEFAULT_SAMPLE_PERIOD = 100 /* ms */;
 
-  constructor(readonly resolve: ResolveFunction<T>) {}
+  constructor(readonly resolve: ResolveFunction<T>) {
+  }
 
   private queueIdsSubject = new BehaviorSubject<string[]>([]);
 
@@ -37,28 +38,22 @@ export class ModelResolveQueue<T extends Model> {
    * To obtain a map of _all_ values resolved since the queue was started,
    * use [:allResolved:]
    */
-  readonly resolved$: Observable<[string, T]> = defer(() => this.resolvedSubject.asObservable());
+  readonly resolved$: Observable<[string, T]> = this.resolvedSubject.asObservable().pipe(
+    shareReplay(1)
+  );
 
   /**
    * An observable which emits each time a new value is resolved
    * Each emission contains a map of all values resolved since the queue was created.
    */
-  readonly allResolved$: Observable<{[id: string]: T}> = defer(() => {
-    function resolveEntry([id, pendingValue]: [string, Observable<T>]): Observable<[string, T]> {
-      return pendingValue.pipe(map(resolvedValue => [id, resolvedValue]));
-    }
-    const currentPending = [...this.pendingFetches.entries()].map(resolveEntry);
-
-    return merge(
-      merge(...currentPending),
-      this.resolved$
-    ).pipe(
-      scan((acc, [id, value]) => ({...acc, [id]: value}), {} as {[k: string]: T}),
-      startWith({})
+  readonly allResolved$: Observable<{ [id: string]: T }> =
+    this.resolved$.pipe(
+      scan((acc, [id, value]) => ({...acc, [id]: value}), {} as { [k: string]: T }),
+      startWith({}),
+      shareReplay(1)
     );
-  });
 
-  queue(id: string, options: {force: boolean} = {force: false}): Observable<T> {
+  queue(id: string, options: { force: boolean } = {force: false}): Observable<T> {
     if (this.isPending(id) && options.force) {
       this.pendingFetches.delete(id);
     }
@@ -73,7 +68,9 @@ export class ModelResolveQueue<T extends Model> {
     ids.forEach(id => this.queue(id));
   }
 
-  protected get queueIds() { return this.queueIdsSubject.value; }
+  protected get queueIds() {
+    return this.queueIdsSubject.value;
+  }
 
   protected queuePending(id: string) {
     if (this.pendingFetches.has(id)) {
@@ -108,13 +105,13 @@ export class ModelResolveQueue<T extends Model> {
     this.resolvedSubject.error(error);
   }
 
-  protected resolveNextBatch(options: {batchSize: number}): Observable<{[batchId: string]: T}> {
+  protected resolveNextBatch(options: { batchSize: number }): Observable<{ [batchId: string]: T }> {
     const queueIds = [...this.queueIds];
     const batchIds = queueIds.splice(0, options.batchSize);
     this.queueIdsSubject.next(queueIds);
 
     return this.resolve(batchIds).pipe(
-      tap((resolved: {[batchId: string]: T}) => {
+      tap((resolved: { [batchId: string]: T }) => {
         for (const [batchId, resolvedValue] of Object.entries(resolved)) {
           this.resolvePending(batchId, resolvedValue);
         }
@@ -136,6 +133,9 @@ export class ModelResolveQueue<T extends Model> {
       mergeMap(() => this.resolveNextBatch(options))
     ).subscribe();
 
+    const resolve = this.resolved$.subscribe();
+    const allResolved = this.allResolved$.subscribe();
+
     return {
       unsubscribe: () => {
         batchExecution.unsubscribe();
@@ -148,6 +148,9 @@ export class ModelResolveQueue<T extends Model> {
 
         this.resolvedSubject.complete();
         this.queueIdsSubject.complete();
+
+        resolve.unsubscribe();
+        allResolved.unsubscribe();
       }
     };
 

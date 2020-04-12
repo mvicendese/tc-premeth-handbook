@@ -1,4 +1,4 @@
-import {Injectable, NgModule} from '@angular/core';
+import {NgModule} from '@angular/core';
 import {AppSidebarMenuComponent} from './app-sidebar-menu.component';
 import {MatSidenavModule} from '@angular/material/sidenav';
 import {CommonModule} from '@angular/common';
@@ -15,6 +15,9 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
 import {ReactiveFormsModule} from '@angular/forms';
 import {UnitsSharedModule} from '../features/units/shared/units-shared.module';
+import {MatToolbarModule} from '@angular/material/toolbar';
+import {AppTitleComponent} from './app-title.component';
+import {AppContextMenuComponent} from './app-context-menu.component';
 
 @NgModule({
   imports: [
@@ -22,6 +25,8 @@ import {UnitsSharedModule} from '../features/units/shared/units-shared.module';
     RouterModule,
     ReactiveFormsModule,
     CommonComponentsModule,
+
+    MatToolbarModule,
     MatSidenavModule,
     MatMenuModule,
     MatDialogModule,
@@ -30,10 +35,13 @@ import {UnitsSharedModule} from '../features/units/shared/units-shared.module';
     MatIconModule,
     MatFormFieldModule,
     MatSelectModule,
+
     UnitsSharedModule
   ],
   declarations: [
     AppSidebarMenuComponent,
+    AppContextMenuComponent,
+    AppTitleComponent,
     SelectSubjectDialogComponent,
     ScaffoldComponent
   ],

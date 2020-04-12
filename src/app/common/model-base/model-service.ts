@@ -62,7 +62,6 @@ export class ModelServiceBackend {
         params
       }
     ).pipe(
-      map(item => item.result as JsonObject),
       map(item => transformKeys(item, toLowerCamelCase)),
     );
   }
@@ -80,7 +79,6 @@ export class ModelServiceBackend {
         params
       }
     ).pipe(
-      map(item => item.result as JsonObject),
       map(item => transformKeys(item, toLowerCamelCase))
     );
   }
@@ -110,12 +108,12 @@ export abstract class ModelService<T extends Model> {
     );
   }
 
-  put<Result extends object = T>(path: string | string[], body: JsonObject, options: {
+  put<Result extends object = T>(path: string, body: JsonObject, options: {
     params?: {[k: string]: string | string[] },
     useDecoder?: (obj: unknown) => Result;
   } = {}): Observable<Result> {
     const decoder = options.useDecoder || this.fromJson.bind(this);
-    return this.backend.put(path, body, options).pipe(
+    return this.backend.put([this.path, path], body, options).pipe(
       map(decoder)
     );
   }

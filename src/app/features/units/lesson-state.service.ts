@@ -2,7 +2,7 @@ import {CompletionState, LessonPrelearningAssessment} from '../../common/model-t
 import {LessonOutcomeSelfAssessmentReport, LessonPrelearningReport} from '../../common/model-types/assessment-reports';
 import {Injectable} from '@angular/core';
 import {BehaviorSubject, combineLatest, defer, Observable, of, OperatorFunction, pipe, Subscription, Unsubscribable} from 'rxjs';
-import {distinctUntilChanged, filter, first, map, pluck, share, skipWhile, switchMap, tap, withLatestFrom} from 'rxjs/operators';
+import {distinct, distinctUntilChanged, filter, first, map, pluck, share, skipWhile, switchMap, withLatestFrom} from 'rxjs/operators';
 import {AppStateService} from '../../app-state.service';
 import {AssessmentsService} from '../../common/model-services/assessments.service';
 import {ModelRef, modelRefId, Resolve} from '../../common/model-base/model-ref';
@@ -163,10 +163,13 @@ export class LessonStateService {
     };
   }
 
-  setPrelearningAssessmentCompletionState(student: ModelRef<Student>, completionState: CompletionState): Observable<LessonPrelearningAssessment> {
+  setPrelearningAssessmentCompletionState(student: ModelRef<Student>, completionState: CompletionState): Promise<LessonPrelearningAssessment> {
+    console.log('setPrelearningCompleteState');
     const studentId = modelRefId(student);
     return this.prelearningAssessments$.pipe(
-      map(assessments => assessments[studentId] as LessonPrelearningAssessment),
+      map(assessments => assessments[studentId]),
+      filter((a): a is Resolve<LessonPrelearningAssessment, 'student'> => a !== undefined),
+      first(),
       switchMap(assessment => {
         if (assessment.createdAt != null) {
           return of(assessment);
@@ -183,6 +186,6 @@ export class LessonStateService {
         })
       ),
       switchMap(() => this.loadPrelearningAssessment(studentId, {force: true}))
-    );
+    ).toPromise();
   }
 }

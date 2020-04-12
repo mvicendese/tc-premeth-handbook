@@ -111,12 +111,12 @@ export class AssessmentsService extends ModelService<Assessment> {
   saveAssessment(type: AssessmentType, options: Partial<Assessment>): Observable<Assessment> {
     const id = options.id || uuid4();
 
-    const student = options.student;
+    const student = modelRefId(options.student);
     if (student == null) {
       throw new Error(`A 'student' is required`);
     }
 
-    let node = options.node;
+    const node = modelRefId(options.node);
     if (node == null) {
       throw new Error(`A 'node' is required`);
     }
