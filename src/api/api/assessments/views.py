@@ -1,11 +1,13 @@
 import re
 
 from uuid import UUID
+from django.core.exceptions import ValidationError
 from django.http import Http404
 from django.shortcuts import render
 
 from rest_framework import status, generics, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from api.base.views import SaveableModelViewSet
@@ -13,7 +15,12 @@ from api.base.views import SaveableModelViewSet
 from api.subjects.models import SubjectNode
 from api.schools.models import SubjectClass, Student
 
-from .models import Assessment, AssessmentSchema, Report
+from .models import (
+    Assessment, 
+    AssessmentSchema, 
+    AssessmentType, 
+    Report
+)
 from .serializers import AssessmentSerializer, ReportSerializer, AttemptSerializer
 
 # Create your views here.
@@ -35,18 +42,25 @@ class AssessmentViewSet(SaveableModelViewSet):
     queryset             = Assessment.objects.all()
 
     def get_assessment_type(self):
-        if 'pk' in self.kwargs:
+        raw_type = self.request.query_params.get('type', None)
+
+        if raw_type is None and 'pk' in self.kwargs:
             try:
                 assessment = Assessment.objects.get(pk=self.kwargs['pk'])
                 return assessment.type
             except Assessment.DoesNotExist:
-                raw_type = self.request.data.get('type')
+                raw_type = self.request.data.get('type', '')
                 if re.search(r'-attempt', raw_type):
-                    return raw_type[:-len('-attempt')]
+                    raw_type = raw_type[:-len('-attempt')]
                 if re.search(r'-report', raw_type):
-                    return raw_type[:-len('-report')]
+                    raw_type = raw_type[:-len('-report')]
 
-        return self.request.query_params.get('type', None)
+
+        if raw_type not in AssessmentType.values:
+            import pdb; pdb.set_trace()
+            raise ValidationError(detail={'type': 'Unrecognised assessment type.'})
+        return raw_type
+
 
     def get_serializer_class(self):
         return AssessmentSerializer.class_for_assessment_type(self.get_assessment_type())
@@ -60,6 +74,9 @@ class AssessmentViewSet(SaveableModelViewSet):
                 return SubjectNode.objects.get(id=node_param)
             except SubjectNode.DoesNotExist: 
                 return Response.invalid({node: 'Node does not exist'})
+
+    def update(self, *args, **kwargs):
+        return super().update(*args, **kwargs)
 
 
     def get_subject_class_from_params(self):
@@ -143,8 +160,8 @@ class AssessmentViewSet(SaveableModelViewSet):
         serializer = AttemptSerializer.for_assessment_type(assessment.type, data=data)
 
         if serializer.is_valid():
-            instance = serializer.save()
-            return Response({'result': serializer.data})
+            serializer.save()
+            return Response(serializer.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

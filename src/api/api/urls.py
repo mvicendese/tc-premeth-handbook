@@ -37,5 +37,5 @@ router.register('classes', ClassViewSet)
 register_assessment_routes(router)
 
 urlpatterns = [
-	path(r'api/', include(router.urls))
+	path(r'api/', include(router.urls)),
 ]

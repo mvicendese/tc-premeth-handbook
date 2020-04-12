@@ -4,7 +4,8 @@ from rest_framework import mixins, viewsets
 
 
 
-class SaveableModelViewSet(mixins.UpdateModelMixin,
+class SaveableModelViewSet(mixins.CreateModelMixin,
+                           mixins.UpdateModelMixin,
                            viewsets.ReadOnlyModelViewSet):
     """
 
@@ -18,34 +19,22 @@ class SaveableModelViewSet(mixins.UpdateModelMixin,
 
     """
 
+    def update(self, request, *args, **kwargs):
+        """
+        If the requested ID does not exist, run create with the same arguments.
 
-    def get_object(self):
-        # Reimplement get_object, except return an unsaved object
-        # if the target does not exist.
-        queryset = self.filter_queryset(self.get_queryset())
+        This probably should be done in the router as we're still exposing a POST / method.
+        Meh. This is less code and it works.
+        """
 
+        queryset = self.get_queryset()
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
 
-        assert lookup_url_kwarg in self.kwargs, (
-            'Expected view %s to be called with a URL keyword argument '
-            'named "%s". Fix your URL conf, or set the `.lookup_field` '
-            'attribute on the view correctly.' %
-            (self.__class__.__name__, lookup_url_kwarg)
-        )
+        if not queryset.filter(pk=self.kwargs[lookup_url_kwarg]).exists():
+            return self.create(request, *args, **kwargs)
 
-        model_id = self.kwargs[lookup_url_kwarg]
+        return super().update(request, *args, **kwargs)
 
-        filter_kwargs = { self.lookup_field: model_id }
-        queryset = queryset.filter(**filter_kwargs)
-
-        try:
-            obj = queryset.get()
-        except ObjectDoesNotExist as e:
-            # Create a new object with the requested id.
-            obj = queryset.model(id=model_id)
-
-        self.check_object_permissions(self.request, obj)
-        return obj
 
 
 

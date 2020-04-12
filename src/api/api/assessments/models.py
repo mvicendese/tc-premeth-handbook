@@ -50,7 +50,7 @@ class Attempt(BaseModel):
     objects = AttemptManager()
 
 class CompletionState(models.TextChoices):
-    NONE        = 'no',       _('Not complete')
+    NONE        = 'no',         _('Not complete')
     PARTIAL     = 'partial',    _('Partially complete')
     COMPLETE    = 'complete',   _('Complete')
 
@@ -305,6 +305,13 @@ class StateMachineReport(Report):
 ##
 ###################################
 
+class AssessmentType(models.TextChoices):
+    UNIT                = 'unit-assessment', _('Unit assessment')
+    BLOCK               = 'block-assessment', _('Block assessment')
+    LESSON_PRELEARNING  = 'lesson-prelearning-assessment', _('Lesson prelearning')
+    LESSON_OUTCOME_SELF = 'lesson-outcome-self-assessment', _('Lesson outcome self-assessment')
+
+
 class AssessmentSchema(BaseModel):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
     node = models.ForeignKey(SubjectNode, on_delete=models.CASCADE, null=True)
@@ -356,6 +363,9 @@ class AssessmentSchema(BaseModel):
     def objects_of_type(assessment_type):
         return _schema_cls_for_type(assessment_type).objects
 
+    def assessment__type(self, assessment):
+        return self.type
+
 class CompletionBasedAssessmentSchema(AssessmentSchema):
     class Meta:
         abstract = True
@@ -375,11 +385,13 @@ class CompletionBasedAssessmentSchema(AssessmentSchema):
         )
 
         return assessment_set.annotate(
+            is_attempted=models.Exists(most_recent_attempts),
             last_attempt_id=models.Subquery(most_recent_attempts.values('id')[:1]),
-            is_attempted=models.Exists(most_recent_attempts.all()),
-
             attempted_at=models.Subquery(most_recent_attempts.values('date')[:1]),
-            completion_state=models.Subquery(most_recent_attempts.values('completion_state')[:1]),
+
+            completion_state=models.Subquery(
+                most_recent_attempts.values('completion_state')[:1]
+            ),
         )
 
     def assessment__is_complete(self, assessment):
@@ -487,8 +499,13 @@ class Assessment(BaseModel):
 
     @property
     def schema(self):
-        schema_cls = _schema_cls_for_type(self.schema_base.type)
+        if hasattr(self, 'schema_base'):
+            schema_cls = _schema_cls_for_type(self.schema_base.type)
         return getattr(self.schema_base, schema_cls.__name__.lower())
+
+    @property
+    def node(self):
+        return self.schema_base.node
 
     class QuerySet(models.QuerySet):
         
@@ -563,8 +580,7 @@ class Assessment(BaseModel):
             raise ValueError(f'Invalid assessment type {assessment_type}')
 
     def __getattr__(self, name):
-        schema = self.schema
-        if hasattr(schema, f'assessment__{name}'): 
-            schema_prop = getattr(schema, f'assessment__{name}')
+        if hasattr(self.schema, f'assessment__{name}'): 
+            schema_prop = getattr(self.schema, f'assessment__{name}')
             return schema_prop(self)
         raise AttributeError
