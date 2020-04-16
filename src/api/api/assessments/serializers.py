@@ -92,7 +92,7 @@ class ReportSerializer(serializers.Serializer):
 	subject = serializers.UUIDField(source='assessment_schema.subject.id')
 	node   = serializers.UUIDField(source='assessment_schema.node.id')
 
-	total_candidate_count = serializers.IntegerField()
+	candidate_count = serializers.IntegerField()
 	candidate_ids = serializers.ListField(child=serializers.UUIDField())
 
 	attempted_candidate_count = serializers.IntegerField()
@@ -111,6 +111,34 @@ class CompletedReportSerializer(ReportSerializer):
 class RatedReportSerializer(ReportSerializer):
 	rating_average			= serializers.FloatField()
 	rating_std_deviation 	= serializers.FloatField(source='rating_std_dev')
+
+	candidate_scores = serializers.JSONField(source='attempted_candidate_scores')
+
+
+###################################
+##
+## Progress
+##
+###################################
+
+class ProgressSerializer(serializers.Serializer):
+	@staticmethod
+	def for_assessment_type(assessment_type, *args, **kwargs):
+		if assessment_type in ['unit-assessment', 'block-assessment', 'lesson-outcome-self-assessment']:
+			return RatedProgressSerializer(*args, **kwargs)
+		elif assessment_type == 'lesson-prelearning-assessment':
+			return CompletedProgressSerializer(*args, **kwargs)
+		else:
+			raise ValueError(f'Unknown assessment type \'{assessment_type}\'')
+
+
+class CompletedProgressSerializer(ReportSerializer):	
+	pass
+	
+
+class RatedProgressSerializer(ReportSerializer):
+	pass
+
 
 ###################################
 ##

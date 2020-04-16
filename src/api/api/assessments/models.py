@@ -7,7 +7,7 @@ from django.db import models
 
 from django.utils.translation import gettext_lazy as _
 
-from api.base.models import BaseModel
+from api.base.models import BaseModel, Document
 
 from api.schools.models import School, Student, SubjectClass
 from api.subjects.models import SubjectNode, Subject, Lesson, Block, Unit, LessonOutcome
@@ -138,6 +138,10 @@ class Report(BaseModel):
             if self._candidate_ids else set()
         )
 
+    @property
+    def candidate_count(self):
+        return len(self.candidate_ids)
+
     @candidate_ids.setter
     def candidate_ids(self, ids):
         self._candidate_ids = ':'.join(id.hex for id in ids)
@@ -153,12 +157,15 @@ class Report(BaseModel):
     def attempted_candidate_ids(self, ids):
         self._attempted_candidate_ids = ':'.join(id.hex for id in ids)
 
+    @property
+    def attempted_candidate_count(self):
+        return len(self.attempted_candidate_ids)
 
     @property
     def percent_attempted(self):
-        if self.total_candidate_count == 0:
+        if self.candidate_count == 0:
             return math.nan
-        return 100 * (self.attempted_candidate_count / self.total_candidate_count)
+        return 100 * (self.attempted_candidate_count / self.candidate_count)
 
     @property
     def assessment_set(self):
@@ -191,11 +198,9 @@ class Report(BaseModel):
         self.generation += 1
         candidate_set = self._snapshot_candidate_set()
 
-        self.total_candidate_count = candidate_set.count()
         self.candidate_ids = set(student.id for student in candidate_set)
 
-        self.attempted_candidate_count = self.assessment_set.filter(is_attempted=True).count()
-        candidate_ids = set(assessment.student_id for assessment in self.assessment_set)
+        attempted_set = self.assessment_set.filter(is_attempted=True)
         self.attempted_candidate_ids = set(assessment.student_id for assessment in self.assessment_set)
         return self
 
@@ -208,8 +213,11 @@ class Report(BaseModel):
 
 
 class RatingBasedReport(Report):
+
     rating_average = models.FloatField(null=True)
     rating_std_dev = models.FloatField(null=True)
+
+    _attempted_candidate_scores = models.TextField(null=True)
 
     maximum_acheived_rating = models.FloatField(null=True)
     minimum_achieved_rating = models.FloatField(null=True)
@@ -232,6 +240,26 @@ class RatingBasedReport(Report):
     def failed_candidate_ids(self):
         return self.attempted_candidate_ids - self.passed_candidate_ids
 
+    @property
+    def attempted_candidate_scores(self):
+        scores = map(
+            lambda score: score.split(':'),
+            self._attempted_candidate_scores.split(',')
+        ) if self._attempted_candidate_scores else [] 
+
+        result = []
+        for k, v in scores:
+            result.append([str(k), int(v)])
+        return dict(result)
+
+    @attempted_candidate_scores.setter
+    def attempted_candidate_scores(self, value):
+        result = []
+        for k, v in value.items():
+            result.append(f'{k}:{v}')
+        self._attempted_candidate_scores = ','.join(result)
+
+
     def generate(self):
         super().generate()
         attempts = self.assessment_set.filter(is_attempted=True)
@@ -241,6 +269,11 @@ class RatingBasedReport(Report):
         )
         self.rating_average = attempt_aggregates['rating_average'] 
         self.rating_std_dev = attempt_aggregates['rating_std_dev']
+
+        scores = {}
+        for attempt in attempts.all():
+            scores[str(attempt.student_id)] = attempt.rating
+        self.attempted_candidate_scores = scores
 
         return self
 
@@ -276,11 +309,11 @@ class CompletionBasedReport(Report):
 
     @property
     def percent_completed(self):
-        return (100 * self.completed_candidate_count) / self.total_candidate_count
+        return (100 * self.completed_candidate_count) / self.candidate_count
 
     @property
     def percent_partial_completed(self):
-        return (100 * self.partially_completed_candidate_count) / self.total_candidate_count
+        return (100 * self.partially_completed_candidate_count) / self.candidate_count
 
     def generate(self):
         super().generate()
@@ -295,8 +328,157 @@ class CompletionBasedReport(Report):
 
         return self
 
-class StateMachineReport(Report):
-    pass
+
+###################################
+##
+## Assessment progress
+## 
+###################################
+
+class Progress(Document):
+    """
+    A Progress represents a snapshot of all the assessments a particular
+    student has completed while progressing through the specified 
+    subject node
+    """
+    class Meta:
+        abstract = True
+
+    @staticmethod
+    def objects_for_type(assessment_type):
+        schema_cls = _schema_cls_for_type(assessment_type)
+        return schema_cls.progress_cls.objects
+
+
+    # Recording the results of the given student
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+
+    # Limited to results nested under the given node
+    node = models.ForeignKey(SubjectNode, on_delete=models.CASCADE)
+
+    # Details of the last time this progress was generated
+    generation = models.PositiveIntegerField(default=0)
+
+    # The assessment ids which were included in this generation
+    _assessment_ids = models.TextField()
+
+    # The assessments for which the student made an attempt
+    _attempted_assessment_ids = models.TextField()
+
+    @property
+    def generated_at(self):
+        return self.updated_at
+
+    @property
+    def requires_regeneration(self):
+        return True # Watch for when an assessment has changed
+
+    @property
+    def assessment_ids(self):
+        return (
+            set(UUID(hex=id) for id in self._assessment_ids.split(':'))
+            if self._assessment_ids else set()
+        )
+
+    @property
+    def assessment_count(self):
+        return len(self.assessment_ids)
+
+    @assessment_ids.setter
+    def assessment_ids(self, ids):
+        self._assessment_ids = ':'.join()
+
+    @property
+    def attempted_assessment_ids(self):
+        return (
+            set(UUID(hex=id) for id in self._attempted_assessment_ids.split(':'))
+            if self._attempted_assessment_ids else set()
+        )
+
+    @property
+    def attempted_assessment_count(self):
+        return len(self.attempted_assessment_ids)
+
+    def _snapshot_assessment_set(self):
+        assessments = (
+            Assessment
+                .objects_of_type(self.assessment_schema.type)
+                .filter(student=self.student)
+        )
+
+
+    def generate(self):
+        self.generation += 1
+        assessment_set = self._snapshot_assessment_set()
+        self.assessment_ids = set(a.id for a in assessment_set)
+
+        attempted_set = assessment_set.filter(is_attempted=True)
+        self.attempted_assessment_ids = set(a.id for a in attempted_set)
+
+        return self
+
+
+    @staticmethod
+    def objects_of_type(self, assessment_type):
+        schema_cls = _schema_cls_for_type(assessment_type)
+        return schema_cls.progress_cls.objects
+
+
+class RatingBasedProgress(Progress):
+    def generate(self):
+        return super().generate()
+
+class CompletionBasedProgress(Progress):
+    _complete_assessment_ids = models.TextField() 
+    _partially_complete_assessment_ids = models.TextField()
+
+    @property
+    def complete_assessment_ids(self):
+        return (
+            set(UUID(hex=id) for id in self._completed_assessment_ids.split(':'))
+            if self._completed_assessment_ids else set()
+        )
+
+    @complete_assessment_ids.setter
+    def complete_assessment_ids(self, ids):
+        self._complete_assessment_ids = ':'.join(id.hex for id in ids)
+
+    @property
+    def complete_assessment_count(self):
+        return len(self.complete_assessment_ids)
+
+
+    @property
+    def partially_complete_assessment_ids(self):
+        return (
+            set(UUID(hex=id) for id in self._partially_completed_assessment_ids.split(':'))
+            if self._partially_completed_assessment_ids else set()
+        )
+
+    @partially_complete_assessment_ids.setter
+    def partiall_complete_assessment_ids(self, ids):
+        self._partially_complete_assessment_ids = ':'.join(id.hex for id in ids)
+
+    @property
+    def partially_complete_assessment_count(self):
+        return len(self.partially_complete_assessment_ids)
+
+    @property
+    def percent_complete(self):
+        return (100 * self.complete_candidate_count) / self.candidate_count
+
+    def generate(self):
+        super().generate()
+
+        assessment_set = self._snapshot_assessment_set()
+
+        complete_assessments = assessment_set.filter(completion_state=CompletionState.COMPLETE)
+        self.complete_assessment_ids = set(a.id for id in complete_assessments.all())
+
+        partially_complete_assessments = assessment_set.filter(completion_state=CompletionState.COMPLETE)
+        self.partially_complete_assessment_ids = set(a.id for a in partially_complete_assessments)
+
+        return self
 
 
 ###################################
@@ -330,6 +512,11 @@ class AssessmentSchema(BaseModel):
         report_cls = _schema_cls_for_type(self.type).report_cls
         return report_cls.objects
 
+    @property
+    def progress_set(self, student):
+        progress_cls = _schema_cls_for_type(self.type).progress_cls
+        return progress_cls.objects_for_student(student)
+
     def get_or_generate_report(self, subject_class=None):
         try:
             report, is_newly_created = self.report_set.get_or_create(
@@ -348,6 +535,10 @@ class AssessmentSchema(BaseModel):
             report.save()
 
         return report
+
+    def get_or_generate_prgress(self, student, subject_node=None):
+        progress, is_newly_created = self.progress_set
+
 
     class QuerySet(models.QuerySet):
 
@@ -376,6 +567,7 @@ class CompletionBasedAssessmentSchema(AssessmentSchema):
     allow_partial_completion = False
 
     report_cls   = CompletionBasedReport
+    progress_cls = CompletionBasedProgress
 
     @classmethod
     def annotate_assessments(cls, assessment_set):
@@ -408,6 +600,7 @@ class RatingsBasedAssessmentSchema(AssessmentSchema):
     marking_type    = 'ratings-based'
     attempt_cls     = RatedAttempt
     report_cls      = RatingBasedReport
+    progress_cls    = CompletionBasedProgress
 
     maximum_available_rating = models.PositiveSmallIntegerField(validators=[validators.MinValueValidator(1)])
     minimum_pass_mark = models.PositiveSmallIntegerField(null=True)
@@ -550,6 +743,9 @@ class Assessment(BaseModel):
 
         def generate_report(self, schema, subject_class=None):
             return schema.generate_report(subject_class=subject_class)
+
+        def generate_progress(self, student, subject_node=None):
+            return schema.generate_progress(student, subject_node=subject_node)
 
         def filter_node(self, subject_node, include_descendents=False):
             return self.get_queryset().filter_node(subject_node, include_descendents)
