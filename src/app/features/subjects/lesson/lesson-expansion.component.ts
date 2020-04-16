@@ -1,28 +1,24 @@
 import {Component, Input, OnDestroy, OnInit} from '@angular/core';
-import {ResponsePage} from '../../common/model-base/pagination';
-import {LessonOutcomeSelfAssessmentReport, LessonPrelearningReport, Report} from '../../common/model-types/assessment-reports';
-import {AppStateService} from '../../app-state.service';
-import {map, shareReplay, startWith, switchMap, tap, withLatestFrom} from 'rxjs/operators';
-import {LessonSchema} from '../../common/model-types/subjects';
-import {LessonPrelearningAssessment} from '../../common/model-types/assessments';
-import {ModelRef, modelRefId} from '../../common/model-base/model-ref';
-import {LessonStateService} from './lesson-state.service';
-import {Unsubscribable} from 'rxjs';
-import {ChangeCompletionStateEvent} from '../assessments/shared/prelearning-assessment-item.component';
-import {AssessmentsService} from '../../common/model-services/assessments.service';
+import {shareReplay} from 'rxjs/operators';
+import {LessonSchema} from '../../../common/model-types/subjects';
+import {LessonState} from './lesson-state';
+import {Observable, Unsubscribable} from 'rxjs';
+import {ChangeCompletionStateEvent} from './prelearning-result-item.component';
+import {LessonOutcomeSelfAssessmentReport} from '../../../common/model-types/assessment-reports';
 
 
 @Component({
-  selector: 'app-units-lesson-expansion',
+  selector: 'subjects-lesson-expansion',
   template: `
+    {{(lesson$ | async).name}}
   <ng-container *ngIf="lesson$ | async as lesson">
     <mat-tab-group>
       <mat-tab label="Prelearning">
-        <app-lesson-prelearning-results
+        <subjects-lesson-prelearning-results
             [report]="prelearningReport$ | async"
             [assessments]="prelearningAssessments$ | async"
             (completionStateChange)="changePrelearningCompletionState($event)">
-        </app-lesson-prelearning-results>
+        </subjects-lesson-prelearning-results>
       </mat-tab>
       <mat-tab label="Student outcomes" class="d-flex">
         <div class="outcomes-content d-flex">
@@ -31,10 +27,10 @@ import {AssessmentsService} from '../../common/model-services/assessments.servic
           </div>
           <div class="outcome-details flex-grow-2">
             <div *ngFor="let outcome of lesson.outcomes">
-              <app-lesson-outcome-results
+              <subjects-lesson-outcome-self-assessment-report
                 [outcome]="outcome"
                 [reports]="outcomeSelfAssessmentReports$ | async">
-              </app-lesson-outcome-results>
+              </subjects-lesson-outcome-self-assessment-report>
             </div>
           </div>
         </div>
@@ -47,7 +43,16 @@ import {AssessmentsService} from '../../common/model-services/assessments.servic
       display: flex;
     }
 
+    .outcomes-overview {
+      flex-basis: 33%;
+    }
+
+    .outcome-details {
+      flex-basis: 66%;
+    }
+
     .flex-grow-1 {
+      flex-shrink: 0;
       flex-grow: 1;
     }
     .flex-grow-2 {
@@ -59,7 +64,7 @@ import {AssessmentsService} from '../../common/model-services/assessments.servic
     }
   `],
   providers: [
-    LessonStateService
+    LessonState
   ]
 })
 export class LessonExpansionComponent implements OnInit, OnDestroy {
@@ -76,20 +81,16 @@ export class LessonExpansionComponent implements OnInit, OnDestroy {
   readonly prelearningAssessments$ = this.lessonState.prelearningAssessments$.pipe(
     shareReplay(1)
   );
-  readonly outcomeSelfAssessmentReports$ = this.lessonState.outcomeSelfAssessmentReports$.pipe(
+  readonly outcomeSelfAssessmentReports$: Observable<{[k: string]: LessonOutcomeSelfAssessmentReport}> = this.lessonState.outcomeSelfAssessmentReports$.pipe(
     shareReplay(1)
   );
 
   constructor(
-    readonly lessonState: LessonStateService,
-    readonly assessmentsService: AssessmentsService
+    readonly lessonState: LessonState
   ) {}
 
   ngOnInit() {
-    if (this.lesson === undefined) {
-      throw new Error(`Uninitialized 'lesson' on app-lesson-expansion`);
-    }
-    this.resources.push(this.lessonState.init(modelRefId(this.lesson)));
+    this.resources.push(this.lessonState.init());
 
     this.resources.push(this.prelearningReport$.subscribe(report => {
       report.candidateIds.forEach(candidateId => {

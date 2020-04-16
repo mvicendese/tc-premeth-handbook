@@ -21,6 +21,7 @@
     "@angular/platform-browser": "~9.0.5",
     "@angular/platform-browser-dynamic": "~9.0.5",
     "@angular/router": "~9.0.5",
+    "@types/d3": "^5.7.2",
     "immutable": "~4.0.0-rc.12",
     "rxjs": "~6.5.4",
     "tslib": "^1.10.0",
@@ -28,7 +29,8 @@
     "date-fns": "^2.11.0",
     "change-case": "^4.1.1",
     "json-pointer": "^0.6.0",
-    "uuid": "^7.0.3"
+    "uuid": "^7.0.3",
+    "d3": "^5.15.1"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "~0.900.5",

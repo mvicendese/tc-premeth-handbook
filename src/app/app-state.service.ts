@@ -10,9 +10,9 @@ import {Subject} from './common/model-types/subjects';
 import {Student, SubjectClass} from './common/model-types/schools';
 
 export interface GlobalState {
-  readonly user?: User;
+  readonly user: User | null;
 
-  readonly subject?: Subject | null;
+  readonly subject: Subject | null;
   readonly year: number;
 
   readonly student: Student | null;
@@ -24,7 +24,9 @@ export interface GlobalState {
 @Injectable({providedIn: 'root'})
 export class AppStateService {
   private readonly stateSubject = new BehaviorSubject<GlobalState>({
+    user: null,
     year: 2020,
+    subject: null,
     student: null,
     allSubjectClasses: [],
     selectedClass: null,

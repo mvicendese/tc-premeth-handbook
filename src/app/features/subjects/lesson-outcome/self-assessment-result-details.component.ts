@@ -3,14 +3,12 @@ import {LessonOutcome} from '../../../common/model-types/subjects';
 import {ResponsePage} from '../../../common/model-base/pagination';
 import {LessonOutcomeSelfAssessment} from '../../../common/model-types/assessments';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {Student} from '../../../common/model-types/schools';
-import {LessonOutcomeSelfAssessmentReport} from '../../../common/model-types/assessment-reports';
-import {Observable} from 'rxjs';
 import {shareReplay} from 'rxjs/operators';
-import {LessonStateService} from '../../units/lesson-state.service';
+import {LessonState} from '../lesson/lesson-state';
+import {LessonOutcomeSelfAssessmentReport} from '../../../common/model-types/assessment-reports';
 
 interface OutcomeResultDialogData {
-  readonly lessonContext: LessonStateService;
+  readonly lessonContext: LessonState;
   readonly outcome: LessonOutcome;
   readonly report: LessonOutcomeSelfAssessmentReport;
   readonly assessments: ResponsePage<LessonOutcomeSelfAssessment>;
@@ -18,7 +16,6 @@ interface OutcomeResultDialogData {
 
 
 @Component({
-  selector: 'app-lesson-outcome-student-breakdown-dialog',
   template: `
     <h1 mat-dialog-title>
       {{data.outcome.description}} student data
@@ -37,9 +34,9 @@ interface OutcomeResultDialogData {
     </div>
   `
 })
-export class LessonOutcomeResultDetailsDialogComponent {
+export class SelfAssessmentResultDetailsDialogComponent {
   constructor(
-    readonly ref: MatDialogRef<LessonOutcomeResultDetailsDialogComponent>,
+    readonly ref: MatDialogRef<SelfAssessmentResultDetailsDialogComponent>,
     @Inject(MAT_DIALOG_DATA) readonly data: OutcomeResultDialogData
   ) {}
 

@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {UnitResultsTableComponent} from './unit-results-table.component';
 import {MatTableModule} from '@angular/material/table';
 import {RouterModule} from '@angular/router';
-import {BlockAssessmentsComponent} from './block-assessments.component';
+import {BlockAssessmentsComponent} from '../blocks/block-assessments.component';
 import {SubjectSelectorComponent} from './subject-selector.component';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';

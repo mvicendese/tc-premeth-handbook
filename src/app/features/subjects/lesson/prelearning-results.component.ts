@@ -1,18 +1,14 @@
-import {ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, Output} from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
-import {first, shareReplay, startWith, tap} from 'rxjs/operators';
-import {LessonOutcomeSelfAssessmentReport, LessonPrelearningReport} from '../../../common/model-types/assessment-reports';
-import {ModelRef, modelRefId, Resolve} from '../../../common/model-base/model-ref';
+import {LessonPrelearningReport} from '../../../common/model-types/assessment-reports';
+import {Resolve} from '../../../common/model-base/model-ref';
 import {AppStateService} from '../../../app-state.service';
 import {LessonSchema} from '../../../common/model-types/subjects';
-import {Assessment, LessonOutcomeSelfAssessment, LessonPrelearningAssessment} from '../../../common/model-types/assessments';
-import {Student} from '../../../common/model-types/schools';
-import {LessonStateService} from '../../units/lesson-state.service';
-import {CreateCompileFn} from '@angular/compiler-cli/ngcc/src/execution/api';
-import {ChangeCompletionStateEvent} from './prelearning-assessment-item.component';
+import {LessonPrelearningAssessment} from '../../../common/model-types/assessments';
+import {ChangeCompletionStateEvent} from './prelearning-result-item.component';
 
 @Component({
-  selector: 'app-lesson-prelearning-results',
+  selector: 'subjects-lesson-prelearning-results',
   template: `
     <div class="report-container" *ngIf="report">
       <dl>
@@ -34,10 +30,10 @@ import {ChangeCompletionStateEvent} from './prelearning-assessment-item.componen
       <mat-list *ngIf="report">
         <mat-list-item *ngFor="let candidateId of report.candidateIds;"
                        [class.hidden]="hideComplete && assessments[candidateId]?.isComplete">
-          <ass-prelearning-assessment-item
+          <subjects-lesson-prelearning-results-item
             [assessment]="assessments[candidateId]"
             (completionStateChange)="completionStateChange.emit($event)">
-          </ass-prelearning-assessment-item>
+          </subjects-lesson-prelearning-results-item>
         </mat-list-item>
       </mat-list>
     </div>
@@ -64,7 +60,7 @@ import {ChangeCompletionStateEvent} from './prelearning-assessment-item.componen
   `],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class LessonPrelearningResultsComponent {
+export class PrelearningResultComponent {
 
   @Input() lesson: LessonSchema | undefined;
 

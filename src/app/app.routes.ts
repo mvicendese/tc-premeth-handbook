@@ -13,9 +13,9 @@ export const appRoutes: Routes = [
                         .then(module => module.StudentsFeatureModule)
   },
   {
-    path: 'units',
-    loadChildren: () => import('./features/units/units-feature.module')
-                        .then(module => module.UnitsFeatureModule)
+    path: 'subjects',
+    loadChildren: () => import('./features/subjects/subjects-feature.module')
+                        .then(module => module.SubjectsFeatureModule)
   }
 
 ];

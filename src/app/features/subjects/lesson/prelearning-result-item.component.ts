@@ -1,6 +1,6 @@
 import {Component, EventEmitter, Injectable, Input, OnChanges, Output, SimpleChanges} from '@angular/core';
 import {Assessment, CompletionState, LessonPrelearningAssessment} from '../../../common/model-types/assessments';
-import {LessonStateService} from '../../units/lesson-state.service';
+import {LessonState} from './lesson-state';
 import {AppStateService} from '../../../app-state.service';
 import {ModelRef, Resolve} from '../../../common/model-base/model-ref';
 import {FormArray, FormControl, FormGroup} from '@angular/forms';
@@ -14,7 +14,7 @@ export interface ChangeCompletionStateEvent {
 }
 
 @Component({
-  selector: 'ass-prelearning-assessment-item',
+  selector: 'subjects-lesson-prelearning-results-item',
   template: `
   <div class="indicator-col">
     <ng-container *ngIf="_isLoading; then loadingIndicator; else trafficIndicator"></ng-container>
@@ -77,7 +77,7 @@ export interface ChangeCompletionStateEvent {
     }
   `]
 })
-export class PrelearningAssessmentItemComponent implements OnChanges {
+export class PrelearningResultItemComponent implements OnChanges {
   _isLoading = true;
 
   @Input() assessment: Resolve<LessonPrelearningAssessment, 'student'>;
@@ -101,7 +101,7 @@ export class PrelearningAssessmentItemComponent implements OnChanges {
 
   constructor(
     readonly appState: AppStateService,
-    readonly lessonState: LessonStateService
+    readonly lessonState: LessonState
   ) {
   }
 

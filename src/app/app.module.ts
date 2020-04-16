@@ -9,6 +9,8 @@ import {environment} from '../environments/environment';
 import {HttpClientModule} from '@angular/common/http';
 import {modelBaseProviders} from './common/model-base/base-providers';
 import {ScaffoldModule} from './scaffold/scaffold.module';
+import {AppStateService} from './app-state.service';
+import {StudentContextService} from './features/schools/students/student-context.service';
 
 @NgModule({
   declarations: [
@@ -23,7 +25,9 @@ import {ScaffoldModule} from './scaffold/scaffold.module';
     ScaffoldModule
   ],
   providers: [
-    ...modelBaseProviders(environment.apiBaseHref)
+    ...modelBaseProviders(environment.apiBaseHref),
+    AppStateService,
+    StudentContextService
   ],
   bootstrap: [AppComponent]
 })

@@ -1,7 +1,7 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {AppStateService} from '../app-state.service';
 import {combineLatest, Observable, Subscription} from 'rxjs';
-import {filter, first, map, shareReplay, skipWhile, tap, withLatestFrom} from 'rxjs/operators';
+import {filter, first, map, shareReplay, skipWhile, withLatestFrom} from 'rxjs/operators';
 import {ActivationStart, Router, UrlSegment} from '@angular/router';
 import {FlatTreeControl} from '@angular/cdk/tree';
 import {MatTreeFlatDataSource, MatTreeFlattener} from '@angular/material/tree';
@@ -79,7 +79,7 @@ function isUnitDetailsUrl(unit: ModelRef<Unit>, url: UrlSegment[]) {
 }
 
 function isUnitBlockDetailsUrl(block: Block, url: UrlSegment[]) {
-  return isUnitDetailsUrl(block.unit, url)
+  return isUnitDetailsUrl(block.context.unit, url)
       && url.length >= 4
       && url[2].path === 'blocks'
       && url[3].path === block.id;
@@ -95,7 +95,7 @@ function unitMenuNode(unit: Unit, level: number): MenuNode {
     name: unit.name,
     level,
     children: unit.blocks.map(block => unitBlockMenuNode(block, level + 1)),
-    routerLink: ['/units', unit.id],
+    routerLink: ['/subjects/unit', unit.id],
     isActiveForUrl: (url) => isUnitDetailsUrl(unit, url)
   };
 }
@@ -104,7 +104,7 @@ function unitBlockMenuNode(block: Block, level: number): MenuNode {
   return {
     name: block.name,
     level,
-    routerLink: ['/units', modelRefId(block.unit), 'blocks', block.id],
+    routerLink: ['/subjects/block', block.id],
     isActiveForUrl: (url) => isUnitBlockDetailsUrl(block, url)
   };
 }
@@ -137,7 +137,7 @@ function classMenuNode(subjectClass: SubjectClass, level: number): MenuNode {
       </mat-menu>
     </header>
     <main>
-      <form [formGroup]="form"Control>
+      <form [formGroup]="form">
         <mat-form-field>
           <mat-label>Class group</mat-label>
           <mat-select formControlName="subjectClass">

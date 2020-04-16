@@ -15,7 +15,7 @@ export class AppTitleComponent implements OnInit, OnDestroy {
   readonly subject$ = this.appState.subject$.pipe(shareReplay(1));
 
   readonly applicationTitle$ = defer(() => this.subject$.pipe(
-    map(subject => subject === undefined ? '...' : `${subject.name} Handbook`)
+    map(subject => subject == null ? '...' : `${subject.name} Handbook`)
   ));
 
   constructor(

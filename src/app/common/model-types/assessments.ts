@@ -2,7 +2,7 @@ import json, {parseError} from '../json';
 
 import {ModelRef, modelRefFromJson} from '../model-base/model-ref';
 import {School, schoolFromJson, Student} from './schools';
-import {Block, LessonOutcome, LessonSchema, Subject, SubjectNode, subjectNodeFromJson, Unit} from './subjects';
+import {Block, LessonOutcome, LessonSchema, Subject, SubjectNode, Unit} from './subjects';
 import {createModel, Model, modelProperties} from '../model-base/model';
 
 export type AssessmentType
@@ -48,7 +48,7 @@ export const Assessment = {
     subject: modelRefFromJson(Subject.fromJson),
     student: modelRefFromJson(Student.fromJson),
 
-    node: modelRefFromJson(subjectNodeFromJson),
+    node: modelRefFromJson,
 
     isAttempted: json.bool,
     attemptedAt: json.nullable(json.date)
@@ -134,7 +134,7 @@ export interface UnitAssessment extends RatingBasedAssessment {
 export const UnitAssessment = {
   fromJson: json.object<UnitAssessment>({
     ...RatingBasedAssessment.properties<UnitAssessment>('unit-assessment'),
-    unit: modelRefFromJson(Unit.fromJson)
+    unit: modelRefFromJson
   })
 };
 
@@ -146,7 +146,7 @@ export interface BlockAssessment extends RatingBasedAssessment {
 export const BlockAssessment = {
   fromJson: json.object<BlockAssessment>({
     ...RatingBasedAssessment.properties<BlockAssessment>('block-assessment'),
-    block: modelRefFromJson(Block.fromJson)
+    block: modelRefFromJson
   })
 };
 
@@ -159,7 +159,7 @@ export const LessonPrelearningAssessment = {
   create: (lesson: LessonSchema, student: Student) => ({
     ...CompletionBasedAssessment.create('lesson-prelearning-assessment', {
       school: student.school,
-      subject: lesson.subject,
+      subject: lesson.context.subject,
       node: lesson,
       student
     }),
@@ -168,7 +168,7 @@ export const LessonPrelearningAssessment = {
 
   fromJson: json.object<LessonPrelearningAssessment>({
     ...CompletionBasedAssessment.properties<LessonPrelearningAssessment>('lesson-prelearning-assessment'),
-    lesson: modelRefFromJson(LessonSchema.fromJson),
+    lesson: modelRefFromJson,
   })
 };
 
@@ -180,7 +180,7 @@ export interface LessonOutcomeSelfAssessment extends RatingBasedAssessment {
 export const LessonOutcomeSelfAssessment = {
   fromJson: json.object<LessonOutcomeSelfAssessment>({
     ...RatingBasedAssessment.properties<LessonOutcomeSelfAssessment>('lesson-outcome-self-assessment'),
-    lessonOutcome: modelRefFromJson(LessonOutcome.fromJson)
+    lessonOutcome: modelRefFromJson
   })
 };
 

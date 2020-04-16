@@ -7,6 +7,7 @@ import string from './decoders/string';
 import tuple from './decoders/tuple';
 import date from './decoders/date';
 import union from './decoders/union';
+import {record} from './decoders/record';
 
 export default {
   array,
@@ -15,6 +16,7 @@ export default {
   nullable,
   number,
   object,
+  record,
   string,
   tuple,
   union

@@ -8,9 +8,7 @@ import {ModelRef, modelRefId} from '../model-base/model-ref';
 import {
   BlockAssessmentReport,
   LessonOutcomeSelfAssessmentReport,
-  lessonOutcomeSelfAssessmentReportFromJson,
   LessonPrelearningReport,
-  lessonPrelearningReportFromJson,
   Report, UnitAssessmentReport
 } from '../model-types/assessment-reports';
 import {Observable} from 'rxjs';
@@ -71,8 +69,8 @@ export class AssessmentsService extends ModelService<Assessment> {
       {
         'unit-assessment': UnitAssessmentReport.fromJson,
         'block-assessment': BlockAssessmentReport.fromJson,
-        'lesson-prelearning-assessment': lessonPrelearningReportFromJson,
-        'lesson-outcome-self-assessment': lessonOutcomeSelfAssessmentReportFromJson
+        'lesson-prelearning-assessment': LessonPrelearningReport.fromJson,
+        'lesson-outcome-self-assessment': LessonOutcomeSelfAssessmentReport.fromJson
       },
       object
     );

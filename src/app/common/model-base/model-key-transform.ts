@@ -9,6 +9,8 @@ export function transformKeys(obj: JsonObject, transform: (k: string) => string)
 
   return _transformKeys(obj, transform, new WeakSet<JsonObject>());
 }
+const RE_UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 
 function _transformKeys(obj: JsonObject, transform: (k: string) => string, seen: WeakSet<JsonObject>) {
   seen.add(obj);
@@ -20,7 +22,10 @@ function _transformKeys(obj: JsonObject, transform: (k: string) => string, seen:
     } else if (isJsonObject(v)) {
       if (seen.has(v)) {
         throw new Error(`Transforming keys of circular structure`);
-      }  else {
+      }
+      // If the keys in the object are UUIDs, then don't transform the keys.
+      const vKeys = Object.keys(v);
+      if (vKeys.some(k => !RE_UUID.test(k))) {
         v = _transformKeys(v as { [k: string]: unknown }, transform, seen);
       }
     }

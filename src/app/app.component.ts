@@ -3,14 +3,12 @@ import {AppStateService} from './app-state.service';
 import {SubjectsService} from './common/model-services/subjects.service';
 import {Subscription, Unsubscribable} from 'rxjs';
 import {StudentService} from './common/model-services/students.service';
+import {StudentContextService} from './features/schools/students/student-context.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
-  viewProviders: [
-    {provide: AppStateService, useClass: AppStateService},
-  ]
 })
 export class AppComponent implements OnInit, OnDestroy {
   private resources: Unsubscribable[] = [];

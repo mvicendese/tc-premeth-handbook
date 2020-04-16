@@ -39,14 +39,15 @@ export function tableRows(state: TableState): TableRowData[] {
   if (state.unit == null || state.studentResults == null) {
     return [];
   }
-  return state.students.map(student => ({
-    student,
-    unit: state.unit,
-    block: state.block,
-    isAttempted: state.studentResults[student.id] != null && state.studentResults[student.id].length > 0,
-    maxBlockResult: maxBlockResult(state.studentResults[student.id] || []),
-    numberOfAttempts: numberOfAttempts(state.studentResults[student.id] || [])
-  }))
+  return state.students
+    .map(student => ({
+      student,
+      unit: state.unit,
+      block: state.block,
+      isAttempted: state.studentResults[student.id] != null && state.studentResults[student.id].length > 0,
+      maxBlockResult: maxBlockResult(state.studentResults[student.id] || []),
+      numberOfAttempts: numberOfAttempts(state.studentResults[student.id] || [])
+    }))
     .filter(row => row.isAttempted);
 }
 

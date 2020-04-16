@@ -1,7 +1,7 @@
 import json from '../json';
 import {ModelRef, modelRefFromJson} from '../model-base/model-ref';
 import {School, schoolFromJson, Student, SubjectClass, subjectClassFromJson} from './schools';
-import {Subject, SubjectNode, subjectNodeFromJson} from './subjects';
+import {Subject, SubjectNode} from './subjects';
 import {AssessmentType} from './assessments';
 
 export type AssessmentReportType
@@ -24,6 +24,7 @@ export interface Report {
 
   readonly totalCandidateCount: number;
   readonly candidateIds: ReadonlyArray<ModelRef<Student>>;
+
   readonly attemptedCandidateCount: number;
   readonly attemptedCandidateIds: ReadonlyArray<ModelRef<Student>>;
 
@@ -36,11 +37,11 @@ export const Report = {
     assessmentType,
     school: modelRefFromJson(schoolFromJson),
     subject: modelRefFromJson(Subject.fromJson),
-    node: modelRefFromJson(subjectNodeFromJson),
+    node: modelRefFromJson,
     subjectClass: json.nullable(modelRefFromJson(subjectClassFromJson)),
     generatedAt: json.date,
 
-    totalCandidateCount: json.number,
+    candidateCount: json.number,
     candidateIds: json.array(modelRefFromJson(Student.fromJson)),
     attemptedCandidateCount: json.number,
     attemptedCandidateIds: json.array(modelRefFromJson(Student.fromJson)),
@@ -48,6 +49,11 @@ export const Report = {
     percentAttempted: json.number
   })
 };
+
+export interface CompletionBasedReport extends Report {
+
+
+}
 
 export interface UnitAssessmentReport extends Report {
 }
@@ -77,28 +83,35 @@ export interface LessonPrelearningReport extends Report {
   readonly completedCandidateIds: ModelRef<Student>[];
 }
 
-export function lessonPrelearningReportFromJson(obj: unknown): LessonPrelearningReport {
-  return json.object<LessonPrelearningReport>({
+export const LessonPrelearningReport = {
+  fromJson: (obj) => json.object<LessonPrelearningReport>({
     ...Report.properties('lesson-prelearning-assessment'),
     percentCompleted: json.number,
     completedCandidateCount: json.number,
     completedCandidateIds: json.array(modelRefFromJson(Student.fromJson)),
     mostRecentCompletionAt: json.nullable(json.date)
-  }, obj);
-}
+  }, obj)
+};
 
 export interface LessonOutcomeSelfAssessmentReport extends Report {
   ratingAverage: number;
   ratingStdDeviation: number;
+
+  /**
+   * A map of the _attempted_ candidates to the scores they achieved
+   */
+  candidateScores: {[candidateId: string]: number};
 }
 
-export function lessonOutcomeSelfAssessmentReportFromJson(obj: unknown): LessonOutcomeSelfAssessmentReport {
-  return json.object<LessonOutcomeSelfAssessmentReport>({
-    ...Report.properties('lesson-outcome-self-assessment'),
-    ratingAverage: json.nullable(json.number),
-    ratingStdDeviation: json.nullable(json.number)
-  }, obj);
-}
+export const LessonOutcomeSelfAssessmentReport = {
+  fromJson: (obj: unknown) =>
+    json.object<LessonOutcomeSelfAssessmentReport>({
+      ...Report.properties('lesson-outcome-self-assessment'),
+      ratingAverage: json.nullable(json.number),
+      ratingStdDeviation: json.nullable(json.number),
+      candidateScores: json.record(json.number)
+    }, obj)
+};
 
 export type AnyReport = LessonPrelearningReport | LessonOutcomeSelfAssessmentReport;
 
