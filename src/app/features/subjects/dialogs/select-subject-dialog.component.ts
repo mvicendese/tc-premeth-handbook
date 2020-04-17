@@ -1,9 +1,9 @@
 import {Component} from '@angular/core';
-import {AppStateService} from '../../app-state.service';
-import {SubjectsService} from '../../common/model-services/subjects.service';
+import {AppStateService} from '../../../app-state.service';
+import {SubjectsService} from '../../../common/model-services/subjects.service';
 import {map, shareReplay} from 'rxjs/operators';
-import {SubjectIndex} from '../../common/model-types/subjects';
-import {modelRefId} from '../../common/model-base/model-ref';
+import {SubjectIndex} from '../../../common/model-types/subjects';
+import {modelRefId} from '../../../common/model-base/model-ref';
 
 
 @Component({

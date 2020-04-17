@@ -10,7 +10,6 @@ import {LessonOutcomeSelfAssessmentReport} from '../../../common/model-types/ass
 @Component({
   selector: 'subjects-lesson-expansion',
   template: `
-    {{(lesson$ | async).name}}
   <ng-container *ngIf="lesson$ | async as lesson">
     <mat-tab-group>
       <mat-tab label="Prelearning">

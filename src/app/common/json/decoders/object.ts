@@ -16,19 +16,18 @@ function object<T extends object>(properties: JsonObjectProperties<T>, json?: un
   } else {
     return decoder;
   }
-
 }
 
 function objectFromProperties<T extends object>(properties: JsonObjectProperties<T>, obj: JsonObject): T {
-  const result = {};
+  let result = {};
 
   for (const key of Object.keys(properties)) {
     withContext(key, () => {
       const decoder = properties[key];
-      if (typeof decoder === 'function') {
+      if (typeof decoder === 'object') {
+        result = Object.defineProperty(result, key, decoder as PropertyDescriptor);
+      } if (typeof decoder === 'function') {
         result[key] = (decoder as Decoder<T>)(obj[key]);
-      } else {
-        result[key] = decoder;
       }
     });
   }

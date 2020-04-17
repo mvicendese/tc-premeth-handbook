@@ -2,7 +2,7 @@ import {NgModule} from '@angular/core';
 import {SelfAssessmentReportComponent} from './self-assessment-report.component';
 import {SelfAssessmentResultHistogramComponent} from './self-assessment-result-histogram.component';
 import {CommonModule} from '@angular/common';
-import {StudentsModule} from '../../schools/students/students.module';
+import {StudentsFeatureModule} from '../../schools/students/students-feature.module';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatDividerModule} from '@angular/material/divider';
@@ -10,6 +10,7 @@ import {CommonComponentsModule} from '../../../common/components/common-componen
 import {MatDialogModule} from '@angular/material/dialog';
 import {SelfAssessmentResultDetailsDialogComponent} from './self-assessment-result-details.component';
 import {MatListModule} from '@angular/material/list';
+import {SchoolsSharedModule} from '../../schools/shared/schools-shared.module';
 
 @NgModule({
   imports: [
@@ -22,8 +23,8 @@ import {MatListModule} from '@angular/material/list';
     MatIconModule,
 
     CommonComponentsModule,
+    SchoolsSharedModule
 
-    StudentsModule
   ],
   declarations: [
     SelfAssessmentResultDetailsDialogComponent,

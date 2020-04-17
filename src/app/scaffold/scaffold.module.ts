@@ -4,7 +4,7 @@ import {MatSidenavModule} from '@angular/material/sidenav';
 import {CommonModule} from '@angular/common';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatDialogModule} from '@angular/material/dialog';
-import {SelectSubjectDialogComponent} from './dialogs/select-subject-dialog.component';
+import {SelectSubjectDialogComponent} from '../features/subjects/dialogs/select-subject-dialog.component';
 import {MatTreeModule} from '@angular/material/tree';
 import {ScaffoldComponent} from './scaffold.component';
 import {CommonComponentsModule} from '../common/components/common-components.module';

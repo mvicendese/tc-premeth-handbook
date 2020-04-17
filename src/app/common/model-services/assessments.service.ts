@@ -5,12 +5,7 @@ import {v4 as uuid4} from 'uuid';
 import {ModelService, ModelServiceBackend} from '../model-base/model-service';
 import {Injectable} from '@angular/core';
 import {ModelRef, modelRefId} from '../model-base/model-ref';
-import {
-  BlockAssessmentReport,
-  LessonOutcomeSelfAssessmentReport,
-  LessonPrelearningReport,
-  Report, UnitAssessmentReport
-} from '../model-types/assessment-reports';
+import {AnyReport, LessonOutcomeSelfAssessmentReport, LessonPrelearningReport} from '../model-types/assessment-reports';
 import {Observable} from 'rxjs';
 import {ResponsePage} from '../model-base/pagination';
 import {LessonSchema, SubjectNode} from '../model-types/subjects';
@@ -21,10 +16,9 @@ import {
   LessonOutcomeSelfAssessment,
   LessonPrelearningAssessment,
 } from '../model-types/assessments';
-import json, {JsonObject} from '../json';
+import {JsonObject} from '../json';
 import {Student, SubjectClass} from '../model-types/schools';
-import {AnyAttempt, AssessmentAttempt, AssessmentAttemptType, CompletionBasedAssessmentAttempt,} from '../model-types/assessment-attempt';
-import {map} from 'rxjs/operators';
+import {AnyAttempt, AssessmentAttempt, LessonPrelearningAssessmentAttempt, UnitAssessmentAttempt} from '../model-types/assessment-attempt';
 
 export interface AssessmentQuery {
   student?: ModelRef<Student>[] | ModelRef<Student> | null;
@@ -60,20 +54,8 @@ export class AssessmentsService extends ModelService<Assessment> {
     return AnyAssessment.fromJson(object);
   }
 
-  reportFromJson(object: unknown): Report {
-    function getAssessmentType(obj: unknown): AssessmentType {
-      return json.object({assessmentType: AssessmentType.fromJson}, obj).assessmentType;
-    }
-    return json.union(
-      getAssessmentType,
-      {
-        'unit-assessment': UnitAssessmentReport.fromJson,
-        'block-assessment': BlockAssessmentReport.fromJson,
-        'lesson-prelearning-assessment': LessonPrelearningReport.fromJson,
-        'lesson-outcome-self-assessment': LessonOutcomeSelfAssessmentReport.fromJson
-      },
-      object
-    );
+  reportFromJson(object: unknown): AnyReport {
+    return AnyReport.fromJson(object);
   }
 
   constructor(backend: ModelServiceBackend) {
@@ -97,8 +79,8 @@ export class AssessmentsService extends ModelService<Assessment> {
 
   queryReports(assessmentType: 'lesson-prelearning-assessment',   options: { params: AssessmentQuery }): Observable<ResponsePage<LessonPrelearningReport>>;
   queryReports(assessmentType: 'lesson-outcome-self-assessment',  options: { params: AssessmentQuery }): Observable<ResponsePage<LessonOutcomeSelfAssessmentReport>>;
-  queryReports<T extends Report>(
-      assessmentType: T['assessmentType'],
+  queryReports<T extends Assessment>(
+      assessmentType: T['type'],
       options: { params: AssessmentQuery }
   ): Observable<ResponsePage<T>> {
     const params = assessmentQueryToParams(assessmentType, options.params);
@@ -122,7 +104,8 @@ export class AssessmentsService extends ModelService<Assessment> {
     return this.put(id, { type, id, student, node });
   }
 
-  createAttempt(type: AssessmentType, attempt: Partial<CompletionBasedAssessmentAttempt>): Observable<CompletionBasedAssessmentAttempt>;
+  createAttempt(type: AssessmentType, attempt: Partial<UnitAssessmentAttempt>): Observable<UnitAssessmentAttempt>;
+  createAttempt(type: 'lesson-prelearning-assessment', attempt: Partial<LessonPrelearningAssessmentAttempt>): Observable<LessonPrelearningAssessmentAttempt>;
   createAttempt(type: AssessmentType, attempt: Partial<AssessmentAttempt>): Observable<AssessmentAttempt> {
     const assessment = attempt.assessment;
     if (assessment == null) {
@@ -131,18 +114,18 @@ export class AssessmentsService extends ModelService<Assessment> {
 
     let body: JsonObject;
     if (['lesson-prelearning-assessment'].includes(type)) {
-      const completionState = (attempt as Partial<CompletionBasedAssessmentAttempt>).completionState;
+      const completionState = (attempt as Partial<LessonPrelearningAssessmentAttempt>).completionState;
       if (completionState == null) {
         throw new Error(`completionState required`);
       }
 
-      body = CompletionBasedAssessmentAttempt.toJson({
+      body = LessonPrelearningAssessmentAttempt.toJson({
         assessmentType: type,
         assessment,
         completionState,
-      } as CompletionBasedAssessmentAttempt)
+      })
     } else {
-      throw new Error(`Unexpected attempt type: ${attempt.type}`);
+      throw new Error(`Unexpected attempt type: ${attempt.assessmentType}`);
     }
     const assessmentId = modelRefId(attempt.assessment);
     return this.post<AssessmentAttempt>([assessmentId, 'attempt'].join('/'), body, {

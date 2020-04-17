@@ -191,7 +191,7 @@ export type AnyAssessment
   | LessonOutcomeSelfAssessment;
 
 export const AnyAssessment = {
-  fromJson: (obj: unknown) => {
+  fromJson: <T extends AnyAssessment>(obj: unknown) => {
     function getAssessmentType(obj: unknown): AssessmentType {
       return json.object({type: AssessmentType.fromJson}, obj).type;
     }
@@ -205,6 +205,6 @@ export const AnyAssessment = {
         'lesson-outcome-self-assessment': LessonOutcomeSelfAssessment.fromJson
       },
       obj
-    );
+    ) as T;
   }
 };

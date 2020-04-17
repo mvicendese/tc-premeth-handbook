@@ -5,31 +5,23 @@ import {Resolve} from '../../../common/model-base/model-ref';
 import {defer, Observable, Observer} from 'rxjs';
 import {AssessmentQuery} from '../../../common/model-services/assessments.service';
 import {Assessment} from '../../../common/model-types/assessments';
+import {StudentState} from './student-state';
 
-export const ASSESSMENT_CONTEXT = new InjectionToken<AssessmentContext>('ASSESSMENT_CONTEXT');
-
-export interface AssessmentContext {
-  readonly query: Observer<AssessmentQuery>;
-  readonly assessments$: Observable<{[assessmentId: string]: Assessment}>;
-}
 
 
 @Component({
-  selector: 'student-progress-component',
+  selector: 'schools-student-progress',
   template: `
 
   `,
   styles: [`
   `]
 })
-export class StudentProgressComponent {
+export class StudentProgressTabComponent {
   @Input() progress: Resolve<Progress, 'student' | 'node'> | undefined;
 
-  readonly assessments$ = defer(() => this.assessmentContext.assessments$);
-
   constructor(
-    @Inject(ASSESSMENT_CONTEXT)
-    readonly assessmentContext: AssessmentContext
+    readonly state: StudentState
   ) {}
 
 }

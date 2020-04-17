@@ -26,7 +26,7 @@ export abstract class BaseModel implements Model {
 
 export function modelProperties<T extends Model>(type: T['type']) {
   return {
-    type,
+    type: { value: type },
     id: json.string,
     createdAt: json.date,
     updatedAt: json.nullable(json.date)

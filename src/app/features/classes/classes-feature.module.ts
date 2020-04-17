@@ -6,7 +6,7 @@ import {CommonModule} from '@angular/common';
 import {StudentsOverviewPageComponent} from './students-overview-page.component';
 import {MatCardModule} from '@angular/material/card';
 import {MatTableModule} from '@angular/material/table';
-import {StudentsSharedModule} from '../schools/shared/students-shared.module';
+import {SchoolsSharedModule} from '../schools/shared/schools-shared.module';
 import {UnitsSharedModule} from '../subjects/shared/units-shared.module';
 import {SubjectClass} from '../../common/model-types/schools';
 import {MatButtonModule} from '@angular/material/button';
@@ -43,7 +43,7 @@ export const routes: Routes = [
     MatTableModule,
     MatButtonModule,
 
-    StudentsSharedModule,
+    SchoolsSharedModule,
     UnitsSharedModule
   ],
   providers: [

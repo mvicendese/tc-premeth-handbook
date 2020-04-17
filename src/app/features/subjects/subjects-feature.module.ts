@@ -1,10 +1,6 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {ReactiveFormsModule} from '@angular/forms';
 import {RouterModule, Routes, UrlMatchResult, UrlSegment} from '@angular/router';
-import {MatTabsModule} from '@angular/material/tabs';
-import {MatExpansionModule} from '@angular/material/expansion';
-import {MatDividerModule} from '@angular/material/divider';
 import {ClassSharedModule} from '../classes/shared/class-shared.module';
 import {SubjectOverviewComponent} from './subject-overview.component';
 import {SubjectNodeHostComponent} from './subject-node-host.component';
@@ -14,6 +10,9 @@ import {UnitsModule} from './units/units.module';
 import {BlocksModule} from './blocks/blocks.module';
 import {LessonModule} from './lesson/lesson.module';
 import {LessonOutcomeModule} from './lesson-outcome/lesson-outcome.module';
+import {SubjectNodeType} from '../../common/model-types/subjects';
+import {PrelearningResultComponent} from './lesson/prelearning-results.component';
+import {LessonOverviewTabComponent} from './lesson/lesson-overview-tab.component';
 
 export function matchSubjectNodeUrl(segments: UrlSegment[]): UrlMatchResult {
   if (segments.length >= 2) {
@@ -29,6 +28,17 @@ export function matchSubjectNodeUrl(segments: UrlSegment[]): UrlMatchResult {
   return null;
 }
 
+export function subjectNodeRoute(options: {type: SubjectNodeType, children?: Routes}) {
+  return {
+    path: options.type,
+    component: SubjectNodeHostComponent,
+    resolve: {
+      node: SubjectNodeResolver
+    },
+    children: options.children
+  }
+}
+
 export const routes: Routes = [
   {
     path: '',
@@ -36,6 +46,16 @@ export const routes: Routes = [
       node: SubjectNodeResolver
     },
   },
+  subjectNodeRoute({type: 'unit'}),
+  subjectNodeRoute({type: 'block'}),
+  subjectNodeRoute({
+    type: 'lesson',
+    children: [
+      { path: '', component: LessonOverviewTabComponent },
+      { path: 'prelearning', component: PrelearningResultComponent },
+      { path: 'outcomes'}
+    ]
+  }),
   {
     matcher: matchSubjectNodeUrl,
     component: SubjectNodeHostComponent,
@@ -43,6 +63,9 @@ export const routes: Routes = [
       node: SubjectNodeResolver
     }
   },
+  {
+    path: ''
+  }
 ];
 
 @NgModule({

@@ -2,34 +2,81 @@ import {AfterViewInit, Component, ElementRef, Host, Input, OnDestroy, Renderer2,
 import {modelRefId} from '../../../common/model-base/model-ref';
 import * as d3 from 'd3';
 import {Set} from 'immutable';
-import {AsyncSubject, BehaviorSubject, combineLatest, defer, Observable, timer,} from 'rxjs';
+import {asyncScheduler, AsyncSubject, BehaviorSubject, combineLatest, defer, Observable, of, timer, Unsubscribable,} from 'rxjs';
 import {LessonOutcomeSelfAssessmentReport} from '../../../common/model-types/assessment-reports';
-import {debounceTime, distinctUntilChanged, filter, map, pluck, shareReplay, withLatestFrom} from 'rxjs/operators';
+import {
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  first,
+  map,
+  observeOn,
+  pluck,
+  scan,
+  shareReplay,
+  switchMap,
+  withLatestFrom
+} from 'rxjs/operators';
+import {Student} from '../../../common/model-types/schools';
+import {LessonOutcomeSelfAssessment} from '../../../common/model-types/assessments';
 
 interface Cell {
   readonly candidateId: string;
+  readonly rating: number | null;
 }
 
-type Bin = { readonly cells: ReadonlyArray<Cell> };
+type Bin = {
+  readonly rating: number | null;
+  readonly cells: Cell[];
+};
 
 function histogramBinData(report: LessonOutcomeSelfAssessmentReport): Bin[] {
-  const bins = Array.from(new Array(6)).map(() => ({cells: []}));
+  const bins = Array.from(
+    new Array(6)).map((_, i) => ({
+      rating: i,
+      cells: []
+    }));
   const candidateScores = report.candidateScores;
 
   report.candidateIds.forEach(candidateId => {
     if (report.attemptedCandidateIds.includes(candidateId)) {
-      const score = candidateScores[modelRefId(candidateId)];
-      if (score === undefined) {
+      const rating = candidateScores[modelRefId(candidateId)];
+      if (rating === undefined) {
         throw new Error(`No score for attempted candidate`);
       }
-      bins[score].cells.push({candidateId});
+      bins[rating].cells.push({candidateId, rating});
     } else {
-      bins[0].cells.push({candidateId});
+      bins[0].cells.push({candidateId, rating: null});
     }
   });
   return bins;
 }
 
+interface BinState {
+  hoverCandidate: string | null;
+  hoverRating: {value: number | null} | null;
+
+  activeCandidate: string | null;
+  activeRating: {value: number | null} | null;
+}
+
+function isCellInHoverState({hoverRating, hoverCandidate}: BinState, cell: Cell) {
+  return hoverRating && hoverRating.value === cell.rating
+      || hoverCandidate === cell.candidateId;
+}
+
+function isCellInActiveState({activeRating, activeCandidate}: BinState, cell: Cell) {
+  return activeRating && activeRating.value === cell.rating
+      || activeCandidate === cell.candidateId;
+}
+
+function isBinLabelInHoverState({hoverRating}: BinState, bin: Bin) {
+  return hoverRating && hoverRating.value === bin.rating;
+}
+
+function isBinLabelInActiveState({activeRating}: BinState, bin: Bin) {
+  return activeRating && activeRating.value === bin.rating;
+}
 
 // browser-only
 @Component({
@@ -37,116 +84,67 @@ function histogramBinData(report: LessonOutcomeSelfAssessmentReport): Bin[] {
   template: `
     <div #container class="container"></div>
 
-    <ng-container *ngIf="(selectedCandidateIds$ | async) as selectedIds">
-      <mat-list class="student-card-container">
-
-        <ng-container *ngIf="!selectedIds.isEmpty()">
-          <mat-list-item *ngFor="let candidateId of (highlightCandidateIds$ | async)">
-            <app-student-card [student]="candidateId"></app-student-card>
-          </mat-list-item>
-        </ng-container>
-
-      </mat-list>
-    </ng-container>
+    <mat-list class="student-card-container">
+      <mat-list-item *ngFor="let candidateId of (displayCandidates$ | async)">
+        <schools-student-item [student]="candidateId"></schools-student-item>
+      </mat-list-item>
+    </mat-list>
   `,
-  styles: [`
-    :host {
-      height: 100%;
-      display: flex;
-      flex-direction: row;
-    }
-
-    mat-list {
-      height: 20rem;
-      flex-grow: 1;
-      overflow-y: auto;
-    }
-
-    .content {
-      width: 25rem;
-      height: 20rem;
-      font-size: 10px;
-      color: white;
-    }
-
-    .content {
-      display: flex;
-      flex-direction: row;
-    }
-
-    .bin {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-end;
-
-      flex-grow: 1;
-      flex-shrink: 0;
-
-      margin: 0 3px;
-    }
-
-    .bin-label {
-      color: black;
-      font-weight: bold;
-      margin-top: 0.5rem;
-    }
-
-    .cell {
-      box-sizing: border-box;
-      font-size: inherit;
-      flex-shrink: 0;
-
-      height: 2em;
-      width: 2em;
-      border-radius: 2em;
-
-      margin: 0.5em 0;
-
-      background-color: steelblue;
-    }
-
-    .cell.hover, .cell:hover {
-      border: 0.2em solid orange;
-    }
-
-    .cell.active {
-      background-color: blue;
-    }
-  `],
+  styleUrls: ['./self-assessment-result-histogram.component.scss'],
   encapsulation: ViewEncapsulation.ShadowDom
 })
 export class SelfAssessmentResultHistogramComponent implements AfterViewInit, OnDestroy {
+  static readonly DOMAIN_LABELS = [
+    'N/A', '★', '★★', '★★★', '★★★★', '★★★★★'
+  ];
+
+  private resources: Unsubscribable[] = [];
 
   private readonly reportSubject = new BehaviorSubject<LessonOutcomeSelfAssessmentReport | undefined>(undefined);
-  private readonly mouseoverLabelSubject = new BehaviorSubject<number | null>(null);
-  private readonly mouseOverCandidateIdsSubject = new BehaviorSubject<Set<string>>(Set());
-  private readonly selectedCandidateIdsSubject = new BehaviorSubject<Set<string>>(Set());
+  private readonly stateSubject = new BehaviorSubject<BinState>({
+    hoverCandidate: null,
+    hoverRating: null,
+    activeCandidate: null,
+    activeRating: null
+  });
 
-  readonly selectedIds$ = defer(() => this.selectedCandidateIdsSubject.asObservable());
+  private binData$ = defer(() => this.reportSubject.pipe(map(report => histogramBinData(report))));
 
-  readonly highlightCandidateIds$ = combineLatest([
-    this.selectedIds$,
-    this.mouseOverCandidateIdsSubject,
+  readonly displayCandidates$: Observable<string[]> = combineLatest([
+      this.binData$,
+      this.stateSubject
   ]).pipe(
-    map(([selectedIds, mouseOverIds]) => selectedIds.isEmpty() ? Set() : mouseOverIds),
-    distinctUntilChanged()
+    map(([
+      bins,
+      {hoverCandidate, hoverRating, activeCandidate, activeRating}]
+    ) => {
+      if (activeRating != null) {
+        const bin = bins.find(b => b.rating === activeRating.value);
+        if (bin === undefined)
+          throw new Error(`No bin with rating ${activeRating}`);
+        return bin.cells.map(cell => cell.candidateId);
+      }
+      if (hoverRating != null) {
+        const bin = bins.find(b => b.rating === hoverRating.value);
+        if (bin === undefined)
+          throw new Error(`No bin with rating ${hoverRating}`);
+        return bin.cells.map(cell => cell.candidateId);
+      }
+
+      if (activeCandidate != null) {
+        return [activeCandidate];
+      }
+      if (hoverCandidate != null) {
+        return [hoverCandidate];
+      }
+      return [];
+    }),
+    shareReplay(1)
   );
 
-  readonly selectedCandidateIds$ = defer(
-    () => this.selectedCandidateIdsSubject.asObservable()
-  );
 
   @ViewChild('container', {static: true})
   readonly container: ElementRef<HTMLDivElement>;
-
-  private bins$: Observable<Bin[]> = this.reportSubject.pipe(
-    filter(report => report !== undefined),
-    distinctUntilChanged(),
-    map(report => histogramBinData(report)),
-    shareReplay(1)
-  );
-  candidateId: string;
 
   @Input()
   get report() {
@@ -157,36 +155,46 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
     this.reportSubject.next(report);
   }
 
+
   constructor(
     readonly renderer: Renderer2,
     @Host() readonly element: ElementRef<Element>
   ) {
   }
 
-  async ngAfterViewInit() {
-    combineLatest([this.bins$, this.selectedCandidateIdsSubject, this.mouseOverCandidateIdsSubject]).pipe(
-      pluck(0),
-      debounceTime(100)
-    ).subscribe(bins => {
-      const node = this.drawHistogram(bins);
-
-      if (this.container.nativeElement.firstChild != null) {
+  ngAfterViewInit() {
+    const initBins = this.binData$.subscribe(binData => {
+      const node = this.drawHistogram(binData);
+      if (this.container.nativeElement.firstChild) {
         this.renderer.removeChild(this.container.nativeElement, this.container.nativeElement.firstChild);
       }
       this.renderer.appendChild(this.container.nativeElement, node.node());
     });
+    this.resources.push(initBins);
+
+    const redrawBins = combineLatest([this.binData$, this.stateSubject]).pipe(
+      observeOn(asyncScheduler)
+    ).subscribe(([binData, state]) => {
+      this.redrawHistogram(binData, state);
+    });
+    this.resources.push(redrawBins);
   }
 
   ngOnDestroy(): void {
     this.reportSubject.complete();
-    this.mouseOverCandidateIdsSubject.complete();
-    this.selectedCandidateIdsSubject.complete();
+    this.stateSubject.complete();
+
+    this.resources.forEach(resource => resource.unsubscribe());
   }
 
-  protected drawHistogram(
-    binDatas: Bin[]
-  ) {
-    const content = d3.create('div').attr('class', 'content');
+  protected selectContainerElement() {
+    return d3.select(this.container.nativeElement);
+  }
+
+  protected drawHistogram(binDatas: Bin[]) {
+    const content = this.selectContainerElement()
+      .append('div')
+      .attr('class', 'content');
 
     const bins = content
       .selectAll('div')
@@ -194,96 +202,91 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
       .join('div')
       .attr('class', 'bin');
 
-
     const cells = bins
       .selectAll('div')
       .data((column) => [...column.cells])
-      .join('div');
+      .join('div')
+      .attr('class', 'cell');
 
     cells
-      .on('click',      (cell) => this.selectCandidate(cell.candidateId))
-      .on('mouseover',  (cell) => this.mouseoverCandidate(cell.candidateId))
-      .on('mouseleave', (cell) => this.mouseleaveCandidate(cell.candidateId))
-      .attr('class', (cell) => {
-        const classes = ['cell'];
-        if (this.isSelectedCandidate(cell.candidateId)) {
-          classes.push('active');
-        }
-        if (this.isMouseoverCandidate(cell.candidateId)) {
-          classes.push('hover');
-        }
-        return classes.join(' ');
-      });
+      .on('click', (cell) => {
+        console.log('click');
+        this.selectCandidate(cell.candidateId);
+      })
+      .on('mouseenter', (cell) => this.hoverCandidate(cell.candidateId))
+      .on('mouseleave', () => this.hoverCandidate(null));
 
-    const xLabels = ['N/A', '1 star', '2 stars', '3 stars', '4 stars', '5 stars'];
-    const scale = d3.scaleOrdinal(xLabels);
+    const xLabels = ['N/A', '★', '★★', '★★★', '★★★★', '★★★★★'];
 
     const labels = bins
-      .append('button')
+      .append('div')
+      .attr('class', 'bin-label')
       .text((bin, index) => xLabels[index])
-      .on('click',      (bin) => this.selectCandidates(bin.cells.map(cell => cell.candidateId)))
-      .on('mouseover', (bin) => this.mouseoverCandidates(bin.cells.map(cell => cell.candidateId)))
-      .on('mouseleave', (bin) => this.mouseleaveCandidates(bin.cells.map(cell => cell.candidateId)))
-      .attr('class', (bin: Bin) => {
-        const classes: string[] = ['bin-label', 'mat-focus-indicator', 'mat-button', 'mat-button-base'];
-        if (bin.cells.every(cell => this.isSelectedCandidate(cell.candidateId))) {
-          classes.push('active');
-        }
-        if (bin.cells.every(cell => this.isMouseoverCandidate(cell.candidateId))) {
-          classes.push('hover');
-        }
-        return classes.join(' ');
-      });
-
-    labels.append('div').attr('class', (bin) => {
-      if (bin.cells.every(cell => this.isMouseoverCandidate(cell.candidateId))) {
-        return 'mat-button-focus-overlay';
-      }
-    });
+      .on('click', (bin) => this.selectRating(bin.rating))
+      .on('mouseenter', (bin) => this.selectRating(bin.rating))
+      .on('mouseleave', (bin) => this.hoverRating(null));
 
     return content;
   }
 
-  isSelectedCandidate(candidateId: string) {
-    return this.selectedCandidateIdsSubject.value.has(candidateId);
+  protected redrawHistogram(binDatas: Bin[], state: BinState) {
+    const container = this.selectContainerElement();
+    const content = container.selectAll('div.content');
+
+    const bins = content.selectAll('div.bin').data<Bin>(binDatas);
+
+    const cells = bins
+      .selectAll('div.cell')
+      .data((bin) => bin.cells)
+      .attr('class', function (cell) {
+        const classes = ['cell'];
+
+        if (isCellInActiveState(state, cell)) {
+          classes.push('active');
+        }
+
+        if (isCellInHoverState(state, cell)) {
+          classes.push('hover');
+        }
+        return classes.join(' ');
+      });
+
+
+    const labels = content
+      .selectAll('div.bin-label')
+      .attr('class', (bin: Bin) => {
+        const classes = ['bin-label'];
+        if (isBinLabelInActiveState(state, bin)) {
+          classes.push('hover');
+        }
+        if (isBinLabelInHoverState(state, bin)) {
+          classes.push('active');
+        }
+        return classes.join(' ');
+      });
   }
 
-  selectCandidates(candidateIds: string[]) {
-    this.selectedCandidateIdsSubject.next(Set(candidateIds));
-  }
-  deselectCandidates(candidateIds: string[]) {
-    timer(300).subscribe(() => {
-      this.selectedCandidateIdsSubject.next(this.selectedCandidateIdsSubject.value.subtract(candidateIds));
-    });
-  }
-  selectCandidate(candidateId: string) {
-    this.selectedCandidateIdsSubject.next(Set.of(candidateId));
+  protected selectRating(rating: number | null) {
+    this.stateSubject.next({ ...this.stateSubject.value, activeCandidate: null, activeRating: {value: rating} });
   }
 
-  isMouseoverCandidate(candidateId: string) {
-    return this.mouseOverCandidateIdsSubject.value.has(candidateId);
+  protected selectCandidate(candidateId: string) {
+    this.stateSubject.next({...this.stateSubject.value, activeRating: null, activeCandidate: candidateId });
   }
 
-  mouseoverCandidates(candidateIds: string[]) {
-    this.mouseOverCandidateIdsSubject.next(Set(candidateIds));
-  }
-  mouseleaveCandidates(candidateIds: string[]) {
-    timer(300).subscribe(() => {
-      const mouseOverIds = this.mouseOverCandidateIdsSubject.value;
-      this.mouseOverCandidateIdsSubject.next(mouseOverIds.subtract(candidateIds));
-    });
-  }
-  mouseoverCandidate(candidateId: string | null) {
-    this.mouseOverCandidateIdsSubject.next(Set.of(candidateId));
-  }
-  mouseleaveCandidate(candidateId: string | null) {
-    timer(300).subscribe(() => {
-      const mouseoverIds = this.mouseOverCandidateIdsSubject.value;
-      this.mouseOverCandidateIdsSubject.next(mouseoverIds.remove(candidateId));
-    })
+  protected clearActive() {
+    this.stateSubject.next({...this.stateSubject.value, activeRating: null, activeCandidate: null});
   }
 
-  mouseoverLabel(labelIndex: number | null) {
-    this.mouseoverLabelSubject.next(labelIndex);
+  hoverRating(rating: number | null) {
+    this.stateSubject.next({...this.stateSubject.value, hoverRating: {value: rating}, hoverCandidate: null});
+  }
+
+  protected hoverCandidate(candidateId: string | null) {
+    this.stateSubject.next({...this.stateSubject.value, hoverCandidate: candidateId, hoverRating: null});
+  }
+
+  protected clearHover() {
+    this.stateSubject.next({...this.stateSubject.value, hoverCandidate: null, hoverRating: null});
   }
 }

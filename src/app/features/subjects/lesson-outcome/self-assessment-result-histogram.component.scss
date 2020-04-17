@@ -1,0 +1,68 @@
+:host {
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+}
+
+mat-list {
+  height: 100%;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.content {
+  width: 25rem;
+  min-height: 10rem;
+  font-size: 10px;
+  color: white;
+}
+
+.content {
+  display: flex;
+  flex-direction: row;
+}
+
+.bin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+
+  flex-grow: 1;
+  flex-shrink: 0;
+
+  margin: 0 3px;
+}
+
+.bin-label {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  height: 2em;
+  width: 6em;
+
+  color: darkgray;
+}
+
+.cell {
+  box-sizing: border-box;
+  font-size: inherit;
+  flex-shrink: 0;
+
+  height: 1.5em;
+  width: 1.5em;
+  border-radius: 1.5em;
+
+  margin: 0.5em 0;
+
+  background-color: steelblue;
+}
+
+.bin-label:hover,
+.cell.hover, .cell:hover,
+.bin-label.active,
+.cell.active {
+  background-color: blue;
+}

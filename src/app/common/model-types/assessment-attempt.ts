@@ -1,33 +1,34 @@
 import {ModelRef, modelRefFromJson, modelRefId} from '../model-base/model-ref';
-import {AnyAssessment, Assessment, AssessmentType, CompletionState} from './assessments';
-import json, {JsonObject} from '../json';
+import {
+  AnyAssessment,
+  Assessment,
+  AssessmentType,
+  BlockAssessment,
+  CompletionState, LessonOutcomeSelfAssessment,
+  LessonPrelearningAssessment,
+  UnitAssessment
+} from './assessments';
+import json, {Decoder} from '../json';
 
-export type AssessmentAttemptType
-  = 'unit-assessment-attempt'
-  | 'block-assessment-attempt'
-  | 'lesson-prelearning-assessment-attempt'
-  | 'lessonoutcome-self-assessment-attempt';
 
 
-export interface AssessmentAttempt extends JsonObject {
-  readonly type: AssessmentAttemptType;
-  readonly assessmentType
-  readonly assessment: ModelRef<Assessment>;
+export interface AssessmentAttempt<T extends Assessment = Assessment> {
+  readonly assessmentType: T['type'];
+  readonly assessment: ModelRef<T>;
   readonly attemptNumber: number;
   readonly date: Date;
 }
 
 export const AssessmentAttempt = {
   properties: <T extends Assessment>(assessmentType: T['type']) => ({
-    type: assessmentType + '-attempt' as AssessmentAttemptType,
-    assessmentType: assessmentType,
-    assessment: modelRefFromJson(AnyAssessment.fromJson),
+    assessmentType: {value: assessmentType},
+    assessment: modelRefFromJson(AnyAssessment.fromJson as Decoder<T>),
     attemptNumber: json.number,
     date: json.date
   })
 };
 
-export interface RatingBasedAssessmentAttempt extends AssessmentAttempt {
+export interface RatingBasedAssessmentAttempt<T extends Assessment> extends AssessmentAttempt<T> {
 }
 
 export const RatingBasedAssessmentAttempt = {
@@ -37,7 +38,7 @@ export const RatingBasedAssessmentAttempt = {
 };
 
 
-export interface CompletionBasedAssessmentAttempt extends AssessmentAttempt {
+export interface CompletionBasedAssessmentAttempt<T extends Assessment> extends AssessmentAttempt<T> {
   readonly completionState: CompletionState;
   readonly isComplete: boolean;
   readonly isPartiallyComplete: boolean;
@@ -50,39 +51,65 @@ export const CompletionBasedAssessmentAttempt = {
     isComplete: json.bool,
     isPartiallyComplete: json.bool
   }),
-  toJson: (obj: CompletionBasedAssessmentAttempt) => ({
-    type: obj.assessmentType + '-attempt',
+  toJson: <T extends Assessment>(obj: CompletionBasedAssessmentAttempt<T>) => ({
     assessmentType: obj.assessmentType,
     assessment: modelRefId(obj.assessment),
     completionState: obj.completionState,
   }),
 };
 
+export interface BlockAssessmentAttempt extends RatingBasedAssessmentAttempt<BlockAssessment> {
+
+}
+
 export const BlockAssessmentAttempt = {
-  fromJson: (obj) => json.object(RatingBasedAssessmentAttempt.properties('block-assessment'), obj)
+  fromJson: (obj) => json.object<BlockAssessmentAttempt>(
+    RatingBasedAssessmentAttempt.properties<BlockAssessment>('block-assessment'),
+    obj
+  )
 };
+
+export interface UnitAssessmentAttempt extends RatingBasedAssessmentAttempt<UnitAssessment> {
+
+}
 
 export const UnitAssessmentAttempt = {
-  fromJson: (obj) => json.object(RatingBasedAssessmentAttempt.properties('unit-assessment'), obj)
+  fromJson: (obj) => json.object<UnitAssessmentAttempt>(
+    RatingBasedAssessmentAttempt.properties('unit-assessment'),
+    obj
+  )
 };
+
+export interface LessonPrelearningAssessmentAttempt extends CompletionBasedAssessmentAttempt<LessonPrelearningAssessment> {
+
+}
 
 export const LessonPrelearningAssessmentAttempt = {
-  fromJson: (obj) => json.object(CompletionBasedAssessmentAttempt.properties('lesson-prelearning-assessment'), obj)
+  fromJson: (obj) => json.object(CompletionBasedAssessmentAttempt.properties<LessonPrelearningAssessment>('lesson-prelearning-assessment'), obj),
+  toJson: (attempt) => CompletionBasedAssessmentAttempt.toJson(attempt)
 };
+
+export interface LessonOutcomeSelfAssessmentAttempt extends RatingBasedAssessmentAttempt<LessonOutcomeSelfAssessment> {
+
+}
 
 export const LessonOutcomeSelfAssessmentAttempt = {
-  fromJson: (obj) => json.object(RatingBasedAssessmentAttempt.properties('lesson-outcome-self-assessment'), obj)
+  fromJson: (obj) => json.object(RatingBasedAssessmentAttempt.properties<LessonOutcomeSelfAssessment>('lesson-outcome-self-assessment'), obj)
 };
 
-export type AnyAttempt = CompletionBasedAssessmentAttempt | RatingBasedAssessmentAttempt;
+export type AnyAttempt
+  = RatingBasedAssessmentAttempt<UnitAssessment>
+  | RatingBasedAssessmentAttempt<BlockAssessment>
+  | RatingBasedAssessmentAttempt<LessonOutcomeSelfAssessment>
+  | CompletionBasedAssessmentAttempt<LessonPrelearningAssessment>;
 
 export const AnyAttempt = {
   fromJson: (object: unknown): AnyAttempt => {
-    function getAssessmentType(obj: unknown): AssessmentType {
-      return json.object({assessmentType: AssessmentType.fromJson}, obj).assessmentType;
+    function getAssessmentType<T extends AssessmentType>(obj: unknown): T {
+      return json.object({assessmentType: AssessmentType.fromJson}, obj).assessmentType as T;
     }
 
-    return json.union(
+    return json.union<AnyAttempt>(
       getAssessmentType,
       {
         'unit-assessment': UnitAssessmentAttempt.fromJson,

@@ -11,6 +11,7 @@ import {ReactiveFormsModule} from '@angular/forms';
 import {CommonComponentsModule} from '../../../common/components/common-components.module';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatIconModule} from '@angular/material/icon';
+import {LessonOverviewTabComponent} from './lesson-overview-tab.component';
 
 @NgModule({
   imports: [
@@ -32,7 +33,8 @@ import {MatIconModule} from '@angular/material/icon';
   declarations: [
     PrelearningResultComponent,
     PrelearningResultItemComponent,
-    LessonExpansionComponent
+    LessonExpansionComponent,
+    LessonOverviewTabComponent
   ],
 })
 export class LessonModule {

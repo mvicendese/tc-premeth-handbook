@@ -1,18 +1,11 @@
-import json from '../json';
+import json, {Decoder} from '../json';
 import {ModelRef, modelRefFromJson} from '../model-base/model-ref';
 import {School, schoolFromJson, Student, SubjectClass, subjectClassFromJson} from './schools';
 import {Subject, SubjectNode} from './subjects';
 import {AssessmentType} from './assessments';
 
-export type AssessmentReportType
-  = 'unit-assessment-report'
-  | 'block-assessment-report'
-  | 'lesson-prelearning-assessment-report'
-  | 'lesson-outcome-self-assessment-report';
-
-export interface Report {
-  readonly type: AssessmentReportType;
-  readonly assessmentType: AssessmentType;
+export interface Report<T extends AssessmentType> {
+  readonly assessmentType: T;
 
   readonly school: ModelRef<School>;
   readonly subject: ModelRef<Subject>;
@@ -32,9 +25,8 @@ export interface Report {
 }
 
 export const Report = {
-  properties: <T extends Report>(assessmentType: T['assessmentType']) => ({
-    type: (assessmentType + '-report') as T['type'],
-    assessmentType,
+  properties: <A extends AssessmentType>(assessmentType: A) => ({
+    assessmentType: {value: assessmentType},
     school: modelRefFromJson(schoolFromJson),
     subject: modelRefFromJson(Subject.fromJson),
     node: modelRefFromJson,
@@ -50,12 +42,10 @@ export const Report = {
   })
 };
 
-export interface CompletionBasedReport extends Report {
-
-
+export interface CompletionBasedReport<T extends AssessmentType> extends Report<T> {
 }
 
-export interface UnitAssessmentReport extends Report {
+export interface UnitAssessmentReport extends Report<'unit-assessment'> {
 }
 
 export const UnitAssessmentReport = {
@@ -64,7 +54,7 @@ export const UnitAssessmentReport = {
   })
 };
 
-export interface BlockAssessmentReport extends Report {
+export interface BlockAssessmentReport extends Report<'block-assessment'> {
 
 }
 
@@ -74,7 +64,7 @@ export const BlockAssessmentReport = {
   })
 };
 
-export interface LessonPrelearningReport extends Report {
+export interface LessonPrelearningReport extends Report<'lesson-prelearning-assessment'> {
   readonly percentCompleted: number;
 
   readonly completedCandidateCount: number;
@@ -93,7 +83,7 @@ export const LessonPrelearningReport = {
   }, obj)
 };
 
-export interface LessonOutcomeSelfAssessmentReport extends Report {
+export interface LessonOutcomeSelfAssessmentReport extends Report<'lesson-outcome-self-assessment'> {
   ratingAverage: number;
   ratingStdDeviation: number;
 
@@ -104,15 +94,34 @@ export interface LessonOutcomeSelfAssessmentReport extends Report {
 }
 
 export const LessonOutcomeSelfAssessmentReport = {
-  fromJson: (obj: unknown) =>
-    json.object<LessonOutcomeSelfAssessmentReport>({
+  fromJson: (obj: unknown) => {
+    return json.object<LessonOutcomeSelfAssessmentReport>({
       ...Report.properties('lesson-outcome-self-assessment'),
       ratingAverage: json.nullable(json.number),
       ratingStdDeviation: json.nullable(json.number),
-      candidateScores: json.record(json.number)
-    }, obj)
+      candidateScores: json.record(json.number),
+    }, obj);
+  },
 };
 
-export type AnyReport = LessonPrelearningReport | LessonOutcomeSelfAssessmentReport;
+export type AnyReport = UnitAssessmentReport | BlockAssessmentReport | LessonPrelearningReport | LessonOutcomeSelfAssessmentReport;
 
+export const AnyReport = {
+  fromJson: (obj: unknown) => {
+    function getAssessmentType<T extends AssessmentType>(obj: unknown): T {
+      return json.object({assessmentType: AssessmentType.fromJson}, obj).assessmentType as T;
+    }
+
+    return json.union<AnyReport>(
+      getAssessmentType,
+      {
+        'unit-assessment': UnitAssessmentReport.fromJson,
+        'block-assessment': BlockAssessmentReport.fromJson,
+        'lesson-prelearning-assessment': LessonPrelearningReport.fromJson,
+        'lesson-outcome-self-assessment': LessonOutcomeSelfAssessmentReport.fromJson
+      },
+      obj
+    );
+  }
+};
 
