@@ -117,8 +117,6 @@ def create_prelearning_assessment(apps, import_lesson):
 		else:
 			completion_state = CompletionState.COMPLETE
 
-		print('assessment rating', prelearning_assessment.rating, 'completion state', completion_state)
-
 		attempt = CompletionAttempt(
 			id=uuid4(),
 			assessment=assessment,

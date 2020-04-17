@@ -12,8 +12,11 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+# For paths relative to the server root
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# For paths relative to the project root
+PROJECT_DIR = os.path.dirname(os.path.dirname(BASE_DIR))
 
 
 # Quick-start development settings - unsuitable for production
@@ -136,7 +139,7 @@ USE_TZ = False
 STATIC_URL = '/static/'
 
 # Location of the source excel worksheet for migration imports
-SOURCE_WORKBOOK = '/mnt/c/Users/ovangle/WebstormProjects/matt-project/src/assets/source-data.xlsx'
+SOURCE_WORKBOOK = os.path.join(PROJECT_DIR, 'src/assets/source-data.xlsx')
 
 CORS_ORIGIN_ALLOW_ALL = True
 
