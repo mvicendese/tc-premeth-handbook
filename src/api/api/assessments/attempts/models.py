@@ -152,6 +152,10 @@ class Attempt(BaseModel):
     def assessment_schema(self):
         return self.assessment.schema
 
+    @property
+    def assessment_type(self):
+        return self.assessment.type
+
     class QuerySet(models.QuerySet):
         def significant_attempt_numbers(self, max_significant_attempts=None):
             """
@@ -284,7 +288,7 @@ class CompletionBasedAttempt(Attempt):
             return assessment_set.annotate(
                 is_complete=models.Exists(most_recent_state.filter(state=CompletionState.COMPLETE)),
                 is_partially_complete=models.Exists(most_recent_state.filter(state=CompletionState.PARTIALLY_COMPLETE)),
-                state=models.Subquery(most_recent_state.values('state'))
+                completion_state=models.Subquery(most_recent_state.values('state'))
             )
 
     objects = Manager.from_queryset(Attempt.QuerySet)()

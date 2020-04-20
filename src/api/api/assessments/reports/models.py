@@ -198,13 +198,13 @@ class CompletionBasedReport(Report):
         super().generate()
         partially_complete_assessments = (
             self.snapshot_assessment_set()
-            .filter(state__in=[CompletionState.PARTIALLY_COMPLETE, CompletionState.COMPLETE])
+            .filter(completion_state__in=[CompletionState.PARTIALLY_COMPLETE, CompletionState.COMPLETE])
         )
         self.partially_complete_candidates = [ass.student_id for ass in partially_complete_assessments]
 
         complete_assessments = (
             self.snapshot_assessment_set()
-            .filter(state=CompletionState.COMPLETE)
+            .filter(completion_state=CompletionState.COMPLETE)
         )
         self.complete_candidates = [ass.student_id for ass in complete_assessments]
         return self

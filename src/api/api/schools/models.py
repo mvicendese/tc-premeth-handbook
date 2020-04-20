@@ -18,6 +18,7 @@ class Person(BaseModel):
 	first_name = models.CharField(max_length=128)
 	surname = models.CharField(max_length=128)
 
+	@property
 	def full_name(self):
 		return f'{self.first_name} {self.surname}'
 

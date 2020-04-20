@@ -80,9 +80,9 @@ def comma_delimited_models_property(model, attr):
     def get_list(self):
         model = load_model()
         text_value = getattr(self, attr)
-        return model.objects.filter(pk__in=[
-            UUID(hex=id) for id in text_value.split(',')    
-        ] if text_value else [])
+        return model._base_manager.filter(
+            pk__in=[UUID(hex=id) for id in text_value.split(',')] if text_value else []
+        )
 
     def set_list(self, values):
         model = load_model()

@@ -67,17 +67,19 @@ class AssessmentSchema(BaseModel):
 
     @property
     def report_set(self):
-        return (
-            Report.objects_of_type(self.attempt_type)
-            .filter(assessment_schema=self)
-        )
+        return (Report
+            .objects_of_type(self.attempt_type)
+            .filter(assessment_schema=self))
 
     @property
     def progress_set(self):
-        return (
-            Progress.objects_of_type(self.attempt_type)
-            .filter(assessment_schema=self)
-        )
+        return (Progress
+            .objects_of_type(self.attempt_type)
+            .filter(assessment_schema=self))
+
+    @property
+    def assessment_set(self):
+        return Assessment.objects_of_type(self.type)
 
     def set_attempt_argument(self, param_name, value):
         attempt_type = AttemptType(self.attempt_type)
@@ -96,6 +98,7 @@ class AssessmentSchema(BaseModel):
 
 
     def get_or_generate_progress(self, student, subject_node=None):
+        import pdb; pdb.set_trace()
         progress, is_newly_created = self.progress_set.get_or_create(
             assessment_schema=self,
             student=student,
@@ -120,6 +123,7 @@ class AssessmentSchema(BaseModel):
 
         if is_newly_created or report.requires_regeneration:
             report.generate()
+            report.save()
 
         return report
 
@@ -142,31 +146,54 @@ class Assessment(BaseModel):
 
     """
 
-    schema          = models.ForeignKey(AssessmentSchema, on_delete=models.CASCADE)
+    schema          = models.ForeignKey(AssessmentSchema, related_name='+', on_delete=models.CASCADE)
 
     # The student that is taking the assessment.
     # The student must:
     #   - belong to the same school as the schema
     #   - be related to the assessment schema by a SubjectClass
-    student         = models.ForeignKey(Student, on_delete=models.CASCADE)
+    student         = models.ForeignKey(Student, related_name='+', on_delete=models.CASCADE)
 
     # The node that the assessment is being run for.
     # The node must:
     #   - be a descendant of the subject of the assessment schema
     #   - be of the same type as the schema's 'subject_node_type'
-    subject_node    = models.ForeignKey(SubjectNode, on_delete=models.CASCADE)
+    subject_node    = models.ForeignKey(SubjectNode, related_name='+', on_delete=models.CASCADE)
 
 
     # Attempt creation parameters
     # FIXME: Move to a database that supports unstructured data better
     _attempt_type_RATED_max_available_rating = models.PositiveSmallIntegerField(null=True)
 
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=['schema_id', 'student_id'],
+                name='index_ass_schema_student'
+            ),
+            models.Index(
+                fields=['schema_id', 'subject_node_id'],
+                name='index_ass_schema_node'
+            ),
+            models.Index(
+                fields=['schema_id', 'subject_node_id', 'student_id'],
+                name='index_ass_schema_student_node'
+            )
+
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=['schema_id', 'student_id', 'node_id'],
+                name='unique_assessment'
+            )
+        ]
+
     @property
     def attempt_set(self):
         return self.schema.attempt_set.filter(assessment=self)
 
     class QuerySet(models.QuerySet):
-        
         def filter_node(self, subject_node, include_descendants=False):
             qs = self.filter(subject_node=subject_node)
             if include_descendants:
@@ -201,8 +228,6 @@ class Assessment(BaseModel):
             return (super().get_queryset()
                 .filter_type(self.assessment_type))
 
-    objects = Manager.from_queryset(QuerySet)(None)
-
     unit_assessments = Manager.from_queryset(QuerySet)('unit-assessment')
     block_assessments = Manager.from_queryset(QuerySet)('block-assessment')
     lesson_prelearning_assessments = Manager.from_queryset(QuerySet)('lesson-prelearning-assessment')
@@ -210,9 +235,7 @@ class Assessment(BaseModel):
 
     @classmethod
     def objects_of_type(cls, assessment_type):
-        if assessment_type is None:
-            return cls.objects
-        elif assessment_type == 'unit-assessment':
+        if assessment_type == 'unit-assessment':
             return cls.unit_assessments
         elif assessment_type == 'block-assessment':
             return cls.block_assessments 
@@ -243,3 +266,6 @@ class Assessment(BaseModel):
         if hasattr(self, attempt_option_name):
             return getattr(self, attempt_option_name)
         raise KeyError(f'{self.attempt_type} attempt has no {attempt_option_name} parameter')
+
+    def __setitem__(self, attr, value):
+        import pdb; pdb.set_trace()

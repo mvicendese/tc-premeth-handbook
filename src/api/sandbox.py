@@ -1,9 +1,4 @@
 
+from api.assessments.models import RatedProgress
 
-from api.assessments.models import Assessment
-from api.assessments.serializers import AssessmentSerializer
-
-prelearn = Assessment.lesson_prelearning_assessments.first()
-serializer = AssessmentSerializer(prelearn)
-
-serializer.to_representation(prelearn)
+progress = RatedProgress.objects.get(pk="84622164-9d1c-4336-9b04-b56aa7f4bc92")

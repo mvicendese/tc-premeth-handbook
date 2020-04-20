@@ -97,7 +97,7 @@ class Progress(Document):
 
         assessment_set = self._snapshot_assessment_set
         if only_attempted:
-            return assessment_set.filter(attempted_at__isnull=True)
+            return assessment_set.filter(is_attempted=True)
         return assessment_set.all()
 
     @property

@@ -1,6 +1,7 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
-from ..models import Assessment
+from ..models import AssessmentSchema, Assessment
 
 from .models import (
 	AttemptType,
@@ -22,8 +23,8 @@ class AttemptSerializer(serializers.Serializer):
 
 		return cls(*args, **kwargs)
 
-	assessment 		= serializers.PrimaryKeyRelatedField(queryset=Assessment.objects.all())
-	assessment_type = serializers.CharField(source='assessment.type', read_only=True)
+	assessment 		= serializers.PrimaryKeyRelatedField(queryset=Assessment._base_manager.all())
+	assessment_type = serializers.CharField()
 	attempt_type 	= serializers.CharField(max_length=64, read_only=True)
 
 	attempt_number  = serializers.IntegerField(read_only=True)
@@ -33,10 +34,30 @@ class AttemptSerializer(serializers.Serializer):
 	def attempt_type(self):
 		return type(self).Meta.attempt_type
 
-	def validate_assessment(self, assessment):
-		if assessment.schema.attempt_type != self.attempt_type:
+	def validate_assessment_type(self, assessment_type):
+		try:
+			AssessmentSchema.objects.get(type=assessment_type)
+		except AssessmentSchema.DoesNotExist:
+			raise ValidationError(detail={
+				'assessment_type': 'Unrecognised assessment type'
+			})
+		return assessment_type
+
+	def validate(self, data):
+		data = dict(data)
+		try:
+			assessment_type = data['assessment_type']
+		except KeyError:
+			raise ValidationError(detail={'assessment_type', 'assessment_type is required'})
+
+		assessment_schema = AssessmentSchema.objects.get(type=assessment_type)
+		if assessment_schema.attempt_type != self.attempt_type:
 			raise ValidationError(f'A {self.attempt_type.label} attempt cannot be directly associated with a {assessment.type} assessment')
-		return assessment
+
+		assessment = assessment_schema.assessment_set.get(pk=data['assessment'].id)
+		data['assessment'] = assessment
+
+		return data
 
 
 class PassFailAttemptSerializer(AttemptSerializer):

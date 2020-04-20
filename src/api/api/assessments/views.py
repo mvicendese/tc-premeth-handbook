@@ -46,8 +46,8 @@ class AssessmentViewSet(SaveableModelViewSet):
             raw_type = self.request.data.get('type', None)
 
         if raw_type is None and 'pk' in self.kwargs:
-            assessment = Assessment.objects.get(pk=self.kwargs['pk'])
-            raw_type = assessment.type
+            assessment = Assessment._base_manager.prefetch_related('schema').get(pk=self.kwargs['pk'])
+            raw_type = assessment.schema.type
 
         if raw_type is None:
             raise ValidationError(detail={'type': 'Request has no assessment_type'})
