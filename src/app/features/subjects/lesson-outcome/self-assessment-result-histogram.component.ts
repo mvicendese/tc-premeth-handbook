@@ -85,8 +85,11 @@ function isBinLabelInActiveState({activeRating}: BinState, bin: Bin) {
     <div #container class="container"></div>
 
     <mat-list class="student-card-container">
-      <mat-list-item *ngFor="let candidateId of (displayCandidates$ | async)">
-        <schools-student-item [student]="candidateId"></schools-student-item>
+      <mat-list-item *ngFor="let candidate of (displayCandidates$ | async)">
+        <schools-student-item [student]="candidate.candidateId"
+                              [class.active]="candidate.isActive"
+                              [class.hover]="candidate.isHover">
+        </schools-student-item>
       </mat-list-item>
     </mat-list>
   `,
@@ -110,38 +113,26 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
 
   private binData$ = defer(() => this.reportSubject.pipe(map(report => histogramBinData(report))));
 
-  readonly displayCandidates$: Observable<string[]> = combineLatest([
+  readonly displayCandidates$: Observable<{candidateId: string, isHover: boolean, isActive: boolean}[]> = combineLatest([
       this.binData$,
       this.stateSubject
   ]).pipe(
-    map(([
-      bins,
-      {hoverCandidate, hoverRating, activeCandidate, activeRating}]
-    ) => {
-      if (activeRating != null) {
-        const bin = bins.find(b => b.rating === activeRating.value);
-        if (bin === undefined)
-          throw new Error(`No bin with rating ${activeRating}`);
-        return bin.cells.map(cell => cell.candidateId);
-      }
-      if (hoverRating != null) {
-        const bin = bins.find(b => b.rating === hoverRating.value);
-        if (bin === undefined)
-          throw new Error(`No bin with rating ${hoverRating}`);
-        return bin.cells.map(cell => cell.candidateId);
-      }
+    map(([bins, state]) =>
+      bins.flatMap(
+        bin => bin.cells.flatMap(cell => {
+          const isActive = isCellInActiveState(state, cell);
+          const isHover = isCellInHoverState(state, cell);
 
-      if (activeCandidate != null) {
-        return [activeCandidate];
-      }
-      if (hoverCandidate != null) {
-        return [hoverCandidate];
-      }
-      return [];
-    }),
+          if (isActive || isHover) {
+            return [{ candidateId: cell.candidateId, isActive, isHover }];
+          } else {
+            return [];
+          }
+        })
+      )
+    ),
     shareReplay(1)
   );
-
 
   @ViewChild('container', {static: true})
   readonly container: ElementRef<HTMLDivElement>;
@@ -216,14 +207,12 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
       .on('mouseenter', (cell) => this.hoverCandidate(cell.candidateId))
       .on('mouseleave', () => this.hoverCandidate(null));
 
-    const xLabels = ['N/A', '★', '★★', '★★★', '★★★★', '★★★★★'];
-
     const labels = bins
       .append('div')
       .attr('class', 'bin-label')
-      .text((bin, index) => xLabels[index])
-      .on('click', (bin) => this.selectRating(bin.rating))
-      .on('mouseenter', (bin) => this.selectRating(bin.rating))
+      .text((bin, index) => SelfAssessmentResultHistogramComponent.DOMAIN_LABELS[index])
+      .on('click', (bin) => this.selectRating({value: bin.rating}))
+      .on('mouseenter', (bin) => this.hoverRating({value: bin.rating}))
       .on('mouseleave', (bin) => this.hoverRating(null));
 
     return content;
@@ -240,7 +229,6 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
       .data((bin) => bin.cells)
       .attr('class', function (cell) {
         const classes = ['cell'];
-
         if (isCellInActiveState(state, cell)) {
           classes.push('active');
         }
@@ -250,7 +238,6 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
         }
         return classes.join(' ');
       });
-
 
     const labels = content
       .selectAll('div.bin-label')
@@ -266,8 +253,9 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
       });
   }
 
-  protected selectRating(rating: number | null) {
-    this.stateSubject.next({ ...this.stateSubject.value, activeCandidate: null, activeRating: {value: rating} });
+  protected selectRating(rating: {value: number | null}) {
+    console.log('select rating', rating);
+    this.stateSubject.next({ ...this.stateSubject.value, activeCandidate: null, activeRating: rating });
   }
 
   protected selectCandidate(candidateId: string) {
@@ -278,8 +266,8 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
     this.stateSubject.next({...this.stateSubject.value, activeRating: null, activeCandidate: null});
   }
 
-  hoverRating(rating: number | null) {
-    this.stateSubject.next({...this.stateSubject.value, hoverRating: {value: rating}, hoverCandidate: null});
+  hoverRating(rating: {value: number | null}) {
+    this.stateSubject.next({...this.stateSubject.value, hoverRating: rating, hoverCandidate: null});
   }
 
   protected hoverCandidate(candidateId: string | null) {

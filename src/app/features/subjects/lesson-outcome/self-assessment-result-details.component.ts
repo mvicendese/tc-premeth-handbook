@@ -22,7 +22,8 @@ interface OutcomeResultDialogData {
     </h1>
     <div mat-dialog-content>
       <mat-list>
-        <mat-list-item *ngFor="let candidateId of data.report.candidates">
+        <mat-list-item
+            *ngFor="let candidateId of data.report.candidates">
           <ng-container *ngIf="(students$ | async)[candidateId] as candidate">
             {{candidate.fullName}}
           </ng-container>

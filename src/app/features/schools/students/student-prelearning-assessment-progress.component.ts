@@ -4,6 +4,7 @@ import {LessonPrelearningAssessmentProgress} from '../../../common/model-types/a
 @Component({
   selector: 'schools-student-prelearning-assessment-progress',
   template: `
+
   `
 })
 export class StudentPrelearningAssessmentProgressComponent {

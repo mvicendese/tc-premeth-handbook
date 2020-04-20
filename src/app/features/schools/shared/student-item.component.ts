@@ -9,9 +9,7 @@ import {ModelRef} from '../../../common/model-base/model-ref';
   selector: 'schools-student-item',
   template: `
     <ng-container *ngIf="student$ | async as student">
-      <mat-list-item>
-        <a [routerLink]="['/schools/students', student.id]">{{student.fullName}}</a>
-      </mat-list-item>
+      <a [routerLink]="['/schools/students', student.id]">{{student.fullName}}</a>
     </ng-container>
 
   `,

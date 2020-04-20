@@ -4,10 +4,18 @@
   flex-direction: row;
 }
 
-mat-list {
+mat-list.student-card-container {
   height: 100%;
   flex-grow: 1;
-  overflow-y: auto;
+
+  .mat-list-item {
+    max-height: 24px;
+    font-size: 14px;
+  }
+
+  .mat-list-item.hover {
+    font-weight: 700;
+  }
 }
 
 .content {
@@ -57,12 +65,16 @@ mat-list {
 
   margin: 0.5em 0;
 
-  background-color: steelblue;
+  background-color: lightgray;
 }
 
 .bin-label:hover,
-.cell.hover, .cell:hover,
+.cell.hover, .cell:hover {
+  border: 0.2em solid steelblue;
+  //opacity: 30%;
+}
+
 .bin-label.active,
 .cell.active {
-  background-color: blue;
+  background-color: lightsteelblue;
 }
