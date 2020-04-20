@@ -4,6 +4,6 @@ import {Component} from '@angular/core';
 @Component({
 
 })
-export class LessonPrelearningtabComponent {
+export class LessonPrelearningTabComponent {
 
 }

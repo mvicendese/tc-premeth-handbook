@@ -92,7 +92,7 @@ export class LessonExpansionComponent implements OnInit, OnDestroy {
     this.resources.push(this.lessonState.init());
 
     this.resources.push(this.prelearningReport$.subscribe(report => {
-      report.candidateIds.forEach(candidateId => {
+      report.candidates.forEach(candidateId => {
         this.lessonState.loadPrelearningAssessment(candidateId);
       })
     }))

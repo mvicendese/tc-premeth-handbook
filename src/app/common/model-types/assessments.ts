@@ -35,7 +35,7 @@ export interface Assessment extends Model {
   readonly subject: ModelRef<Subject>;
   readonly student: ModelRef<Student>;
 
-  readonly node: ModelRef<SubjectNode>;
+  readonly subjectNode: ModelRef<SubjectNode>;
 
   readonly isAttempted: boolean;
   readonly attemptedAt: Date | null;
@@ -48,7 +48,7 @@ export const Assessment = {
     subject: modelRefFromJson(Subject.fromJson),
     student: modelRefFromJson(Student.fromJson),
 
-    node: modelRefFromJson,
+    subjectNode: modelRefFromJson<SubjectNode>(),
 
     isAttempted: json.bool,
     attemptedAt: json.nullable(json.date)
@@ -58,8 +58,8 @@ export const Assessment = {
     if (options.subject == null) {
       throw new Error(`A subject is required`);
     }
-    if (options.node == null) {
-      throw new Error(`A node is required`)
+    if (options.subjectNode == null) {
+      throw new Error(`A subjectNode is required`)
     }
     if (options.student == null) {
       throw new Error(`A student is required`);
@@ -72,19 +72,18 @@ export const Assessment = {
       school: options.school,
       subject: options.subject,
       student: options.student,
-      node: options.node,
+      subjectNode: options.subjectNode,
       isAttempted: false,
       attemptedAt: null
     };
   }
 };
 
-export type CompletionState = 'no' | 'partial' | 'complete';
+export type CompletionState = 'none' | 'partially-complete' | 'complete';
 export const CompletionState = {
   fromJson: (obj: unknown) => {
     const str = json.string(obj);
-
-    if (['no', 'partial', 'complete'].includes(str)) {
+    if (['none', 'partially-complete', 'complete'].includes(str)) {
       return str as CompletionState;
     }
     throw parseError('Unrecognised completion state: ' + str);
@@ -98,7 +97,7 @@ export interface CompletionBasedAssessment extends Assessment {
 }
 
 export const CompletionBasedAssessment = {
-  create: (type: AssessmentType, options: Partial<Assessment>) => ({
+  create: (type: AssessmentType, options: Partial<Assessment>): Partial<CompletionBasedAssessment> => ({
     ...Assessment.create(type, options),
     completionState: null,
     isPartiallyComplete: false,
@@ -156,11 +155,11 @@ export interface LessonPrelearningAssessment extends CompletionBasedAssessment {
 }
 
 export const LessonPrelearningAssessment = {
-  create: (lesson: LessonSchema, student: Student) => ({
+  create: (lesson: LessonSchema, student: Student): LessonPrelearningAssessment => ({
     ...CompletionBasedAssessment.create('lesson-prelearning-assessment', {
       school: student.school,
       subject: lesson.context.subject,
-      node: lesson,
+      subjectNode: lesson,
       student
     }),
     lesson,

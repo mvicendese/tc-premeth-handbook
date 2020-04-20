@@ -7,6 +7,8 @@ import {RouterModule, Routes} from '@angular/router';
 import {StudentPageComponent} from './student-page.component';
 import {StudentResolver} from './student-resolver';
 import {MatTabsModule} from '@angular/material/tabs';
+import {StudentPrelearningAssessmentProgressComponent} from './student-prelearning-assessment-progress.component';
+import {StudentLessonOutcomeSelfAssessmentProgressComponent} from './student-lesson-outcome-self-assessment-progress.component';
 
 const studentRoutes: Routes = [
   {
@@ -34,6 +36,8 @@ const studentRoutes: Routes = [
   ],
   declarations: [
     StudentProgressTabComponent,
+    StudentPrelearningAssessmentProgressComponent,
+    StudentLessonOutcomeSelfAssessmentProgressComponent,
     StudentPageComponent
   ],
   providers: [

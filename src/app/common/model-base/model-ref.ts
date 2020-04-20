@@ -51,11 +51,12 @@ export function modelRefModel<T extends Model>(ref: ModelRef<T>): T {
   return ref;
 }
 
+export function modelRefFromJson<T extends Model>(): Decoder<ModelRef<T>>;
 export function modelRefFromJson<T extends Model>(obj: ModelRef<T>): ModelRef<T>;
-export function modelRefFromJson<T extends Model>(fromObject?: (obj: JsonObject) => T): Decoder<ModelRef<T>>;
+export function modelRefFromJson<T extends Model>(fromObject: (obj: JsonObject) => T): Decoder<ModelRef<T>>;
 export function modelRefFromJson<T extends Model>(fromObject: (obj: JsonObject) => T, ref: ModelRef<T>): ModelRef<T>;
 
-export function modelRefFromJson<T extends Model>(fromObject: ((obj: JsonObject) => T | ModelRef<T>), ref?: ModelRef<T>): Decoder<ModelRef<T>> | ModelRef<T> {
+export function modelRefFromJson<T extends Model>(fromObject?: ((obj: JsonObject) => T | ModelRef<T>), ref?: ModelRef<T>): Decoder<ModelRef<T>> | ModelRef<T> {
   ref = typeof fromObject === 'function' ? ref : fromObject;
   return json.union(
     obj => typeof obj as "string" | "object",

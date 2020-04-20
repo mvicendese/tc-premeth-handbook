@@ -1,13 +1,21 @@
-import json from '../json';
+import json, {Decoder} from '../json';
 
-import {AnyAssessment, AssessmentType} from './assessments';
+import {
+  AnyAssessment,
+  Assessment,
+  AssessmentType,
+  BlockAssessment,
+  LessonOutcomeSelfAssessment,
+  LessonPrelearningAssessment,
+  UnitAssessment
+} from './assessments';
 import {ModelDocument} from '../model-base/document';
 import {ModelRef, modelRefFromJson} from '../model-base/model-ref';
 import {Student} from './schools';
 import {Subject, SubjectNode} from './subjects';
 
-export interface Progress extends ModelDocument {
-  readonly assessmentType: AssessmentType;
+export interface Progress<T extends Assessment = AnyAssessment> extends ModelDocument {
+  readonly assessmentType: T['type'];
   readonly student: ModelRef<Student>;
 
   readonly subject: ModelRef<Subject>;
@@ -26,44 +34,119 @@ export interface Progress extends ModelDocument {
 }
 
 export const Progress = {
-  properties: {
+  properties: <T extends Assessment>(type: T['type']) => ({
     ...ModelDocument.properties,
-    assessmentType: AssessmentType.fromJson,
+    assessmentType: {value: type},
     student: modelRefFromJson(Student.fromJson),
     subject: modelRefFromJson(Subject.fromJson),
-    node: json.nullable(modelRefFromJson),
+    node: json.nullable(modelRefFromJson as Decoder<ModelRef<SubjectNode>>),
+
+    assessmentCount: json.number,
+    assessments: json.array(modelRefFromJson(AnyAssessment.fromJson)),
 
     attemptedAssessmentCount: json.number,
-    attemptedAssessmentIds: json.array(modelRefFromJson(AnyAssessment.fromJson)),
-  }
+    attemptedAssessments: json.array(modelRefFromJson(AnyAssessment.fromJson)),
+
+    percentAttempted: json.number
+  })
 };
 
-export interface RatingsBasedProgress extends Progress {
+export interface RatingsBasedProgress<T extends Assessment = AnyAssessment> extends Progress<T> {
 
 }
 
 export const RatingsBasedProgress = {
-  properties: {
-    ...Progress.properties,
- },
+  properties: <T extends Assessment>(type: T['type']) => ({
+    ...Progress.properties<T>(type),
+ }),
   fromJson: (obj) => json.object(RatingsBasedProgress.properties, obj)
 };
 
-export interface CompletionBasedProgress extends Progress {
+export interface CompletionBasedProgress<T extends Assessment = AnyAssessment> extends Progress<T> {
   readonly completeAssessmentCount: number;
-  readonly completeAssessmentIds: (ModelRef<AnyAssessment>)[];
+  readonly completeAssessments: (ModelRef<AnyAssessment>)[];
 
   readonly partiallyCompleteAssessmentCount: number;
-  readonly partiallyCompleteAssessmentIds: (ModelRef<AnyAssessment>)[];
+  readonly partiallyCompleteAssessments: (ModelRef<AnyAssessment>)[];
 }
 
 export const CompletionBasedProgress = {
-  properties: {
-    ...Progress.properties,
+  properties: <T extends Assessment>(type: T['type']) => ({
+    ...Progress.properties<T>(type),
     completeAssessmentCount: json.number,
-    completeAssessmentIds: json.array(modelRefFromJson(AnyAssessment.fromJson)),
+    completeAssessments: json.array(modelRefFromJson(AnyAssessment.fromJson)),
     partiallyCompleteAssessmentCount: json.number,
-    partiallyCompleteAssessmentIds: json.array(modelRefFromJson(AnyAssessment.fromJson))
-  },
+    partiallyCompleteAssessments: json.array(modelRefFromJson(AnyAssessment.fromJson))
+  }),
   fromJson: (obj) => json.object(CompletionBasedProgress.properties, obj)
+};
+
+export interface UnitAssessmentProgress extends RatingsBasedProgress {
+  readonly assessmentType: 'unit-assessment';
+}
+
+export const UnitAssessmentProgress = {
+  properties: {
+    ...RatingsBasedProgress.properties<UnitAssessment>('unit-assessment'),
+  },
+  fromJson: (obj: unknown) => json.object(UnitAssessmentProgress.properties, obj)
+};
+
+export interface BlockAssessmentProgress extends RatingsBasedProgress {
+  readonly assessmentType: 'block-assessment';
+}
+
+export const BlockAssessmentProgress = {
+  properties: {
+    ...RatingsBasedProgress.properties<BlockAssessment>('block-assessment'),
+  },
+  fromJson: (obj: unknown) => json.object(BlockAssessmentProgress.properties, obj)
+};
+
+export interface LessonPrelearningAssessmentProgress extends CompletionBasedProgress {
+  readonly assessmentType: 'lesson-prelearning-assessment';
+}
+
+export const LessonPrelearningAssessmentProgress = {
+  properties: {
+    ...CompletionBasedProgress.properties<LessonPrelearningAssessment>('lesson-prelearning-assessment'),
+  },
+  fromJson: (obj: unknown) => json.object(LessonPrelearningAssessmentProgress.properties, obj)
+};
+
+export interface LessonOutcomeSelfAssessmentProgress extends RatingsBasedProgress {
+  readonly assessmentType: 'lesson-outcome-self-assessment';
+}
+
+export const LessonOutcomeSelfAssessmentProgress = {
+  properties: {
+    ...RatingsBasedProgress.properties<LessonOutcomeSelfAssessment>('lesson-outcome-self-assessment')
+  },
+  fromJson: (obj: unknown) => json.object(LessonOutcomeSelfAssessmentProgress.properties, obj)
+};
+
+export type AnyProgress
+  = UnitAssessmentProgress
+  | BlockAssessmentProgress
+  | LessonPrelearningAssessmentProgress
+  | LessonOutcomeSelfAssessmentProgress;
+
+export const AnyProgress = {
+  fromJson: (obj: unknown) => {
+    function getAssessmentType(object: unknown): AssessmentType {
+      return json.object({assessmentType: AssessmentType.fromJson}, object).assessmentType;
+    }
+
+    return json.union<AnyProgress>(
+      getAssessmentType,
+      {
+        'unit-assessment': UnitAssessmentProgress.fromJson,
+        'block-assessment': BlockAssessmentProgress.fromJson,
+        'lesson-prelearning-assessment': LessonPrelearningAssessmentProgress.fromJson,
+        'lesson-outcome-self-assessment': LessonOutcomeSelfAssessmentProgress.fromJson
+      },
+      obj
+    );
+
+  }
 };

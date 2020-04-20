@@ -45,7 +45,7 @@ export class LessonState {
       switchMap(params =>
         this.assessmentsService.queryReports('lesson-outcome-self-assessment', {params})
       ),
-      map(page => page.resultMap((result) => modelRefId(result.node)),
+      map(page => page.resultMap((result) => modelRefId(result.subjectNode)),
         shareReplay(1))
     );
 
@@ -117,7 +117,6 @@ export class LessonState {
   }
 
   setPrelearningAssessmentCompletionState(student: ModelRef<Student>, completionState: CompletionState): Promise<LessonPrelearningAssessment> {
-    console.log('setPrelearningCompleteState');
     const studentId = modelRefId(student);
     return this.prelearningAssessments$.pipe(
       map(assessments => assessments[studentId]),

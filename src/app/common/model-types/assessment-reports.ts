@@ -9,17 +9,17 @@ export interface Report<T extends AssessmentType> {
 
   readonly school: ModelRef<School>;
   readonly subject: ModelRef<Subject>;
-  readonly node: ModelRef<SubjectNode>;
+  readonly subjectNode: ModelRef<SubjectNode>;
 
   readonly subjectClass: ModelRef<SubjectClass> | null;
 
   readonly generatedAt: Date;
 
-  readonly totalCandidateCount: number;
-  readonly candidateIds: ReadonlyArray<ModelRef<Student>>;
+  readonly candidateCount: number;
+  readonly candidates: ReadonlyArray<ModelRef<Student>>;
 
   readonly attemptedCandidateCount: number;
-  readonly attemptedCandidateIds: ReadonlyArray<ModelRef<Student>>;
+  readonly attemptedCandidates: ReadonlyArray<ModelRef<Student>>;
 
   readonly percentAttempted: number;
 }
@@ -29,14 +29,16 @@ export const Report = {
     assessmentType: {value: assessmentType},
     school: modelRefFromJson(schoolFromJson),
     subject: modelRefFromJson(Subject.fromJson),
-    node: modelRefFromJson,
+
+    subjectNode: modelRefFromJson<SubjectNode>(),
+
     subjectClass: json.nullable(modelRefFromJson(subjectClassFromJson)),
     generatedAt: json.date,
 
     candidateCount: json.number,
-    candidateIds: json.array(modelRefFromJson(Student.fromJson)),
+    candidates: json.array(modelRefFromJson(Student.fromJson)),
     attemptedCandidateCount: json.number,
-    attemptedCandidateIds: json.array(modelRefFromJson(Student.fromJson)),
+    attemptedCandidates: json.array(modelRefFromJson(Student.fromJson)),
 
     percentAttempted: json.number
   })
@@ -67,18 +69,29 @@ export const BlockAssessmentReport = {
 export interface LessonPrelearningReport extends Report<'lesson-prelearning-assessment'> {
   readonly percentCompleted: number;
 
-  readonly completedCandidateCount: number;
-  readonly mostRecentCompletionAt: Date | null;
+  readonly completeCandidates: ModelRef<Student>[];
+  readonly completeCandidateCount: number;
 
-  readonly completedCandidateIds: ModelRef<Student>[];
+  readonly partiallyCompleteCandidates: ModelRef<Student>[];
+  readonly partiallyCompleteCandidateCount: number;
+
+  readonly percentPartiallyComplete: number;
+  readonly percentComplete: number;
+
+  readonly mostRecentCompletionAt: Date | null;
 }
 
 export const LessonPrelearningReport = {
   fromJson: (obj) => json.object<LessonPrelearningReport>({
     ...Report.properties('lesson-prelearning-assessment'),
-    percentCompleted: json.number,
-    completedCandidateCount: json.number,
-    completedCandidateIds: json.array(modelRefFromJson(Student.fromJson)),
+    completeCandidateCount: json.number,
+    completeCandidates: json.array(modelRefFromJson(Student.fromJson)),
+    partiallyCompleteCandidateCount: json.number,
+    partiallyCompleteCandidates: json.array(modelRefFromJson(Student.fromJson)),
+
+    percentComplete: json.number,
+    percentPartiallyComplete: json.number,
+
     mostRecentCompletionAt: json.nullable(json.date)
   }, obj)
 };
@@ -90,7 +103,7 @@ export interface LessonOutcomeSelfAssessmentReport extends Report<'lesson-outcom
   /**
    * A map of the _attempted_ candidates to the scores they achieved
    */
-  candidateScores: {[candidateId: string]: number};
+  candidateRatings: {[candidateId: string]: number};
 }
 
 export const LessonOutcomeSelfAssessmentReport = {
@@ -99,7 +112,7 @@ export const LessonOutcomeSelfAssessmentReport = {
       ...Report.properties('lesson-outcome-self-assessment'),
       ratingAverage: json.nullable(json.number),
       ratingStdDeviation: json.nullable(json.number),
-      candidateScores: json.record(json.number),
+      candidateRatings: json.record(json.number),
     }, obj);
   },
 };

@@ -52,7 +52,7 @@ export function tableRows(state: TableState): TableRowData[] {
 }
 
 @Component({
-  selector: 'app-block-assessments-table',
+  selector: 'subjects-block-assessment-results',
   template: `
     <ng-container *ngIf="unit$ | async as unit">
 
@@ -97,7 +97,7 @@ export function tableRows(state: TableState): TableRowData[] {
     </ng-template>
   `
 })
-export class BlockAssessmentsComponent implements OnDestroy {
+export class BlockAssessmentResultsComponent implements OnDestroy {
   readonly tableColumns = ['date', 'student', 'markPercent', 'attempts'];
 
   private readonly stateSubject = new BehaviorSubject<TableState>({

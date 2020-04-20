@@ -16,7 +16,7 @@ export interface AssessmentAttempt<T extends Assessment = Assessment> {
   readonly assessmentType: T['type'];
   readonly assessment: ModelRef<T>;
   readonly attemptNumber: number;
-  readonly date: Date;
+  readonly createdAt: Date;
 }
 
 export const AssessmentAttempt = {
@@ -24,7 +24,7 @@ export const AssessmentAttempt = {
     assessmentType: {value: assessmentType},
     assessment: modelRefFromJson(AnyAssessment.fromJson as Decoder<T>),
     attemptNumber: json.number,
-    date: json.date
+    createdAt: json.date
   })
 };
 

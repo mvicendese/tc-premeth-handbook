@@ -17,7 +17,7 @@ export class StudentContextService {
   student(ref: ModelRef<Student>): Observable<Student> {
     return this.all$.pipe(
       map(students => {
-        const student = students[modelRefId(ref)]
+        const student = students[modelRefId(ref)];
         if (student === undefined) {
           throw new Error(`No student loaded with id ${modelRefId(ref)}`);
         }
@@ -25,5 +25,4 @@ export class StudentContextService {
       }),
     );
   }
-
 }

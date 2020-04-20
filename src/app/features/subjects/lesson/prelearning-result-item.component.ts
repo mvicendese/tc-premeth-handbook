@@ -89,9 +89,9 @@ export class PrelearningResultItemComponent implements OnChanges {
       return 'indeterminate';
     }
     switch (this.assessment.completionState) {
-      case 'no':
+      case 'none':
         return 'stop';
-      case 'partial':
+      case 'partially-complete':
         return 'wait';
       case 'complete':
         return 'go';
@@ -116,7 +116,7 @@ export class PrelearningResultItemComponent implements OnChanges {
     this.completionStateChange.emit({
       student: this.assessment.student,
       assessment: this.assessment,
-      completionState: 'partial'
+      completionState: 'partially-complete'
     });
   }
 

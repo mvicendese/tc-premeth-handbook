@@ -4,9 +4,9 @@ import {parseError} from '../context';
 function union<T, K extends string = string>(select: (obj: unknown) => K, decoders: Record<K, Decoder<T>>): Decoder<T>;
 function union<T, K extends string = string>(select: (obj: unknown) => K, decoders: Record<K, Decoder<T>>, obj: unknown): T;
 
-function union<T, K extends string = string>(
+function union<T, V extends T = T, K extends string = string>(
   select: (obj: unknown) => K,
-  decoders: Record<K, Decoder<T>>,
+  decoders: Record<K, Decoder<V>>,
   json?: unknown
 ): Decoder<T> | T {
   const decoder = (obj: unknown) => {

@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {UnitResultsTableComponent} from './unit-results-table.component';
 import {MatTableModule} from '@angular/material/table';
 import {RouterModule} from '@angular/router';
-import {BlockAssessmentsComponent} from '../blocks/block-assessments.component';
+import {BlockAssessmentResultsComponent} from '../blocks/block-assessment-results.component';
 import {SubjectSelectorComponent} from './subject-selector.component';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
@@ -20,12 +20,12 @@ import {FormsModule, ReactiveFormsModule} from '@angular/forms';
   ],
   declarations: [
     UnitResultsTableComponent,
-    BlockAssessmentsComponent,
+    BlockAssessmentResultsComponent,
     SubjectSelectorComponent
   ],
   exports: [
     UnitResultsTableComponent,
-    BlockAssessmentsComponent,
+    BlockAssessmentResultsComponent,
     SubjectSelectorComponent
   ]
 })

@@ -38,7 +38,7 @@ import {SelfAssessmentResultDetailsDialogComponent} from './self-assessment-resu
 
           <dt>Students</dt>
           <dd>
-            {{report.attemptedCandidateCount}} / {{report.totalCandidateCount}} rated
+            {{report.attemptedCandidateCount}} / {{report.candidateCount}} rated
           </dd>
         </dl>
 
@@ -78,7 +78,7 @@ export class SelfAssessmentReportComponent {
       return datas;
     }
     const report = this.reports[this.outcome.id];
-    Object.entries(report.candidateIds).forEach(([candidateId, rating]) => ({
+    Object.entries(report.candidates).forEach(([candidateId, rating]) => ({
       value: rating,
     }));
   }

@@ -55,7 +55,7 @@ export class BlockState {
       page.results.forEach(report => {
         this.prelearningReportsSubject.next({
           ...this.prelearningReportsSubject.value,
-          [modelRefId(report.node)]: report
+          [modelRefId(report.subjectNode)]: report
         });
       });
     });

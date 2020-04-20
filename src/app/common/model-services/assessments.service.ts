@@ -19,6 +19,7 @@ import {
 import {JsonObject} from '../json';
 import {Student, SubjectClass} from '../model-types/schools';
 import {AnyAttempt, AssessmentAttempt, LessonPrelearningAssessmentAttempt, UnitAssessmentAttempt} from '../model-types/assessment-attempt';
+import {AnyProgress, LessonOutcomeSelfAssessmentProgress, LessonPrelearningAssessmentProgress} from '../model-types/assessment-progress';
 
 export interface AssessmentQuery {
   student?: ModelRef<Student>[] | ModelRef<Student> | null;
@@ -58,6 +59,10 @@ export class AssessmentsService extends ModelService<Assessment> {
     return AnyReport.fromJson(object);
   }
 
+  progressFromJson(object: unknown): AnyProgress {
+    return AnyProgress.fromJson(object);
+  }
+
   constructor(backend: ModelServiceBackend) {
     super(backend, '/assessments');
   }
@@ -79,12 +84,22 @@ export class AssessmentsService extends ModelService<Assessment> {
 
   queryReports(assessmentType: 'lesson-prelearning-assessment',   options: { params: AssessmentQuery }): Observable<ResponsePage<LessonPrelearningReport>>;
   queryReports(assessmentType: 'lesson-outcome-self-assessment',  options: { params: AssessmentQuery }): Observable<ResponsePage<LessonOutcomeSelfAssessmentReport>>;
-  queryReports<T extends Assessment>(
-      assessmentType: T['type'],
+  queryReports<Report extends AnyReport>(
+      assessmentType: Report['assessmentType'],
       options: { params: AssessmentQuery }
-  ): Observable<ResponsePage<T>> {
+  ): Observable<ResponsePage<Report>> {
     const params = assessmentQueryToParams(assessmentType, options.params);
     return this.query('/reports', { params, useDecoder: this.reportFromJson.bind(this) });
+  }
+
+  queryProgresses(assessmentType: 'lesson-prelearning-assessment', options: { params: AssessmentQuery }): Observable<ResponsePage<LessonPrelearningAssessmentProgress>>;
+  queryProgresses(assessmentType: 'lesson-outcome-self-assessment', options: { params: AssessmentQuery }): Observable<ResponsePage<LessonOutcomeSelfAssessmentProgress>>;
+  queryProgresses<Progress  extends AnyProgress>(
+      assessmentType: Progress['assessmentType'],
+      options: { params: AssessmentQuery }
+  ): Observable<ResponsePage<Progress>> {
+    const params = assessmentQueryToParams(assessmentType, options.params);
+    return this.query('/progress', { params, useDecoder: this.progressFromJson.bind(this) });
   }
 
   saveAssessment(type: 'lesson-prelearning-assessment', options: Partial<LessonPrelearningAssessment>): Observable<LessonPrelearningAssessment>;
@@ -96,12 +111,12 @@ export class AssessmentsService extends ModelService<Assessment> {
       throw new Error(`A 'student' is required`);
     }
 
-    const node = modelRefId(options.node);
-    if (node == null) {
-      throw new Error(`A 'node' is required`);
+    const subjectNode = modelRefId(options.subjectNode);
+    if (subjectNode == null) {
+      throw new Error(`A 'subjectNode' is required`);
     }
 
-    return this.put(id, { type, id, student, node });
+    return this.put(id, { type, id, student, subjectNode });
   }
 
   createAttempt(type: AssessmentType, attempt: Partial<UnitAssessmentAttempt>): Observable<UnitAssessmentAttempt>;

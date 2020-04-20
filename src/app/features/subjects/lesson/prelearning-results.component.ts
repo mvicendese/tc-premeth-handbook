@@ -14,7 +14,7 @@ import {ChangeCompletionStateEvent} from './prelearning-result-item.component';
       <dl>
         <dt>Students Complete</dt>
         <dd>
-          {{report.completedCandidateCount}} / {{report.totalCandidateCount}}
+          {{report.completeCandidateCount}} / {{report.candidateCount}}
           <span class="percentage">{{report.percentCompleted}}
           </span>
         </dd>
@@ -28,7 +28,7 @@ import {ChangeCompletionStateEvent} from './prelearning-result-item.component';
 
     <div class="assessments-container" [formGroup]="controlsForm">
       <mat-list *ngIf="report">
-        <mat-list-item *ngFor="let candidateId of report.candidateIds;"
+        <mat-list-item *ngFor="let candidateId of report.candidates;"
                        [class.hidden]="hideComplete && assessments[candidateId]?.isComplete">
           <subjects-lesson-prelearning-results-item
             [assessment]="assessments[candidateId]"

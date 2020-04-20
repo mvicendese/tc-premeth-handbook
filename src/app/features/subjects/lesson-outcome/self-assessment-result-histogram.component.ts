@@ -36,10 +36,10 @@ function histogramBinData(report: LessonOutcomeSelfAssessmentReport): Bin[] {
       rating: i,
       cells: []
     }));
-  const candidateScores = report.candidateScores;
+  const candidateScores = report.candidateRatings;
 
-  report.candidateIds.forEach(candidateId => {
-    if (report.attemptedCandidateIds.includes(candidateId)) {
+  report.candidates.forEach(candidateId => {
+    if (report.attemptedCandidates.includes(candidateId)) {
       const rating = candidateScores[modelRefId(candidateId)];
       if (rating === undefined) {
         throw new Error(`No score for attempted candidate`);

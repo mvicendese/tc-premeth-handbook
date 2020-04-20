@@ -1,25 +1,50 @@
 import {Injectable} from '@angular/core';
-import {BehaviorSubject, defer, Unsubscribable} from 'rxjs';
+import {BehaviorSubject, combineLatest, defer, Observable, Unsubscribable} from 'rxjs';
 import {Student} from '../../../common/model-types/schools';
 import {ActivatedRoute} from '@angular/router';
-import {filter, map, pluck, switchMap} from 'rxjs/operators';
+import {distinctUntilChanged, filter, map, pluck, switchMap} from 'rxjs/operators';
 import {AssessmentsService} from '../../../common/model-services/assessments.service';
+import {SubjectNode} from '../../../common/model-types/subjects';
+import {LessonOutcomeSelfAssessmentProgress, LessonPrelearningAssessmentProgress} from '../../../common/model-types/assessment-progress';
 
 
 @Injectable()
 export class StudentState {
   private readonly studentSubject = new BehaviorSubject<Student | undefined>(undefined);
+  private readonly subjectNodeSubject = new BehaviorSubject<SubjectNode | undefined>(undefined);
 
   readonly studentId$ = defer(() =>
     this.studentSubject.pipe(filter((s): s is Student => s != null))
   );
 
-  /*
-  readonly prelearningProgress$
-    = this.studentId$.pipe(
-      switchMap(studentId => this.assessments.fetchProgress(''))
+  readonly subjectNode$ = defer(() =>
+    this.subjectNodeSubject.pipe(filter((n): n is SubjectNode => n != null))
+  );
+
+  readonly assessmentParams$ = combineLatest([
+    this.studentId$.pipe(distinctUntilChanged()),
+  ]).pipe(
+    map(([studentId]) => ({
+      student: studentId,
+      year: 2020
+    }))
+  );
+
+  readonly lessonPrelearningAssessmentProgress$: Observable<LessonPrelearningAssessmentProgress>
+    = this.assessmentParams$.pipe(
+      switchMap(params =>
+        this.assessments.queryProgresses('lesson-prelearning-assessment', { params })
+      ),
+      map(page => page.results[0])
     );
-   */
+
+  readonly lessonOutcomeSelfAssessmentProgress$: Observable<LessonOutcomeSelfAssessmentProgress>
+    = this.assessmentParams$.pipe(
+      switchMap(params =>
+          this.assessments.queryProgresses('lesson-outcome-self-assessment', { params })
+      ),
+      map(page => page.results[0])
+    );
 
   constructor(
     readonly route: ActivatedRoute,

@@ -25,7 +25,14 @@ function _transformKeys(obj: JsonObject, transform: (k: string) => string, seen:
       }
       // If the keys in the object are UUIDs, then don't transform the keys.
       const vKeys = Object.keys(v);
-      if (vKeys.some(k => !RE_UUID.test(k))) {
+      if (vKeys.every(k => RE_UUID.test(k))) {
+        // But if the values in the map are objects, then we still want to transform those keys.
+        const vCopy = {};
+        for (const k in vKeys) {
+          vCopy[k] = isJsonObject(v[k]) ? _transformKeys(v[k] as JsonObject, transform, seen) : v[k];
+        }
+        v = vCopy[k];
+      } else {
         v = _transformKeys(v as { [k: string]: unknown }, transform, seen);
       }
     }
