@@ -25,7 +25,7 @@ export interface Progress<T extends Assessment = AnyAssessment> extends ModelDoc
   readonly node: ModelRef<SubjectNode> | null;
 
   readonly assessmentCount: number;
-  readonly assessmentIds: (ModelRef<AnyAssessment>)[];
+  readonly assessments: (ModelRef<AnyAssessment>)[];
 
   readonly attemptedAssessmentCount: number;
   readonly attemptedAssessments: (ModelRef<AnyAssessment>)[];
