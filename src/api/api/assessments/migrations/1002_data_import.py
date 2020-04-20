@@ -12,6 +12,9 @@ from utils.importer import (
 	get_premeth_subject
 )
 
+def get_assessment_schema(apps, assessment_type):
+	AssessmentSchema = apps.get_model('assessments', 'AssessmentSchema')
+	return AssessmentSchema.objects.get(type=assessment_type)
 
 def create_assessments(apps, shema_editor):
 	all_import_subjects = importer.subjects.Subject.all(subject_model=apps.get_model('subjects', 'Subject'))
@@ -24,33 +27,19 @@ def create_subject_descendent_assessments(apps, import_subject):
 	for import_unit in import_subject.units:
 		create_unit_descendent_assessments(apps, import_unit)
 
+
 def create_unit_descendent_assessments(apps, import_unit):
 	print('unit', import_unit.name)
 	for import_block in import_unit.blocks:
 		create_block_assessments(apps, import_block)
 		create_block_descendent_assessments(apps, import_block)
 
+
 def create_block_assessments(apps, import_block):
 	Assessment = apps.get_model('assessments', 'Assessment')
-	BlockAssessmentSchema = apps.get_model('assessments', 'BlockAssessmentSchema')
 	RatedAttempt = apps.get_model('assessments', 'RatedAttempt')
 
-	try:
-		schema = BlockAssessmentSchema.objects.get(node_id=import_block.id)
-		schema.delete()
-	except BlockAssessmentSchema.DoesNotExist:
-		pass
-
-
-	schema = BlockAssessmentSchema(
-		id=uuid4(),
-		school_id=get_tc_school(apps).id,
-		node_id=import_block.id,
-		type='block-assessment',
-		maximum_available_rating=60,
-		minimum_pass_mark=30
-	)
-	schema.save()
+	schema = get_assessment_schema(apps, 'block-assessment')
 
 	all_block_assessments = importer.assessments.BlockAssessment.all_for_block(
 		import_block,
@@ -60,8 +49,10 @@ def create_block_assessments(apps, import_block):
 	for import_block_assessment in all_block_assessments:
 		assessment = Assessment(
 			id=import_block_assessment.id,
-			schema_base=schema,
-			student_id=import_block_assessment.student.id
+			schema=schema,
+			subject_node_id=import_block.id,
+			student_id=import_block_assessment.student.id,
+			_attempt_type_RATED_max_available_rating=import_block_assessment.max_available_mark
 		)
 		assessment.save()
 
@@ -69,31 +60,18 @@ def create_block_assessments(apps, import_block):
 			RatedAttempt(
 				id=import_attempt.id,
 				assessment=assessment,
+				max_available_rating=import_block_assessment.max_available_mark,
 				rating=import_attempt.raw_mark,
 				date=import_attempt.date
 			)
 			for import_attempt in import_block_assessment.attempts
 		)
 
-
 def create_prelearning_assessment(apps, import_lesson):
 	Assessment = apps.get_model('assessments', 'Assessment')
-	LessonPrelearningAssessmentSchema = apps.get_model('assessments', 'LessonPrelearningAssessmentSchema')
-	CompletionAttempt = apps.get_model('assessments', 'CompletionAttempt')
+	CompletionBasedAttempt = apps.get_model('assessments', 'CompletionBasedAttempt')
 
-	try:
-		schema = LessonPrelearningAssessmentSchema.objects.get(node_id=import_lesson.id)
-		schema.delete()
-	except LessonPrelearningAssessmentSchema.DoesNotExist:
-		pass
-
-	schema = LessonPrelearningAssessmentSchema(
-		id=uuid4(),
-		school_id=get_tc_school(apps).id,
-		node_id=import_lesson.id,
-		type='lesson-prelearning-assessment',
-	)
-	schema.save()
+	schema = get_assessment_schema(apps, 'lesson-prelearning-assessment')
 
 	all_prelearning_assessments = importer.assessments.LessonPrelearningAssessment.all_for_lesson(
 		import_lesson,
@@ -103,7 +81,8 @@ def create_prelearning_assessment(apps, import_lesson):
 	for prelearning_assessment in all_prelearning_assessments:
 		assessment = Assessment(
 			id=prelearning_assessment.id,
-			schema_base=schema,
+			schema=schema,
+			subject_node_id=import_lesson.id,
 			student_id=prelearning_assessment.student.id
 		)
 		assessment.save()
@@ -113,16 +92,16 @@ def create_prelearning_assessment(apps, import_lesson):
 		if (prelearning_assessment.rating or 0) == 0:
 			completion_state = CompletionState.NONE
 		elif prelearning_assessment.rating < 4:
-			completion_state = CompletionState.PARTIAL
+			completion_state = CompletionState.PARTIALLY_COMPLETE
 		else:
 			completion_state = CompletionState.COMPLETE
 
-		attempt = CompletionAttempt(
+		attempt = CompletionBasedAttempt(
 			id=uuid4(),
 			assessment=assessment,
 			attempt_number=1,
-			date=prelearning_assessment.date,
-			completion_state=completion_state
+			created_at=prelearning_assessment.date,
+			state=completion_state
 		)
 		attempt.save()
 
@@ -134,22 +113,9 @@ def create_block_descendent_assessments(apps, import_block):
 
 def create_lesson_outcome_self_assessments(apps, import_lesson_outcome):
 	Assessment = apps.get_model('assessments', 'Assessment')
-	LessonOutcomeSelfAssessmentSchema = apps.get_model('assessments', 'LessonOutcomeSelfAssessmentSchema')
 	RatedAttempt = apps.get_model('assessments', 'RatedAttempt')
 
-	try:
-		schema = LessonOutcomeSelfAssessmentSchema.objects.get(node_id=import_lesson_outcome.id)
-		schema.delete()
-	except LessonOutcomeSelfAssessmentSchema.DoesNotExist:
-		pass
-
-	schema = LessonOutcomeSelfAssessmentSchema(
-		id=uuid4(),
-		school_id=get_tc_school(apps).id,
-		node_id=import_lesson_outcome.id,
-		type='lesson-outcome-self-assessment',
-	)
-	schema.save()
+	schema = get_assessment_schema(apps, 'lesson-outcome-self-assessment')
 
 	all_assessments = importer.assessments.LessonOutcomeSelfAssessment.all_for_lesson_outcome(
 		import_lesson_outcome,
@@ -159,7 +125,8 @@ def create_lesson_outcome_self_assessments(apps, import_lesson_outcome):
 	for import_assessment in all_assessments:
 		assessment = Assessment(
 			id=import_assessment.id,
-			schema_base=schema,
+			schema=schema,
+			subject_node_id=import_lesson_outcome.id,
 			student_id=import_assessment.student.id
 		)
 		assessment.save()
@@ -168,7 +135,8 @@ def create_lesson_outcome_self_assessments(apps, import_lesson_outcome):
 			id=uuid4(),
 			assessment=assessment,
 			attempt_number=1,
-			date=import_assessment.date,
+			created_at=import_assessment.date,
+			max_available_rating=4,
 			rating=import_assessment.rating
 		)
 		attempt.save()
@@ -182,7 +150,7 @@ def create_lesson_descendent_assessments(apps, import_lesson):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('assessments', '0006_auto_20200409_1025'),
+        ('assessments', '1001_data_create_schemas'),
         ('subjects', 	'0009_data_prepopulate_subject_tree'),
         ('schools', 	'0002_data_import_teachers_students'),
     ]

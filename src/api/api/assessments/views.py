@@ -18,10 +18,10 @@ from api.schools.models import SubjectClass, Student
 from .models import (
     Assessment, 
     AssessmentSchema, 
-    AssessmentType, 
+    Progress,
     Report
 )
-from .serializers import AssessmentSerializer, ReportSerializer, AttemptSerializer
+from .serializers import AssessmentSerializer, ReportSerializer, AttemptSerializer, ProgressSerializer
 
 # Create your views here.
 
@@ -39,28 +39,20 @@ def filter_student_params(assessment_set, query_params):
 
 
 class AssessmentViewSet(SaveableModelViewSet):
-    queryset             = Assessment.objects.all()
-
     def get_assessment_type(self):
         raw_type = self.request.query_params.get('type', None)
 
+        if raw_type is None:
+            raw_type = self.request.data.get('type', None)
+
         if raw_type is None and 'pk' in self.kwargs:
-            try:
-                assessment = Assessment.objects.get(pk=self.kwargs['pk'])
-                return assessment.type
-            except Assessment.DoesNotExist:
-                raw_type = self.request.data.get('type', '')
-                if re.search(r'-attempt', raw_type):
-                    raw_type = raw_type[:-len('-attempt')]
-                if re.search(r'-report', raw_type):
-                    raw_type = raw_type[:-len('-report')]
+            assessment = Assessment.objects.get(pk=self.kwargs['pk'])
+            raw_type = assessment.type
 
+        if raw_type is None:
+            raise ValidationError(detail={'type': 'Request has no assessment_type'})
 
-        if raw_type not in AssessmentType.values:
-            import pdb; pdb.set_trace()
-            raise ValidationError(detail={'type': 'Unrecognised assessment type.'})
         return raw_type
-
 
     def get_serializer_class(self):
         return AssessmentSerializer.class_for_assessment_type(self.get_assessment_type())
@@ -78,7 +70,6 @@ class AssessmentViewSet(SaveableModelViewSet):
     def update(self, *args, **kwargs):
         return super().update(*args, **kwargs)
 
-
     def get_subject_class_from_params(self):
         class_param = self.request.query_params.get('class', None)
         if class_param is None:
@@ -88,14 +79,8 @@ class AssessmentViewSet(SaveableModelViewSet):
             return subject_class
 
     def get_queryset(self):
-        qs = super().get_queryset()
         assessment_type = self.get_assessment_type()
-        if assessment_type is not None:
-            qs = qs.filter_type(assessment_type)
-
-        node = self.get_node_from_params()
-        if node is not None:
-            qs = qs.filter_node(node, include_descendents=True)
+        qs = Assessment.objects_of_type(assessment_type)
 
         student_param = self.request.query_params.get('student', None)
         if student_param is not None:
@@ -107,6 +92,10 @@ class AssessmentViewSet(SaveableModelViewSet):
         if subject_class is not None:
             qs = qs.filter_class(subject_class)
 
+        node = self.get_node_from_params()
+        if node is not None:
+            qs = qs.filter_node(node, include_descendants=True)
+
         return qs
 
     @action(detail=False)
@@ -115,36 +104,61 @@ class AssessmentViewSet(SaveableModelViewSet):
         if assessment_type is None:
             return Response({'errors': {'type': 'Report must be run on an assessment type'}}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            schemas = AssessmentSchema.objects_of_type(assessment_type)
-        except ValueError as e:
-            return Response(errors={'type': e.message}, status=status.HTTP_400_BAD_REQUEST)
+        schema = AssessmentSchema.objects.get(type=assessment_type)
 
         node = self.get_node_from_params()
-        if node is not None:
-            schemas = schemas.filter_node(node, include_descendents=True)
-            if not schemas.exists():
-                return Response(
-                    {
-                        'errors': {'node': f'Node must be a parent node for at least one schema of type \'{assessment_type}\''}
-                    }, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
         subject_class = self.get_subject_class_from_params()
 
-        schema_page = self.paginate_queryset(schemas.all())
+        # A report is generated for each of the report nodes of the parameter node
+        # which are of the schema's subject node type
+        all_report_nodes = node.get_descendants_of_type(schema.subject_node_type)
+
+        if not all_report_nodes.exists():
+            raise ValidationError(detail={'node': f'Node has no descendants of type {schema.subject_node_type}'})
+
+        page_nodes = self.paginate_queryset(all_report_nodes.all())
 
         reports = [] 
-        for assessment_schema in schema_page: 
-            report = assessment_schema.get_or_generate_report(subject_class=subject_class)
+        for node in page_nodes: 
+            print('generating report for', node)
+            report = schema.get_or_generate_report(subject_class=subject_class, subject_node=node)
+            report.save()
             reports.append(report)
 
-        report_serializer = ReportSerializer.for_assessment_type(assessment_type, reports, many=True)
+        report_serializer = ReportSerializer.for_attempt_type(schema.attempt_type, reports, many=True)
         return Response({
-            'count': len(schema_page),
+            'count': len(page_nodes),
             'results': report_serializer.data
          })
+
+    @action(detail=False)
+    def progress(self, request):
+        assessment_type = self.get_assessment_type()
+        if assessment_type is None:
+            return Response({'errors': {'type': 'Progress must be run for an assessment type'}}, status=status.HTTP_400_BAD_REQUEST)
+
+        schema = AssessmentSchema.objects.get(type=assessment_type)
+        student_id = self.request.query_params.get('student', None)
+        if student_id is None:
+            raise ValidationError(detail={
+                'student', 'Required parameter student'
+            })
+
+        student = Student.objects.get(pk=student_id)
+
+        node = self.get_node_from_params()
+        if node is None:
+            # If the node is not provided, results are for the entire subject.
+            node = schema.subject.node
+
+        progress = schema.get_or_generate_progress(student=student, subject_node=node)
+
+        progress_serializer = ProgressSerializer.for_attempt_type(schema.attempt_type, progress)
+        return Response({
+            'count': 1, 
+            'results': [progress_serializer.data]
+        })
+
 
     @action(detail=True, methods=['post'])
     def attempt(self, request, pk=None):
@@ -157,7 +171,7 @@ class AssessmentViewSet(SaveableModelViewSet):
         data = {'assessment': assessment.id}
         data.update(request.data)
 
-        serializer = AttemptSerializer.for_assessment_type(assessment.type, data=data)
+        serializer = AttemptSerializer.for_attempt_type(assessment.schema.attempt_type, data=data)
 
         if serializer.is_valid():
             serializer.save()
@@ -167,4 +181,4 @@ class AssessmentViewSet(SaveableModelViewSet):
 
 
 def register_routes(router):
-    router.register('assessments', AssessmentViewSet)
+    router.register('assessments', AssessmentViewSet, basename='')
