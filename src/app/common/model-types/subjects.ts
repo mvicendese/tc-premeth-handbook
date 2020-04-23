@@ -150,7 +150,6 @@ export class Block extends BaseModel implements BlockParams {
 
   readonly type = 'block';
 
-
   readonly name: string;
   readonly lessons: LessonSchema[];
 
@@ -251,20 +250,23 @@ export class LessonSchema extends BaseModel implements LessonSchemaParams {
 
 
 export interface LessonOutcomeParams extends Model {
-  readonly type: 'lessonoutcome';
+  readonly type: 'lesson-outcome';
+  readonly name: string;
   readonly description: string;
 }
 
 function lessonOutcomeParamsFromJson(obj: unknown): LessonOutcomeParams {
   return json.object<LessonOutcomeParams>({
-    ...modelProperties<LessonOutcome>('lessonoutcome'),
+    ...modelProperties<LessonOutcome>('lesson-outcome'),
+    name: json.nullable(json.string),
     description: json.string
   }, obj);
 }
 
 export class LessonOutcome extends BaseModel implements LessonOutcomeParams {
-  readonly type = 'lessonoutcome';
+  readonly type = 'lesson-outcome';
 
+  readonly name: string;
   readonly description: string;
 
   constructor(
@@ -273,11 +275,12 @@ export class LessonOutcome extends BaseModel implements LessonOutcomeParams {
   ) {
     super(params);
 
+    this.name = params.name;
     this.description = params.description;
   }
 
   getNode(type: SubjectNodeType, id: string) {
-    if (type === 'lessonoutcome') {
+    if (type === 'lesson-outcome') {
       return id === this.id ? this : undefined;
     }
     return undefined;
@@ -293,5 +296,33 @@ export class LessonOutcome extends BaseModel implements LessonOutcomeParams {
 
 export type SubjectNode = Subject | Unit | Block | LessonSchema | LessonOutcome;
 export type SubjectNodeType = SubjectNode['type'];
+
+export function subjectNodeChildren(node: SubjectNode): SubjectNode[] {
+  switch (node.type) {
+    case 'subject':
+      return node.units;
+    case 'unit':
+      return node.blocks;
+    case 'block':
+      return node.lessons;
+    case 'lesson':
+      return node.outcomes;
+    default:
+      return [];
+  }
+}
+
+export function subjectNodeParent(node: SubjectNode): SubjectNode | undefined {
+  switch (node.type) {
+    case 'unit':
+      return node.context.subject;
+    case 'block':
+      return node.context.unit;
+    case 'lesson':
+      return node.context.block;
+    case 'lesson-outcome':
+      return node.context.lesson;
+  }
+}
 
 

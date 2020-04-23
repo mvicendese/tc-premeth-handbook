@@ -1,14 +1,14 @@
 import {Injectable} from '@angular/core';
-import {ActivatedRoute, ActivatedRouteSnapshot, ParamMap, Resolve, RouterStateSnapshot} from '@angular/router';
-import {SubjectNode, SubjectNodeType, Unit} from '../../common/model-types/subjects';
-import {SubjectState} from './subject-state';
-import {Observable, of} from 'rxjs';
-import {filter, first, map, skipWhile} from 'rxjs/operators';
+import {ActivatedRouteSnapshot, Resolve, RouterStateSnapshot} from '@angular/router';
+import {SubjectNode, SubjectNodeType} from '../../common/model-types/subjects';
+import {Observable} from 'rxjs';
+import {filter, first, map} from 'rxjs/operators';
+import {SubjectsFeatureState} from './subjects-feature-state';
 
 @Injectable()
-export class SubjectNodeResolver implements Resolve<SubjectNode> {
+export class SubjectNodeRouteResolver implements Resolve<SubjectNode> {
   constructor(
-    readonly subjectState: SubjectState
+    readonly subjectsFeature: SubjectsFeatureState
   ) {}
 
   protected nodeTypeFromRoute(route: ActivatedRouteSnapshot): SubjectNodeType {
@@ -24,7 +24,7 @@ export class SubjectNodeResolver implements Resolve<SubjectNode> {
   }
 
   protected subjectNodeFromParams(nodeType: SubjectNodeType, id: string): Observable<SubjectNode> {
-    return this.subjectState.subject$.pipe(
+    return this.subjectsFeature.subject$.pipe(
       filter(subject => subject != null),
       map(subject => {
         const node = subject.getNode(nodeType, id);

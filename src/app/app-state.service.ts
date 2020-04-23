@@ -36,7 +36,7 @@ export class AppStateService {
     readonly subjectClassService: SubjectClassService
   ) {}
 
-  get user$(): Observable<User | undefined> {
+  get user$(): Observable<User | null> {
     return this.stateSubject.pipe(pluck('user'));
   }
 
@@ -110,7 +110,11 @@ export class AppStateService {
       }),
       map(page => page.results /* only ever one page of classes for a given subject year */)
     ).subscribe(classes => {
-      classes = classes.map(cls => ({...cls, subject: this.stateSubject.value.subject}));
+      const subject = this.stateSubject.value.subject;
+      if (subject == null) {
+        throw new Error('subject is null');
+      }
+      classes = classes.map(cls => ({...cls, subject: subject}));
       this.setState('allSubjectClasses', classes);
     });
 

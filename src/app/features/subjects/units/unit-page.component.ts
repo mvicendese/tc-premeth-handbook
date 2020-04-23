@@ -2,13 +2,15 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {map, shareReplay} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
 import {Unsubscribable} from 'rxjs';
-import {SubjectNodeRouteContext} from '../subject-node-route-context';
+import {SubjectNodeRouteData} from '../subject-node-route-data';
 
 @Component({
   selector: 'subjects-unit-page',
   template: `
     <ng-container *ngIf="(unit$ | async) as unit">
       <h1>{{unit.name}}</h1>
+
+      <subjects-tree-nav [root]="unit"></subjects-tree-nav>
     </ng-container>
 
     <main>
@@ -17,6 +19,9 @@ import {SubjectNodeRouteContext} from '../subject-node-route-context';
   `,
   styleUrls: [
     './unit-page.component.scss'
+  ],
+  providers: [
+    SubjectNodeRouteData,
   ]
 })
 export class UnitPageComponent {
@@ -25,6 +30,6 @@ export class UnitPageComponent {
   );
 
   constructor(
-    readonly routeContext: SubjectNodeRouteContext
+    readonly routeContext: SubjectNodeRouteData
   ) {}
 }

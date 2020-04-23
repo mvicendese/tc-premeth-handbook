@@ -11,6 +11,7 @@ import {MatDialogModule} from '@angular/material/dialog';
 import {SelfAssessmentResultDetailsDialogComponent} from './self-assessment-result-details.component';
 import {MatListModule} from '@angular/material/list';
 import {SchoolsSharedModule} from '../../schools/shared/schools-shared.module';
+import {LessonOutcomeOverviewComponent} from './lesson-outcome-overview.component';
 
 @NgModule({
   imports: [
@@ -24,14 +25,15 @@ import {SchoolsSharedModule} from '../../schools/shared/schools-shared.module';
 
     CommonComponentsModule,
     SchoolsSharedModule
-
   ],
   declarations: [
     SelfAssessmentResultDetailsDialogComponent,
     SelfAssessmentReportComponent,
     SelfAssessmentResultHistogramComponent,
+    LessonOutcomeOverviewComponent
   ],
   exports: [
+    LessonOutcomeOverviewComponent,
     SelfAssessmentReportComponent
   ]
 })

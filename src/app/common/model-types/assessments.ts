@@ -165,10 +165,11 @@ export const LessonPrelearningAssessment = {
     lesson,
   } as LessonPrelearningAssessment),
 
-  fromJson: json.object<LessonPrelearningAssessment>({
-    ...CompletionBasedAssessment.properties<LessonPrelearningAssessment>('lesson-prelearning-assessment'),
+  fromJson: (obj) =>
+    json.object<LessonPrelearningAssessment>({
+      ...CompletionBasedAssessment.properties<LessonPrelearningAssessment>('lesson-prelearning-assessment'),
     lesson: modelRefFromJson,
-  })
+  }, obj)
 };
 
 export interface LessonOutcomeSelfAssessment extends RatingBasedAssessment {

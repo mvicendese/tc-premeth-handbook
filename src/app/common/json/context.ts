@@ -6,10 +6,10 @@ import {compile as compilePointer} from 'json-pointer';
  * We assume that all parsers return synchronously, and track the position from the root
  * using an absolute RFC 6901 compatible JSON pointer.
  */
-const contextStack = [];
+const contextStack: string[] = [];
 
 function getPath() {
-  let result = [];
+  let result: string[] = [];
   contextStack.forEach((component) => {
     if (component === result[0]) {
       // Skip consecutive duplicates

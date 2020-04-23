@@ -31,12 +31,12 @@ export class StarRatingComponent {
 
   readonly currentValueSubject = new BehaviorSubject<number | null>(null);
 
-  private lastCommittedValue: number;
+  private lastCommittedValue: number | null = null;
   @Input()
   set value(value: number | null) {
     this.currentValueSubject.next(this.lastCommittedValue = value);
   }
-  @Output() valueChange = new EventEmitter<number>();
+  @Output() valueChange = new EventEmitter<number | null>();
 
   setCurrentValue(value: number) {
     if (!this.disabled) {

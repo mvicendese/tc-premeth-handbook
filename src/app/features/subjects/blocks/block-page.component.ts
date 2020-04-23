@@ -3,17 +3,23 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {shareReplay} from 'rxjs/operators';
 import {Unsubscribable} from 'rxjs';
 
-import {BlockState} from './block-state';
+import {BlockState, provideBlockState} from './block-state';
 import {Router} from '@angular/router';
 import {LessonSchema} from '../../../common/model-types/subjects';
 import {modelRefId} from '../../../common/model-base/model-ref';
+import {SubjectNodeRouteData} from '../subject-node-route-data';
 
 
 @Component({
-  selector: 'subjects-block-drawer',
+  selector: 'subjects-block-page',
   template: `
     <ng-container *ngIf="(block$ | async) as block">
-      <h2>{{block.name}}</h2>
+      <div class="title-container">
+        <h1>{{block.context.unit.name}}</h1>
+        <h1><mat-icon>chevron_right</mat-icon>{{block.name}}</h1>
+      </div>
+      <subjects-tree-nav [root]="block"></subjects-tree-nav>
+      <!--
       <mat-accordion>
         <mat-expansion-panel *ngFor="let lesson of block.lessons"
                              [expanded]="lesson.id === (activeLessonId$ | async)"
@@ -29,24 +35,32 @@ import {modelRefId} from '../../../common/model-base/model-ref';
           </ng-template>
         </mat-expansion-panel>
       </mat-accordion>
+      -->
+      
+      
     </ng-container>
   `,
   styles: [`
+    .title-container {
+      display: flex;
+    } 
+    
+    .title-container h1 {
+      display: flex;
+      align-items: center;
+    }
+    
     span.lesson-code {
       width: 2rem;
       font-weight: 700;
     }
   `],
   providers: [
-    BlockState
+    ...provideBlockState()
   ]
 })
-export class BlockDrawerComponent implements OnInit, OnDestroy {
+export class BlockPageComponent implements OnInit, OnDestroy {
   private resources: Unsubscribable[] = [];
-
-  readonly activeLessonId$ = this.blockState.activeLessonId$.pipe(
-    shareReplay(1)
-  );
 
   readonly block$ = this.blockState.block$.pipe(
     shareReplay(1)

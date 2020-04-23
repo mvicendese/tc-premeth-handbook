@@ -1,6 +1,5 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {LessonExpansionComponent} from './lesson-expansion.component';
 import {MatTabsModule} from '@angular/material/tabs';
 import {PrelearningResultComponent} from './prelearning-results.component';
 import {PrelearningResultItemComponent} from './prelearning-result-item.component';
@@ -12,6 +11,11 @@ import {CommonComponentsModule} from '../../../common/components/common-componen
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatIconModule} from '@angular/material/icon';
 import {LessonOverviewTabComponent} from './lesson-overview-tab.component';
+import {LessonPrelearningTabComponent} from './lesson-prelearning-tab.component';
+import {LessonOutcomesTabComponent} from './lesson-outcomes-tab.component';
+import {LessonPageComponent} from './lesson-page.component';
+import {MatExpansionModule} from '@angular/material/expansion';
+import {PrelearningOverviewComponent} from './prelearning-overview.component';
 
 @NgModule({
   imports: [
@@ -24,17 +28,19 @@ import {LessonOverviewTabComponent} from './lesson-overview-tab.component';
     MatTabsModule,
     MatListModule,
     MatButtonToggleModule,
+    MatExpansionModule,
 
     LessonOutcomeModule
   ],
-  exports: [
-    LessonExpansionComponent
-  ],
   declarations: [
+    PrelearningOverviewComponent,
     PrelearningResultComponent,
     PrelearningResultItemComponent,
-    LessonExpansionComponent,
-    LessonOverviewTabComponent
+    LessonOverviewTabComponent,
+    LessonPrelearningTabComponent,
+    LessonOutcomesTabComponent,
+
+    LessonPageComponent
   ],
 })
 export class LessonModule {

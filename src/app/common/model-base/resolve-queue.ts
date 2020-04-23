@@ -28,7 +28,7 @@ export class ModelResolveQueue<T extends Model> {
   private queueIdsSubject = new BehaviorSubject<string[]>([]);
 
   private resolvedSubject = new Subject<[string, T]>();
-  readonly pendingFetches = new Map<string, AsyncSubject<T>>();
+  readonly pendingFetches = new Map<string, AsyncSubject<T | null>>();
 
 
   /**
@@ -112,7 +112,8 @@ export class ModelResolveQueue<T extends Model> {
 
     return this.resolve(batchIds).pipe(
       tap((resolved: { [batchId: string]: T }) => {
-        for (const [batchId, resolvedValue] of Object.entries(resolved)) {
+        for (const batchId of batchIds) {
+          const resolvedValue = resolved[batchId];
           this.resolvePending(batchId, resolvedValue);
         }
       }),

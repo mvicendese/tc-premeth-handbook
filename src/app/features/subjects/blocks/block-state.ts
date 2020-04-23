@@ -1,70 +1,54 @@
-import {Injectable} from '@angular/core';
+import {Injectable, Provider} from '@angular/core';
 import {BehaviorSubject, combineLatest, defer, Observable, Subject, Subscription, Unsubscribable} from 'rxjs';
 import {AssessmentsService} from '../../../common/model-services/assessments.service';
 import {AppStateService} from '../../../app-state.service';
-import {Block, LessonSchema} from '../../../common/model-types/subjects';
-import {distinctUntilChanged, filter, map, pluck, shareReplay} from 'rxjs/operators';
-import {ModelRef, modelRefId} from '../../../common/model-base/model-ref';
+import {Block, LessonSchema, Unit} from '../../../common/model-types/subjects';
+import {distinctUntilChanged, filter, first, map, pluck, shareReplay, switchMap, withLatestFrom} from 'rxjs/operators';
+import {ModelRef, modelRefId, Resolve} from '../../../common/model-base/model-ref';
 import {SubjectClass} from '../../../common/model-types/schools';
-import {LessonPrelearningReport} from '../../../common/model-types/assessment-reports';
-import {SubjectNodeRouteContext} from '../subject-node-route-context';
+import {BlockAssessmentReport, LessonPrelearningReport} from '../../../common/model-types/assessment-reports';
+import {SubjectNodeRouteData} from '../subject-node-route-data';
+import {ModelResolveQueue} from '../../../common/model-base/resolve-queue';
+import {BlockAssessment} from '../../../common/model-types/assessments';
+import {StudentContextService} from '../../schools/students/student-context.service';
+import {provideSubjectNodeState} from '../subject-node-state';
+import {AssessmentResolveQueue} from '../assessment-resolve-queue';
+import {AssessmentReportLoader} from '../assessment-report-loader';
+
+export function provideBlockState(): Provider[] {
+  return [
+    ...provideSubjectNodeState({
+      assessmentType: 'block-assessment',
+      childAssessmentTypes: ['lesson-prelearning-assessment']
+    }),
+    BlockState
+  ]
+}
 
 @Injectable()
 export class BlockState {
-
   constructor(
-    readonly assessmentsService: AssessmentsService,
-    readonly appState: AppStateService,
-    readonly subjectNodeRouteData: SubjectNodeRouteContext
+    readonly students: StudentContextService,
+    readonly nodeRouteData: SubjectNodeRouteData,
+    readonly assessmentResolveQueue: AssessmentResolveQueue<BlockAssessment>,
+    readonly reportLoader: AssessmentReportLoader<BlockAssessmentReport>
   ) {}
 
-  readonly block$: Observable<Block> =
-    this.subjectNodeRouteData.block$.pipe(shareReplay(1));
+  readonly block$ = this.nodeRouteData.block$;
 
-  readonly blockId$ = defer(() => this.block$.pipe(pluck('id')));
-  readonly activeLessonId$ = defer(() =>
-    this.subjectNodeRouteData.lesson$.pipe(map(lesson => lesson && lesson.id))
-  );
+  readonly blockAssessmentReport$ = this.reportLoader.report$;
+
+  readonly lessonPrelearningReports$ = this.reportLoader.childReportsOfType('lesson-prelearning-assessment');
 
   init(): Unsubscribable {
-    const reportLoaderSubscription = combineLatest([
-      this.block$,
-      this.appState.activeSubjectClass$
-    ]).subscribe(([block, subjectClass]) => {
-      this.loadPrelearningReports(block, subjectClass);
-    });
+    const resolveQueue = this.assessmentResolveQueue.init();
+    const reportLoader = this.reportLoader.init();
 
     return {
       unsubscribe: () => {
-        reportLoaderSubscription.unsubscribe();
-        this.prelearningReportsSubject.complete();
+        resolveQueue.unsubscribe();
+        reportLoader.unsubscribe();
       }
     };
-  }
-
-  readonly prelearningReportsSubject = new BehaviorSubject<{[lessonId: string]: LessonPrelearningReport}>({});
-
-  protected loadPrelearningReports(block: Block, subjectClass: ModelRef<SubjectClass> | null): Subscription {
-    return this.assessmentsService.queryReports('lesson-prelearning-assessment', {
-      params: {
-        node: block,
-        class: subjectClass
-      }
-    }).subscribe(page => {
-      // Should only be one page.
-      page.results.forEach(report => {
-        this.prelearningReportsSubject.next({
-          ...this.prelearningReportsSubject.value,
-          [modelRefId(report.subjectNode)]: report
-        });
-      });
-    });
-  }
-
-  getPrelearningReport(lesson: ModelRef<LessonSchema>): Observable<LessonPrelearningReport> {
-    return this.prelearningReportsSubject.pipe(
-      pluck(modelRefId(lesson)),
-      filter(report => report !== undefined)
-    );
   }
 }

@@ -37,7 +37,7 @@ export class ResponsePage<T extends object> {
     return this.data.results.map(result => this.options.useDecoder(result as JsonObject));
   }
 
-  resultMap<K extends keyof T>(key: (obj: T) => T[K]): Record<K, T> {
+  resultMap(key: (obj: T) => string): Record<string, T> {
     const keyFn = key || modelRefId;
     return Object.fromEntries( this.results.map(result => {
       const key = keyFn(result);

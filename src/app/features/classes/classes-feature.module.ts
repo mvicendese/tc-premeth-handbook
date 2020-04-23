@@ -7,7 +7,7 @@ import {StudentsOverviewPageComponent} from './students-overview-page.component'
 import {MatCardModule} from '@angular/material/card';
 import {MatTableModule} from '@angular/material/table';
 import {SchoolsSharedModule} from '../schools/shared/schools-shared.module';
-import {UnitsSharedModule} from '../subjects/shared/units-shared.module';
+import {SubjectsSharedModule} from '../subjects/shared/subjects-shared.module';
 import {SubjectClass} from '../../common/model-types/schools';
 import {MatButtonModule} from '@angular/material/button';
 import {MatAutocompleteModule} from '@angular/material/autocomplete';
@@ -44,7 +44,7 @@ export const routes: Routes = [
     MatButtonModule,
 
     SchoolsSharedModule,
-    UnitsSharedModule
+    SubjectsSharedModule
   ],
   providers: [
     {

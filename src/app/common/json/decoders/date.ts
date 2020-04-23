@@ -2,7 +2,7 @@ import {parseISO} from 'date-fns';
 import {leaveContext, parseError} from '../context';
 
 export default function date(obj: unknown): Date {
-  let result: Date;
+  let result: Date | undefined = undefined;
   if (typeof obj === 'string') {
     result = parseISO(obj);
   }

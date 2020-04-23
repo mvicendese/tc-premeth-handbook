@@ -1,11 +1,18 @@
 import json, {Decoder} from '../json';
 import {ModelRef, modelRefFromJson} from '../model-base/model-ref';
 import {School, schoolFromJson, Student, SubjectClass, subjectClassFromJson} from './schools';
-import {Subject, SubjectNode} from './subjects';
-import {AssessmentType} from './assessments';
+import {LessonSchema, Subject, SubjectNode} from './subjects';
+import {
+  Assessment,
+  AssessmentType,
+  BlockAssessment,
+  LessonOutcomeSelfAssessment,
+  LessonPrelearningAssessment,
+  UnitAssessment
+} from './assessments';
 
-export interface Report<T extends AssessmentType> {
-  readonly assessmentType: T;
+export interface Report<T extends Assessment> {
+  readonly assessmentType: T['type'];
 
   readonly school: ModelRef<School>;
   readonly subject: ModelRef<Subject>;
@@ -44,10 +51,10 @@ export const Report = {
   })
 };
 
-export interface CompletionBasedReport<T extends AssessmentType> extends Report<T> {
+export interface CompletionBasedReport<T extends Assessment> extends Report<T> {
 }
 
-export interface UnitAssessmentReport extends Report<'unit-assessment'> {
+export interface UnitAssessmentReport extends Report<UnitAssessment> {
 }
 
 export const UnitAssessmentReport = {
@@ -56,7 +63,7 @@ export const UnitAssessmentReport = {
   })
 };
 
-export interface BlockAssessmentReport extends Report<'block-assessment'> {
+export interface BlockAssessmentReport extends Report<BlockAssessment> {
 
 }
 
@@ -66,7 +73,7 @@ export const BlockAssessmentReport = {
   })
 };
 
-export interface LessonPrelearningReport extends Report<'lesson-prelearning-assessment'> {
+export interface LessonPrelearningReport extends Report<LessonPrelearningAssessment> {
   readonly percentCompleted: number;
 
   readonly completeCandidates: ModelRef<Student>[];
@@ -96,9 +103,9 @@ export const LessonPrelearningReport = {
   }, obj)
 };
 
-export interface LessonOutcomeSelfAssessmentReport extends Report<'lesson-outcome-self-assessment'> {
+export interface LessonOutcomeSelfAssessmentReport extends Report<LessonOutcomeSelfAssessment> {
   ratingAverage: number;
-  ratingStdDeviation: number;
+  ratingStdDev: number;
 
   /**
    * A map of the _attempted_ candidates to the scores they achieved
@@ -110,8 +117,8 @@ export const LessonOutcomeSelfAssessmentReport = {
   fromJson: (obj: unknown) => {
     return json.object<LessonOutcomeSelfAssessmentReport>({
       ...Report.properties('lesson-outcome-self-assessment'),
-      ratingAverage: json.nullable(json.number),
-      ratingStdDeviation: json.nullable(json.number),
+      ratingAverage: json.number,
+      ratingStdDev: json.number,
       candidateRatings: json.record(json.number),
     }, obj);
   },

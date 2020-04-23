@@ -11,42 +11,35 @@ import {SelfAssessmentResultDetailsDialogComponent} from './self-assessment-resu
 @Component({
   selector: 'subjects-lesson-outcome-self-assessment-report',
   template: `
-    <ng-container>
-      <div class="title">
-        <h4>{{outcome.description}}</h4>
-        <button mat-button
-                *ngIf="!isLoadingAssessments; else assessmentsLoadingIndicator"
-                (click)="openStudentResults()">
-          <mat-icon>open_in_new</mat-icon>
-          View students
+    <div class="title">
+      <button mat-button
+              *ngIf="!isLoadingAssessments; else assessmentsLoadingIndicator"
+              (click)="openStudentResults()">
+        <mat-icon>open_in_new</mat-icon>
+        View students
+      </button>
+
+      <ng-template #assessmentsLoadingIndicator>
+        <button mat-button disabled>
+          <app-loading></app-loading>
         </button>
+      </ng-template>
+    </div>
 
-        <ng-template #assessmentsLoadingIndicator>
-          <button mat-button disabled>
-            <app-loading></app-loading>
-          </button>
-        </ng-template>
-      </div>
+    <dl>
+      <dt>Average Rating</dt>
+      <dd>
+        <app-star-rating disabled [value]="report.ratingAverage"></app-star-rating>
+        ({{report.ratingAverage | number:'1.1-1'}})
+      </dd>
 
-      <ng-container *ngIf="reports && reports[outcome.id] as report">
-        <dl>
-          <dt>Average Rating</dt>
-          <dd>
-            <app-star-rating disabled [value]="report.ratingAverage"></app-star-rating>
-            ({{report.ratingAverage | number:'1.1-1'}})
-          </dd>
+      <dt>Students</dt>
+      <dd>
+          {{report.attemptedCandidateCount}} / {{report.candidateCount}} rated
+      </dd>
+    </dl>
 
-          <dt>Students</dt>
-          <dd>
-            {{report.attemptedCandidateCount}} / {{report.candidateCount}} rated
-          </dd>
-        </dl>
-
-        <app-lesson-outcome-histogram [report]="report"></app-lesson-outcome-histogram>
-
-      </ng-container>
-    </ng-container>
-    <mat-divider></mat-divider>
+    <app-lesson-outcome-histogram [report]="report"></app-lesson-outcome-histogram>
   `,
   styles: [`
     .title {
@@ -60,7 +53,7 @@ import {SelfAssessmentResultDetailsDialogComponent} from './self-assessment-resu
 })
 export class SelfAssessmentReportComponent {
   @Input() outcome: LessonOutcome | undefined;
-  @Input() reports: { [outcomeId: string]: LessonOutcomeSelfAssessmentReport } = {};
+  @Input() report: LessonOutcomeSelfAssessmentReport | undefined;
 
   isLoadingAssessments: boolean;
 
@@ -73,12 +66,10 @@ export class SelfAssessmentReportComponent {
   }
 
   get histogramDatas(): ReadonlyArray<{ value: number, label: string, command: any[] }> {
-    const datas = [];
-    if (this.outcome == null || this.reports[this.outcome.id] == null) {
-      return datas;
+    if (this.outcome == null || this.report == null) {
+      return [];
     }
-    const report = this.reports[this.outcome.id];
-    Object.entries(report.candidates).forEach(([candidateId, rating]) => ({
+    Object.entries(this.report.candidates).forEach(([candidateId, rating]) => ({
       value: rating,
     }));
   }
@@ -101,7 +92,7 @@ export class SelfAssessmentReportComponent {
       this.dialog.open(SelfAssessmentResultDetailsDialogComponent, {
         data: {
           outcome: this.outcome,
-          report: this.reports[this.outcome.id],
+          report: this.report,
           assessments,
           lessonContext: this.lessonContext
         }

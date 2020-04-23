@@ -41,7 +41,7 @@ export class SelfAssessmentResultDetailsDialogComponent {
     @Inject(MAT_DIALOG_DATA) readonly data: OutcomeResultDialogData
   ) {}
 
-  readonly students$ = this.data.lessonContext.students$.pipe(
+  readonly students$ = this.data.lessonContext.students.all$.pipe(
     shareReplay(1)
   );
 

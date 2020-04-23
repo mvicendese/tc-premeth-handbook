@@ -3,24 +3,26 @@ import {ActivatedRoute, ActivatedRouteSnapshot, ParamMap, Resolve, RouterStateSn
 import {Injectable} from '@angular/core';
 import {AppStateService} from '../../app-state.service';
 import {combineLatest, defer, Observable, of, Unsubscribable} from 'rxjs';
-import {SubjectState} from './subject-state';
-import {map, pluck, skipWhile} from 'rxjs/operators';
+import {filter, map, pluck, skipWhile} from 'rxjs/operators';
 
 
 @Injectable()
-export class SubjectNodeRouteContext {
-  readonly routeNode$: Observable<SubjectNode> = defer(() =>
-    this.route.data.pipe(pluck('node'))
+export class SubjectNodeRouteData {
+  readonly subjectNode$: Observable<SubjectNode> = defer(() =>
+    this.route.data.pipe(
+      pluck('node'),
+      filter(node => node != null)
+    )
   );
 
-  readonly unit$: Observable<Unit | null> = defer(() => this.routeNode$.pipe(
+  readonly unit$: Observable<Unit | null> = defer(() => this.subjectNode$.pipe(
     map(node => {
       switch (node.type) {
         case 'unit':
           return node;
         case 'block':
         case 'lesson':
-        case 'lessonoutcome':
+        case 'lesson-outcome':
           return node.context.unit;
         default:
           return null;
@@ -28,13 +30,13 @@ export class SubjectNodeRouteContext {
     })
   ));
 
-  readonly block$: Observable<Block | null> = defer(() => this.routeNode$.pipe(
+  readonly block$: Observable<Block | null> = defer(() => this.subjectNode$.pipe(
     map(node => {
       switch (node.type) {
         case 'block':
           return node;
         case 'lesson':
-        case 'lessonoutcome':
+        case 'lesson-outcome':
           return node.context.block;
         default:
           return null;
@@ -42,12 +44,12 @@ export class SubjectNodeRouteContext {
     })
   ));
 
-  readonly lesson$: Observable<LessonSchema | null> = defer(() => this.routeNode$.pipe(
+  readonly lesson$: Observable<LessonSchema | null> = defer(() => this.subjectNode$.pipe(
     map(node => {
       switch (node.type) {
         case 'lesson':
           return node;
-        case 'lessonoutcome':
+        case 'lesson-outcome':
           return node.context.lesson;
         default:
           return null;
@@ -55,10 +57,10 @@ export class SubjectNodeRouteContext {
     })
   ));
 
-  readonly lessonOutcome$: Observable<LessonOutcome | null> = defer(() => this.routeNode$.pipe(
+  readonly lessonOutcome$: Observable<LessonOutcome | null> = defer(() => this.subjectNode$.pipe(
     map(node => {
       switch (node.type) {
-        case 'lessonoutcome':
+        case 'lesson-outcome':
           return node;
         default:
           return null;

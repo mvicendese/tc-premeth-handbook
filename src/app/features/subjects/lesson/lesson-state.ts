@@ -1,141 +1,114 @@
 import {CompletionState, LessonPrelearningAssessment} from '../../../common/model-types/assessments';
-import {Injectable} from '@angular/core';
-import {BehaviorSubject, combineLatest, defer, of, Unsubscribable} from 'rxjs';
-import {filter, first, map, pluck, shareReplay, switchMap, withLatestFrom} from 'rxjs/operators';
-import {AppStateService} from '../../../app-state.service';
-import {AssessmentsService} from '../../../common/model-services/assessments.service';
-import {ModelRef, modelRefId, Resolve} from '../../../common/model-base/model-ref';
-import {BlockState} from '../blocks/block-state';
-import {ModelResolveQueue} from '../../../common/model-base/resolve-queue';
+import {Injectable, Provider} from '@angular/core';
+import {combineLatest, forkJoin, Observable, of, Unsubscribable} from 'rxjs';
+import {filter, first, map, shareReplay, switchMap, tap, withLatestFrom} from 'rxjs/operators';
+import {ModelRef, modelRefId} from '../../../common/model-base/model-ref';
 import {Student} from '../../../common/model-types/schools';
 import {LessonSchema} from '../../../common/model-types/subjects';
-import {SubjectNodeRouteContext} from '../subject-node-route-context';
+import {SubjectNodeRouteData} from '../subject-node-route-data';
+import {LessonPrelearningReport} from '../../../common/model-types/assessment-reports';
+import {StudentContextService} from '../../schools/students/student-context.service';
+import {AssessmentResolveQueue} from '../assessment-resolve-queue';
+import {provideSubjectNodeState} from '../subject-node-state';
+import {AssessmentReportLoader} from '../assessment-report-loader';
+import {AssessmentsService} from '../../../common/model-services/assessments.service';
+import {LessonPrelearningAssessmentAttempt} from '../../../common/model-types/assessment-attempt';
+
+export function provideLessonState(): Provider[] {
+  return [
+    ...provideSubjectNodeState({
+      assessmentType: 'lesson-prelearning-assessment',
+      childAssessmentTypes: ['lesson-outcome-self-assessment'],
+    }),
+    LessonState
+  ];
+}
 
 @Injectable()
 export class LessonState {
-  private lessonSubject
-    = new BehaviorSubject<LessonSchema | undefined>(undefined);
-
-  readonly lesson$ = defer(() =>
-    this.lessonSubject.asObservable()
-  );
-
-  readonly lessonId$ = defer(() => this.lesson$.pipe(pluck('id')));
-
-  readonly prelearningReport$ =
-    this.lessonId$.pipe(
-      switchMap(lessonId => this.blockState.getPrelearningReport(lessonId)),
-      shareReplay(1)
-    );
-
-  protected readonly assessmentParams$ = defer(() =>
-    combineLatest([
-      this.lessonId$,
-      this.appState.activeSubjectClass$
-    ]).pipe(
-      map(([lesson, subjectClass]) => ({
-        node: lesson,
-        class: subjectClass && subjectClass.id
-      }))
-    )
-  );
-
-  readonly outcomeSelfAssessmentReports$ =
-    this.assessmentParams$.pipe(
-      switchMap(params =>
-        this.assessmentsService.queryReports('lesson-outcome-self-assessment', {params})
-      ),
-      map(page => page.resultMap((result) => modelRefId(result.subjectNode)),
-        shareReplay(1))
-    );
-
-  readonly students$ = this.appState.studentsForActiveSubjectClass$;
-
-
   constructor(
     readonly assessmentsService: AssessmentsService,
-    readonly appState: AppStateService,
-    readonly subjectNodeRouteData: SubjectNodeRouteContext,
-    readonly blockState: BlockState,
-  ) {
-  }
+    readonly students: StudentContextService,
+    readonly nodeRouteData: SubjectNodeRouteData,
+    readonly assessmentResolveQueue: AssessmentResolveQueue<LessonPrelearningAssessment>,
+    readonly reportLoader: AssessmentReportLoader<LessonPrelearningReport>
+  ) {}
 
-  protected prelearningAssessmentResolveQueue = new ModelResolveQueue<Resolve<LessonPrelearningAssessment, 'student'>>((candidateIds) => {
-    return this.assessmentParams$.pipe(
-      first(),
-      switchMap(params => {
-        return this.assessmentsService.queryAssessments(
-          'lesson-prelearning-assessment',
-          {params: {...params, student: [...candidateIds]}}
-        );
-      }),
-      withLatestFrom(this.lesson$, this.students$),
-      map(([page, lesson, students]) => {
-        const candidateMap = {};
-        for (const candidateId of candidateIds) {
-          let assessment = page.results.find(result => modelRefId(result.student) == candidateId);
-          if (assessment === undefined) {
-            assessment = LessonPrelearningAssessment.create(lesson, students[candidateId]);
-          }
-          assessment = {...assessment, lesson: lesson, student: students[candidateId]};
-          candidateMap[candidateId] = assessment;
-        }
-        for (const result of page.results) {
-          if (!candidateMap.hasOwnProperty(modelRefId(result.student))) {
-            throw new Error(`Assessment for '${modelRefId(result.student)}' was resolved, when no such student was requested`);
-          }
-        }
-        return candidateMap;
-      })
-    );
-  });
+  readonly lesson$: Observable<LessonSchema> = this.nodeRouteData.lesson$;
 
-  readonly prelearningAssessments$ = defer(() => this.prelearningAssessmentResolveQueue.allResolved$);
+  readonly lessonPrelearningReport$: Observable<LessonPrelearningReport> = this.reportLoader.report$;
+  readonly outcomeSelfAssessmentReports$ = this.reportLoader.childReportsOfType('lesson-outcome-self-assessment');
 
-  loadPrelearningAssessment(student: ModelRef<Student>, options: { force: boolean } = {force: false}) {
-    return this.prelearningAssessmentResolveQueue.queue(modelRefId(student), options);
+  private readonly initialAssessments$: Observable<{[candidateId: string]: LessonPrelearningAssessment}> = combineLatest([
+    this.lesson$,
+    this.lessonPrelearningReport$,
+  ]).pipe(
+    switchMap(([lesson, report]) => {
+      function createInitialAssessment(candidate: Student): [string, LessonPrelearningAssessment] {
+        return [modelRefId(candidate), LessonPrelearningAssessment.create(lesson, candidate)];
+      }
+      return forkJoin(
+        report.candidates.map(candidate => {
+          return this.students.student(candidate).pipe(first())
+        })
+      ).pipe(
+        map((candidates: Student[]) => {
+          return Object.fromEntries(candidates.map(createInitialAssessment))
+        })
+      )
+    }),
+    shareReplay(1)
+  );
+
+  readonly prelearningAssessments$ = this.assessmentResolveQueue.assessments$.pipe(
+    withLatestFrom(this.initialAssessments$),
+    map(([loadedAssessments, initialAssessments]) => {
+      loadedAssessments = Object.fromEntries(
+        Object.entries(loadedAssessments).filter(([k, v]) => v !== undefined)
+      );
+      return Object.assign({}, initialAssessments, loadedAssessments);
+    })
+  );
+
+  loadPrelearningAssessment(candidateId: ModelRef<Student>, options?: {force: boolean}): Observable<LessonPrelearningAssessment> {
+    return this.assessmentResolveQueue.loadAssessment(modelRefId(candidateId), options);
   }
 
   init(): Unsubscribable {
-    const resolveQueue = this.prelearningAssessmentResolveQueue.init();
-
-    const loadLesson = this.subjectNodeRouteData.lesson$.subscribe(this.lessonSubject);
-    const loadPrelearningReport = this.lesson$.subscribe();
-    const loadSelfAssessmentReports = this.outcomeSelfAssessmentReports$.subscribe();
+    const resolveQueue = this.assessmentResolveQueue.init();
+    const reportLoader = this.reportLoader.init();
+    this.initialAssessments$.subscribe(() => console.log('initial assessments'));
 
     return {
       unsubscribe: () => {
         resolveQueue.unsubscribe();
-
-        loadLesson.unsubscribe();
-        loadPrelearningReport.unsubscribe();
-        loadSelfAssessmentReports.unsubscribe();
-
-        this.lessonSubject.complete();
+        reportLoader.unsubscribe();
       }
     };
   }
 
   setPrelearningAssessmentCompletionState(student: ModelRef<Student>, completionState: CompletionState): Promise<LessonPrelearningAssessment> {
     const studentId = modelRefId(student);
+
     return this.prelearningAssessments$.pipe(
       map(assessments => assessments[studentId]),
-      filter((a): a is Resolve<LessonPrelearningAssessment, 'student'> => a !== undefined),
+      filter((a): a is LessonPrelearningAssessment  => a !== undefined),
       first(),
       switchMap(assessment => {
         if (assessment.createdAt != null) {
           return of(assessment);
         }
+
         return this.assessmentsService.saveAssessment(
           'lesson-prelearning-assessment',
           assessment
         );
       }),
-      switchMap(assessment =>
+      switchMap((assessment: LessonPrelearningAssessment) =>
         this.assessmentsService.createAttempt('lesson-prelearning-assessment', {
           assessment: assessment.id,
           completionState
-        })
+        } as Partial<LessonPrelearningAssessmentAttempt>)
       ),
       switchMap(() => this.loadPrelearningAssessment(studentId, {force: true}))
     ).toPromise();

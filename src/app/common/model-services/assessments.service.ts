@@ -5,16 +5,21 @@ import {v4 as uuid4} from 'uuid';
 import {ModelService, ModelServiceBackend} from '../model-base/model-service';
 import {Injectable} from '@angular/core';
 import {ModelRef, modelRefId} from '../model-base/model-ref';
-import {AnyReport, LessonOutcomeSelfAssessmentReport, LessonPrelearningReport} from '../model-types/assessment-reports';
+import {
+  AnyReport,
+  BlockAssessmentReport,
+  LessonOutcomeSelfAssessmentReport,
+  LessonPrelearningReport, UnitAssessmentReport
+} from '../model-types/assessment-reports';
 import {Observable} from 'rxjs';
 import {ResponsePage} from '../model-base/pagination';
 import {LessonSchema, SubjectNode} from '../model-types/subjects';
 import {
   AnyAssessment,
   Assessment,
-  AssessmentType,
+  AssessmentType, BlockAssessment,
   LessonOutcomeSelfAssessment,
-  LessonPrelearningAssessment,
+  LessonPrelearningAssessment, UnitAssessment,
 } from '../model-types/assessments';
 import {JsonObject} from '../json';
 import {Student, SubjectClass} from '../model-types/schools';
@@ -72,18 +77,16 @@ export class AssessmentsService extends ModelService<Assessment> {
     return this.queryUnique('', {params});
   }
 
-  queryAssessments(assessmentType: 'lesson-prelearning-assessment', options: { params: AssessmentQuery }): Observable<ResponsePage<LessonPrelearningAssessment>>;
-  queryAssessments(assessmentType: 'lesson-outcome-self-assessment', options: { params: AssessmentQuery }): Observable<ResponsePage<LessonOutcomeSelfAssessment>>;
-  queryAssessments<T extends Assessment>(
-      assessmentType: T['type'],
-      options: { params: AssessmentQuery }
-   ): Observable<ResponsePage<T>> {
+  queryAssessments<T extends Assessment>(assessmentType: T['type'], options: { params: AssessmentQuery }): Observable<ResponsePage<T>> {
     const params = assessmentQueryToParams(assessmentType, options.params);
     return this.query('', { params });
   }
 
-  queryReports(assessmentType: 'lesson-prelearning-assessment',   options: { params: AssessmentQuery }): Observable<ResponsePage<LessonPrelearningReport>>;
-  queryReports(assessmentType: 'lesson-outcome-self-assessment',  options: { params: AssessmentQuery }): Observable<ResponsePage<LessonOutcomeSelfAssessmentReport>>;
+  fetchReport<Report extends AnyReport>(assessmentType: Report['assessmentType'], options: { params: AssessmentQuery }): Observable<Report> {
+    const params = assessmentQueryToParams(assessmentType, options.params);
+    return this.queryUnique('/reports', { params, useDecoder: this.reportFromJson.bind(this) });
+  }
+
   queryReports<Report extends AnyReport>(
       assessmentType: Report['assessmentType'],
       options: { params: AssessmentQuery }
@@ -92,8 +95,6 @@ export class AssessmentsService extends ModelService<Assessment> {
     return this.query('/reports', { params, useDecoder: this.reportFromJson.bind(this) });
   }
 
-  queryProgresses(assessmentType: 'lesson-prelearning-assessment', options: { params: AssessmentQuery }): Observable<ResponsePage<LessonPrelearningAssessmentProgress>>;
-  queryProgresses(assessmentType: 'lesson-outcome-self-assessment', options: { params: AssessmentQuery }): Observable<ResponsePage<LessonOutcomeSelfAssessmentProgress>>;
   queryProgresses<Progress  extends AnyProgress>(
       assessmentType: Progress['assessmentType'],
       options: { params: AssessmentQuery }
@@ -119,8 +120,6 @@ export class AssessmentsService extends ModelService<Assessment> {
     return this.put(id, { type, id, student, subjectNode });
   }
 
-  createAttempt(type: AssessmentType, attempt: Partial<UnitAssessmentAttempt>): Observable<UnitAssessmentAttempt>;
-  createAttempt(type: 'lesson-prelearning-assessment', attempt: Partial<LessonPrelearningAssessmentAttempt>): Observable<LessonPrelearningAssessmentAttempt>;
   createAttempt(type: AssessmentType, attempt: Partial<AssessmentAttempt>): Observable<AssessmentAttempt> {
     const assessment = attempt.assessment;
     if (assessment == null) {

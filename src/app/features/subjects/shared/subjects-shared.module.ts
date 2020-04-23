@@ -8,27 +8,37 @@ import {SubjectSelectorComponent} from './subject-selector.component';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {SubjectsTreeNavComponent} from './tree-nav.component';
+import {MatTreeModule} from '@angular/material/tree';
+import {MatIconModule} from '@angular/material/icon';
+import {MatButtonModule} from '@angular/material/button';
 
 @NgModule({
   imports: [
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
+
+    MatButtonModule,
     MatFormFieldModule,
+    MatIconModule,
     MatSelectModule,
     MatTableModule,
+    MatTreeModule,
   ],
   declarations: [
     UnitResultsTableComponent,
     BlockAssessmentResultsComponent,
-    SubjectSelectorComponent
+    SubjectSelectorComponent,
+    SubjectsTreeNavComponent
   ],
   exports: [
     UnitResultsTableComponent,
     BlockAssessmentResultsComponent,
-    SubjectSelectorComponent
+    SubjectSelectorComponent,
+    SubjectsTreeNavComponent
   ]
 })
-export class UnitsSharedModule {
+export class SubjectsSharedModule {
 
 }

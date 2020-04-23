@@ -1,22 +1,26 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {BlockDrawerComponent} from './block-drawer.component';
+import {BlockPageComponent} from './block-page.component';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {LessonModule} from '../lesson/lesson.module';
+import {SubjectsSharedModule} from '../shared/subjects-shared.module';
+import {MatIconModule} from '@angular/material/icon';
 
 
 @NgModule({
   imports: [
     CommonModule,
-    MatExpansionModule,
 
+    MatIconModule,
+
+    SubjectsSharedModule,
     LessonModule
   ],
   declarations: [
-    BlockDrawerComponent
+    BlockPageComponent
   ],
   exports: [
-    BlockDrawerComponent
+    BlockPageComponent
   ]
 })
 export class BlocksModule {

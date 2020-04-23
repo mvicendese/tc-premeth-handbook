@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {BehaviorSubject, combineLatest, defer, Observable, Unsubscribable} from 'rxjs';
 import {Student} from '../../../common/model-types/schools';
 import {ActivatedRoute} from '@angular/router';
-import {distinctUntilChanged, filter, map, pluck, switchMap} from 'rxjs/operators';
+import {distinctUntilChanged, filter, map, switchMap} from 'rxjs/operators';
 import {AssessmentsService} from '../../../common/model-services/assessments.service';
 import {SubjectNode} from '../../../common/model-types/subjects';
 import {LessonOutcomeSelfAssessmentProgress, LessonPrelearningAssessmentProgress} from '../../../common/model-types/assessment-progress';
@@ -33,7 +33,7 @@ export class StudentState {
   readonly lessonPrelearningAssessmentProgress$: Observable<LessonPrelearningAssessmentProgress>
     = this.assessmentParams$.pipe(
       switchMap(params =>
-        this.assessments.queryProgresses('lesson-prelearning-assessment', { params })
+        this.assessments.queryProgresses<LessonPrelearningAssessmentProgress>('lesson-prelearning-assessment', { params })
       ),
       map(page => page.results[0])
     );
@@ -41,7 +41,7 @@ export class StudentState {
   readonly lessonOutcomeSelfAssessmentProgress$: Observable<LessonOutcomeSelfAssessmentProgress>
     = this.assessmentParams$.pipe(
       switchMap(params =>
-          this.assessments.queryProgresses('lesson-outcome-self-assessment', { params })
+          this.assessments.queryProgresses<LessonOutcomeSelfAssessmentProgress>('lesson-outcome-self-assessment', { params })
       ),
       map(page => page.results[0])
     );

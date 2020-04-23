@@ -1,41 +1,31 @@
-import {NgModule} from '@angular/core';
+import {NgModule, Type} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {RouterModule, Routes, UrlMatchResult, UrlSegment} from '@angular/router';
+import {Route, RouterModule, Routes, UrlMatchResult, UrlSegment} from '@angular/router';
 import {ClassSharedModule} from '../classes/shared/class-shared.module';
 import {SubjectOverviewComponent} from './subject-overview.component';
-import {SubjectNodeHostComponent} from './subject-node-host.component';
-import {SubjectNodeResolver} from './subject-node-resolver';
-import {SubjectState} from './subject-state';
+import {SubjectNodeRouteResolver} from './subject-node-route-resolver.service';
 import {UnitsModule} from './units/units.module';
 import {BlocksModule} from './blocks/blocks.module';
 import {LessonModule} from './lesson/lesson.module';
 import {LessonOutcomeModule} from './lesson-outcome/lesson-outcome.module';
+import {UnitPageComponent} from './units/unit-page.component';
+import {BlockPageComponent} from './blocks/block-page.component';
 import {SubjectNodeType} from '../../common/model-types/subjects';
-import {PrelearningResultComponent} from './lesson/prelearning-results.component';
-import {LessonOverviewTabComponent} from './lesson/lesson-overview-tab.component';
+import {LessonPageComponent} from './lesson/lesson-page.component';
+import {SubjectsFeatureState} from './subjects-feature-state';
 
-export function matchSubjectNodeUrl(segments: UrlSegment[]): UrlMatchResult {
-  if (segments.length >= 2) {
-    if (['unit', 'node', 'block', 'lesson'].includes(segments[0].path)) {
-      return {
-        consumed: segments.slice(0, 2),
-        posParams: {
-          node_id: segments[1]
-        }
-      };
-    }
-  }
-  return null;
-}
-
-export function subjectNodeRoute(options: {type: SubjectNodeType, children?: Routes}) {
+export function subjectNodeRoute({type, component, children}: {
+  type: SubjectNodeType;
+  component: Type<any>;
+  children?: Routes;
+}): Route {
   return {
-    path: options.type,
-    component: SubjectNodeHostComponent,
+    path: `${type}/:node_id`,
+    component,
     resolve: {
-      node: SubjectNodeResolver
+      node: SubjectNodeRouteResolver
     },
-    children: options.children
+    children
   }
 }
 
@@ -43,29 +33,26 @@ export const routes: Routes = [
   {
     path: '',
     resolve: {
-      node: SubjectNodeResolver
+      node: SubjectNodeRouteResolver
     },
   },
-  subjectNodeRoute({type: 'unit'}),
-  subjectNodeRoute({type: 'block'}),
+  subjectNodeRoute({
+    type: 'unit',
+    component: UnitPageComponent,
+  }),
+  subjectNodeRoute({
+    type: 'block',
+    component: BlockPageComponent,
+  }),
   subjectNodeRoute({
     type: 'lesson',
+    component: LessonPageComponent,
     children: [
-      { path: '', component: LessonOverviewTabComponent },
-      { path: 'prelearning', component: PrelearningResultComponent },
+      { path: '', component: BlockPageComponent },
+      { path: 'prelearning', component: BlockPageComponent },
       { path: 'outcomes'}
     ]
-  }),
-  {
-    matcher: matchSubjectNodeUrl,
-    component: SubjectNodeHostComponent,
-    resolve: {
-      node: SubjectNodeResolver
-    }
-  },
-  {
-    path: ''
-  }
+  })
 ];
 
 @NgModule({
@@ -81,12 +68,11 @@ export const routes: Routes = [
     LessonOutcomeModule,
   ],
   declarations: [
-    SubjectNodeHostComponent,
     SubjectOverviewComponent,
   ],
   providers: [
-    SubjectState,
-    SubjectNodeResolver
+    SubjectsFeatureState,
+    SubjectNodeRouteResolver
   ]
 })
 export class SubjectsFeatureModule {}

@@ -1,59 +1,31 @@
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, Output} from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
 import {LessonPrelearningReport} from '../../../common/model-types/assessment-reports';
-import {Resolve} from '../../../common/model-base/model-ref';
+import {modelRefId, Resolve} from '../../../common/model-base/model-ref';
 import {AppStateService} from '../../../app-state.service';
 import {LessonSchema} from '../../../common/model-types/subjects';
 import {LessonPrelearningAssessment} from '../../../common/model-types/assessments';
 import {ChangeCompletionStateEvent} from './prelearning-result-item.component';
+import {LessonState} from './lesson-state';
+import {BehaviorSubject, combineLatest} from 'rxjs';
+import {filter, map, shareReplay, switchMap} from 'rxjs/operators';
 
 @Component({
   selector: 'subjects-lesson-prelearning-results',
   template: `
-    <div class="report-container" *ngIf="report">
-      <dl>
-        <dt>Students Complete</dt>
-        <dd>
-          {{report.completeCandidateCount}} / {{report.candidateCount}}
-          <span class="percentage">{{report.percentCompleted}}
-          </span>
-        </dd>
-      </dl>
-      <form class="table-controls" [formGroup]="controlsForm">
-        <mat-checkbox formControlName="hideComplete">Hide if prelearning complete</mat-checkbox>
-      </form>
-    </div>
-
-    <mat-divider vertical></mat-divider>
-
-    <div class="assessments-container" [formGroup]="controlsForm">
-      <mat-list *ngIf="report">
-        <mat-list-item *ngFor="let candidateId of report.candidates;"
-                       [class.hidden]="hideComplete && assessments[candidateId]?.isComplete">
-          <subjects-lesson-prelearning-results-item
-            [assessment]="assessments[candidateId]"
+    <mat-list *ngIf="report">
+      <mat-list-item *ngFor="let assessment of displayAssessments$ | async">
+        <subjects-lesson-prelearning-results-item
+            [assessment]="assessment.assessment"
             (completionStateChange)="completionStateChange.emit($event)">
-          </subjects-lesson-prelearning-results-item>
-        </mat-list-item>
-      </mat-list>
-    </div>
-    <ng-template #noStudent>>< STUDENT MISSING ></ng-template>
+        </subjects-lesson-prelearning-results-item>
+      </mat-list-item>
+    </mat-list>
   `,
   styles: [`
-    :host {
-      display: flex;
-    }
-    :host .report-container {
-      flex-grow: 1;
-    }
-    :host .assessments-container {
-      flex-grow: 2;
-    }
-
     :host mat-list-item.hidden {
       display: none;
     }
-
     .complete-col > button {
       width: 100%;
     }
@@ -61,24 +33,49 @@ import {ChangeCompletionStateEvent} from './prelearning-result-item.component';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PrelearningResultComponent {
+  private readonly reportSubject = new BehaviorSubject<LessonPrelearningReport | undefined>(undefined);
 
   @Input() lesson: LessonSchema | undefined;
 
-  @Input() report: LessonPrelearningReport | undefined;
-  @Input() assessments: {[candidateId: string]: Resolve<LessonPrelearningAssessment, 'student'>} = {};
+  @Input()
+  get report(): LessonPrelearningReport | undefined {
+    return this.reportSubject.value;
+  }
+  set report(value: LessonPrelearningReport | undefined) {
+    this.reportSubject.next(value);
+  }
 
   @Output() completionStateChange = new EventEmitter<ChangeCompletionStateEvent>();
 
-  readonly controlsForm = new FormGroup({
-    hideComplete: new FormControl(true)
-  });
+  readonly displayAssessments$ = combineLatest([
+    this.reportSubject.pipe(filter((report): report is LessonPrelearningReport => report != null)),
+    this.lessonState.prelearningAssessments$
+  ]).pipe(
+    map(([report, assessments]) =>
+      report.candidates.map(candidate => {
+        const assessment = assessments[modelRefId(candidate)];
 
-  get hideComplete() {
-    return this.controlsForm.value.hideComplete;
-  }
+        return {
+          report: report,
+          student: assessment.student,
+          assessment
+        };
+      })
+    ),
+    shareReplay(1)
+  );
+
 
   constructor(
-    protected readonly appState: AppStateService,
+    readonly lessonState: LessonState,
+    readonly appState: AppStateService,
     protected readonly cd: ChangeDetectorRef
   ) {}
+
+  ngOnInit() {
+    if (this.report == null) {
+      throw new Error(`No report on init`);
+    }
+    this.report.candidates.forEach(candidate => this.lessonState.loadPrelearningAssessment(candidate).subscribe());
+  }
 }

@@ -81,7 +81,7 @@ export const UnitAssessmentAttempt = {
 };
 
 export interface LessonPrelearningAssessmentAttempt extends CompletionBasedAssessmentAttempt<LessonPrelearningAssessment> {
-
+  completionState: CompletionState;
 }
 
 export const LessonPrelearningAssessmentAttempt = {

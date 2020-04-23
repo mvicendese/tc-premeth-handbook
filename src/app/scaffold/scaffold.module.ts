@@ -14,7 +14,7 @@ import {RouterModule} from '@angular/router';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
 import {ReactiveFormsModule} from '@angular/forms';
-import {UnitsSharedModule} from '../features/subjects/shared/units-shared.module';
+import {SubjectsSharedModule} from '../features/subjects/shared/subjects-shared.module';
 import {MatToolbarModule} from '@angular/material/toolbar';
 import {AppTitleComponent} from './app-title.component';
 import {AppContextMenuComponent} from './app-context-menu.component';
@@ -36,7 +36,7 @@ import {AppContextMenuComponent} from './app-context-menu.component';
     MatFormFieldModule,
     MatSelectModule,
 
-    UnitsSharedModule
+    SubjectsSharedModule
   ],
   declarations: [
     AppSidebarMenuComponent,
