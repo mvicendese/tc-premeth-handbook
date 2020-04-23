@@ -48,6 +48,7 @@ export class AssessmentResolveQueue<T extends Assessment> {
   readonly assessments$: Observable<{ [candidateId: string]: T }> = this.resolveQueue.allResolved$;
 
   loadAssessment(candidateId: string, options?: {force: boolean}): Observable<T> {
+    console.log('queuing ' + candidateId);
     return this.resolveQueue.queue(candidateId, options);
   }
 
@@ -56,13 +57,16 @@ export class AssessmentResolveQueue<T extends Assessment> {
       map(subjectClass => ({
           subjectClass: subjectClass && subjectClass.id,
           node,
-          resolveStudents: candidateIds
+          student: [...candidateIds]
         } as AssessmentQuery)
       ),
       switchMap((params: AssessmentQuery) =>
         this.assessments.queryAssessments<T>(this.assessmentType, {params})
       ),
-      map(page => page.resultMap(result => modelRefId(result.student)))
+      map(page => {
+        console.log('page', page.results);
+        return page.resultMap(result => modelRefId(result.student))
+      })
     );
   }
 }

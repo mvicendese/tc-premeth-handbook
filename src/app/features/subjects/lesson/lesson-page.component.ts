@@ -24,12 +24,12 @@ import {BlockState} from '../blocks/block-state';
     <mat-tab-group>
       <mat-tab label="Prelearning">
         <ng-template matTabContent>
-          <subjects-lesson-prelearning-tab></subjects-lesson-prelearning-tab>
+          <subjects-lesson-prelearning-tab class="tab-content"></subjects-lesson-prelearning-tab>
         </ng-template>
       </mat-tab>
       <mat-tab label="Student outcomes" class="d-flex">
        <ng-template matTabContent>
-         <subjects-lesson-outcomes-tab></subjects-lesson-outcomes-tab>
+         <subjects-lesson-outcomes-tab class="tab-content"></subjects-lesson-outcomes-tab>
        </ng-template>
       </mat-tab>
     </mat-tab-group>
@@ -48,8 +48,11 @@ import {BlockState} from '../blocks/block-state';
       display: flex;
       align-items: center;
     }
-
-
+    
+    .tab-content {
+      display: flex;
+      padding-top: 1rem;
+    }
   `],
   providers: [
     ...provideLessonState()

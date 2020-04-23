@@ -1,11 +1,38 @@
-import {Injectable} from '@angular/core';
+import {Inject, Injectable, InjectionToken} from '@angular/core';
 import {BehaviorSubject, combineLatest, defer, Observable, Unsubscribable} from 'rxjs';
 import {Student} from '../../../common/model-types/schools';
 import {ActivatedRoute} from '@angular/router';
 import {distinctUntilChanged, filter, map, switchMap} from 'rxjs/operators';
 import {AssessmentsService} from '../../../common/model-services/assessments.service';
 import {SubjectNode} from '../../../common/model-types/subjects';
-import {LessonOutcomeSelfAssessmentProgress, LessonPrelearningAssessmentProgress} from '../../../common/model-types/assessment-progress';
+import {
+  AnyProgress,
+  LessonOutcomeSelfAssessmentProgress,
+  LessonPrelearningAssessmentProgress
+} from '../../../common/model-types/assessment-progress';
+import {ModelRef} from '../../../common/model-base/model-ref';
+import {AssessmentType} from '../../../common/model-types/assessments';
+import {StudentService} from '../../../common/model-services/students.service';
+
+export const PROGRESS_LOADER_OPTIONS = new InjectionToken<ProgressLoaderOptions>('PROGRESS_LOADER_OPTIONS');
+
+export interface ProgressLoaderOptions {
+  readonly assessmentType: AssessmentType;
+}
+
+@Injectable()
+export class ProgressLoader<T extends AnyProgress> {
+  constructor(
+    readonly assessments: AssessmentsService,
+    readonly route: ActivatedRoute,
+    @Inject(PROGRESS_LOADER_OPTIONS)
+    readonly options: ProgressLoaderOptions
+  ) {}
+
+  loadProgresses(student: ModelRef<Student>, node: ModelRef<SubjectNode>): Observable<T> {
+    return this.assessments.fetchProgress(student, node);
+  }
+}
 
 
 @Injectable()

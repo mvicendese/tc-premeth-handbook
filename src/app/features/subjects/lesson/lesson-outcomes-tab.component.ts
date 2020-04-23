@@ -18,13 +18,10 @@ interface OutcomeView {
       <mat-accordion>
         <mat-expansion-panel *ngFor="let view of (displayOutcome$ | async)">
           <mat-expansion-panel-header>
-            <span>{{view.outcome.description}}</span>
-            <span>
-                <app-star-rating [value]="view.report.averageRating"></app-star-rating>
-            </span>
-            <span>
-                
-            </span>
+            <subjects-lesson-outcome-overview 
+              [outcome]="view.outcome"
+              [report]="view.report">
+            </subjects-lesson-outcome-overview>
           </mat-expansion-panel-header> 
           <ng-template matExpansionPanelContent>
             <subjects-lesson-outcome-self-assessment-report
@@ -35,7 +32,16 @@ interface OutcomeView {
           </ng-template> 
         </mat-expansion-panel>
       </mat-accordion>
-    `
+    `,
+  styles: [`
+    subjects-lesson-outcome-overview {
+      width: 80%;
+    }
+    
+    mat-accordion {
+      width: 100%;
+    }
+  `]
 })
 export class LessonOutcomesTabComponent {
     readonly lesson$ = this.lessonState.lesson$.pipe(

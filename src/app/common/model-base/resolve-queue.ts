@@ -110,8 +110,11 @@ export class ModelResolveQueue<T extends Model> {
     const batchIds = queueIds.splice(0, options.batchSize);
     this.queueIdsSubject.next(queueIds);
 
+    var time = Date.now();
+    console.log('sending request');
     return this.resolve(batchIds).pipe(
       tap((resolved: { [batchId: string]: T }) => {
+        console.log('response took ' + (Date.now() - time) + ' ms');
         for (const batchId of batchIds) {
           const resolvedValue = resolved[batchId];
           this.resolvePending(batchId, resolvedValue);
@@ -131,6 +134,7 @@ export class ModelResolveQueue<T extends Model> {
     const batchExecution = this.queueIdsSubject.pipe(
       filter(queue => queue.length > 0),
       sampleTime(options.samplePeriod),
+      tap(() => console.log('sampling queue')),
       mergeMap(() => this.resolveNextBatch(options))
     ).subscribe();
 

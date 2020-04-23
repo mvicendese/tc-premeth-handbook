@@ -11,7 +11,6 @@ import {ModelRef} from '../../../common/model-base/model-ref';
     <ng-container *ngIf="student$ | async as student">
       <a [routerLink]="['/schools/students', student.id]">{{student.fullName}}</a>
     </ng-container>
-
   `,
   styles: [`
     :host {

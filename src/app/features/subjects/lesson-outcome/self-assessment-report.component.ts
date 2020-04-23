@@ -42,6 +42,10 @@ import {SelfAssessmentResultDetailsDialogComponent} from './self-assessment-resu
     <app-lesson-outcome-histogram [report]="report"></app-lesson-outcome-histogram>
   `,
   styles: [`
+    :host {
+      display: block;
+      margin-top: 1rem;
+    }
     .title {
       display: flex;
     }

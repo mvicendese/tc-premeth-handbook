@@ -7,13 +7,14 @@ import {LessonSchema} from '../../../common/model-types/subjects';
 import {LessonPrelearningAssessment} from '../../../common/model-types/assessments';
 import {ChangeCompletionStateEvent} from './prelearning-result-item.component';
 import {LessonState} from './lesson-state';
-import {BehaviorSubject, combineLatest} from 'rxjs';
-import {filter, map, shareReplay, switchMap} from 'rxjs/operators';
+import {BehaviorSubject, combineLatest, forkJoin} from 'rxjs';
+import {filter, first, map, shareReplay, switchMap, tap} from 'rxjs/operators';
+import {StudentContextService} from '../../schools/students/student-context.service';
 
 @Component({
   selector: 'subjects-lesson-prelearning-results',
   template: `
-    <mat-list *ngIf="report">
+    <mat-list>
       <mat-list-item *ngFor="let assessment of displayAssessments$ | async">
         <subjects-lesson-prelearning-results-item
             [assessment]="assessment.assessment"
@@ -33,34 +34,30 @@ import {filter, map, shareReplay, switchMap} from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PrelearningResultComponent {
-  private readonly reportSubject = new BehaviorSubject<LessonPrelearningReport | undefined>(undefined);
 
   @Input() lesson: LessonSchema | undefined;
-
-  @Input()
-  get report(): LessonPrelearningReport | undefined {
-    return this.reportSubject.value;
-  }
-  set report(value: LessonPrelearningReport | undefined) {
-    this.reportSubject.next(value);
-  }
-
   @Output() completionStateChange = new EventEmitter<ChangeCompletionStateEvent>();
 
   readonly displayAssessments$ = combineLatest([
-    this.reportSubject.pipe(filter((report): report is LessonPrelearningReport => report != null)),
+    this.lessonState.lessonPrelearningReport$,
     this.lessonState.prelearningAssessments$
   ]).pipe(
-    map(([report, assessments]) =>
-      report.candidates.map(candidate => {
-        const assessment = assessments[modelRefId(candidate)];
+    tap(([report, _]) => console.log('report candidates', report.candidateCount)),
+    switchMap(([report, assessments]) =>
+      forkJoin(
+        report.candidates.map(candidate => {
+          const assessment = assessments[modelRefId(candidate)];
 
-        return {
-          report: report,
-          student: assessment.student,
-          assessment
-        };
-      })
+          return this.studentContext.student(candidate).pipe(
+            first(),
+            map((student) => ({
+              report: report,
+              student: assessment.student,
+              assessment: {...assessment, student: student}
+            }))
+          );
+        })
+      )
     ),
     shareReplay(1)
   );
@@ -68,14 +65,8 @@ export class PrelearningResultComponent {
 
   constructor(
     readonly lessonState: LessonState,
+    readonly studentContext: StudentContextService,
     readonly appState: AppStateService,
     protected readonly cd: ChangeDetectorRef
   ) {}
-
-  ngOnInit() {
-    if (this.report == null) {
-      throw new Error(`No report on init`);
-    }
-    this.report.candidates.forEach(candidate => this.lessonState.loadPrelearningAssessment(candidate).subscribe());
-  }
 }

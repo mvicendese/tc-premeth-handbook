@@ -1,7 +1,7 @@
 import {CompletionState, LessonPrelearningAssessment} from '../../../common/model-types/assessments';
 import {Injectable, Provider} from '@angular/core';
 import {combineLatest, forkJoin, Observable, of, Unsubscribable} from 'rxjs';
-import {filter, first, map, shareReplay, switchMap, tap, withLatestFrom} from 'rxjs/operators';
+import {filter, first, map, shareReplay, switchMap, switchMapTo, tap, withLatestFrom} from 'rxjs/operators';
 import {ModelRef, modelRefId} from '../../../common/model-base/model-ref';
 import {Student} from '../../../common/model-types/schools';
 import {LessonSchema} from '../../../common/model-types/subjects';
@@ -60,7 +60,13 @@ export class LessonState {
     shareReplay(1)
   );
 
-  readonly prelearningAssessments$ = this.assessmentResolveQueue.assessments$.pipe(
+  readonly prelearningAssessments$ = this.lessonPrelearningReport$.pipe(
+    tap(report => {
+      report.candidates.forEach(candidate =>
+        this.assessmentResolveQueue.loadAssessment(modelRefId(candidate))
+      );
+    }),
+    switchMapTo(this.assessmentResolveQueue.assessments$),
     withLatestFrom(this.initialAssessments$),
     map(([loadedAssessments, initialAssessments]) => {
       loadedAssessments = Object.fromEntries(
@@ -77,7 +83,6 @@ export class LessonState {
   init(): Unsubscribable {
     const resolveQueue = this.assessmentResolveQueue.init();
     const reportLoader = this.reportLoader.init();
-    this.initialAssessments$.subscribe(() => console.log('initial assessments'));
 
     return {
       unsubscribe: () => {

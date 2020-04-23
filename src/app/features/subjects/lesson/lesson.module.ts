@@ -16,6 +16,7 @@ import {LessonOutcomesTabComponent} from './lesson-outcomes-tab.component';
 import {LessonPageComponent} from './lesson-page.component';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {PrelearningOverviewComponent} from './prelearning-overview.component';
+import {SchoolsSharedModule} from '../../schools/shared/schools-shared.module';
 
 @NgModule({
   imports: [
@@ -30,6 +31,7 @@ import {PrelearningOverviewComponent} from './prelearning-overview.component';
     MatButtonToggleModule,
     MatExpansionModule,
 
+    SchoolsSharedModule,
     LessonOutcomeModule
   ],
   declarations: [

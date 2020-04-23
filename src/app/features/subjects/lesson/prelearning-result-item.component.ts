@@ -16,6 +16,7 @@ export interface ChangeCompletionStateEvent {
 @Component({
   selector: 'subjects-lesson-prelearning-results-item',
   template: `
+  
   <div class="indicator-col">
     <ng-container *ngIf="_isLoading; then loadingIndicator; else trafficIndicator"></ng-container>
 
@@ -29,10 +30,8 @@ export interface ChangeCompletionStateEvent {
   </div>
   <ng-container *ngIf="assessment">
     <div class="student-col">
-      {{assessment.student.fullName}}
+      <schools-student-item [student]="assessment.student"></schools-student-item>
     </div>
-
-
     <div class="completion-date-col">
       <span *ngIf="assessment.isComplete">
         On: <span class="date">{{assessment.attemptedAt | date}}</span>
@@ -40,14 +39,19 @@ export interface ChangeCompletionStateEvent {
     </div>
     <div class="complete-col">
       <mat-button-toggle-group multiple>
+        <mat-button-toggle class="dna-toggle"
+                           [checked]="assessment.completionState === 'none'"
+                           (change)="markCompletionState($event, 'none')">
+          <mat-icon>error_outline</mat-icon> Did not attempt
+        </mat-button-toggle> 
         <mat-button-toggle class="attempt-toggle"
-                           [checked]="assessment.isPartiallyComplete || assessment.isComplete"
-                           (change)="markPartialComplete($event)">
+                           [checked]="assessment.completionState === 'partially-complete'"
+                           (change)="markCompletionState($event, 'partially-complete')">
           <mat-icon>done</mat-icon> made attempt
         </mat-button-toggle>
         <mat-button-toggle class="complete-toggle"
-                           [checked]="assessment.isComplete"
-                           (change)="markComplete($event)">
+                           [checked]="assessment.completionState === 'complete'"
+                           (change)="markCompletionState($event, 'complete')">
           <mat-icon>done_all</mat-icon>complete
         </mat-button-toggle>
       </mat-button-toggle-group>
@@ -111,21 +115,12 @@ export class PrelearningResultItemComponent implements OnChanges {
     }
   }
 
-  markPartialComplete(change: MatButtonToggleChange) {
+  markCompletionState($event: MatButtonToggleChange, completionState: CompletionState) {
     this._isLoading = true;
     this.completionStateChange.emit({
       student: this.assessment.student,
       assessment: this.assessment,
-      completionState: 'partially-complete'
-    });
-  }
-
-  markComplete(change: MatButtonToggleChange) {
-    this._isLoading = true;
-    this.completionStateChange.emit({
-      student: this.assessment.student,
-      assessment: this.assessment,
-      completionState: 'complete'
+      completionState
     });
   }
 }

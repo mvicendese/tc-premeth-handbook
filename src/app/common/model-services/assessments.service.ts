@@ -28,7 +28,7 @@ import {AnyProgress, LessonOutcomeSelfAssessmentProgress, LessonPrelearningAsses
 
 export interface AssessmentQuery {
   student?: ModelRef<Student>[] | ModelRef<Student> | null;
-  class?: ModelRef<SubjectClass> | null;
+  subjectClass?: ModelRef<SubjectClass> | null;
   node?: ModelRef<SubjectNode> | null;
 
   page?: number;
@@ -38,13 +38,13 @@ function assessmentQueryToParams(type: AssessmentType, query: AssessmentQuery): 
   const params: { [k: string]: string | string[] } = { type };
   if (query.student) {
     if (Array.isArray(query.student)) {
-      params.student = query.student.map(modelRefId).join('|');
+      params.student = query.student.map(modelRefId).join(',');
     } else {
       params.student = modelRefId(query.student);
     }
   }
-  if (query.class)
-    params.class = modelRefId(query.class);
+  if (query.subjectClass)
+    params.class = modelRefId(query.subjectClass);
   if (query.node)
     params.node = modelRefId(query.node);
   if (query.page)
@@ -95,6 +95,14 @@ export class AssessmentsService extends ModelService<Assessment> {
     return this.query('/reports', { params, useDecoder: this.reportFromJson.bind(this) });
   }
 
+  fetchProgress<Progress extends AnyProgress>(
+    assessmentType: Progress['assessmentType'],
+    options: { params: AssessmentQuery }
+  ): Observable<Progress> {
+    const params = assessmentQueryToParams(assessmentType, options.params);
+    return this.queryUnique('/progress', { params, useDecoder: this.progressFromJson.bind(this) });
+  }
+
   queryProgresses<Progress  extends AnyProgress>(
       assessmentType: Progress['assessmentType'],
       options: { params: AssessmentQuery }
@@ -103,7 +111,6 @@ export class AssessmentsService extends ModelService<Assessment> {
     return this.query('/progress', { params, useDecoder: this.progressFromJson.bind(this) });
   }
 
-  saveAssessment(type: 'lesson-prelearning-assessment', options: Partial<LessonPrelearningAssessment>): Observable<LessonPrelearningAssessment>;
   saveAssessment(type: AssessmentType, options: Partial<Assessment>): Observable<Assessment> {
     const id = options.id || uuid4();
 
