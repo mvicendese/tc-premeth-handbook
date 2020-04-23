@@ -5,6 +5,8 @@ from uuid import uuid4
 from django.db import migrations
 from django.conf import settings
 
+from api.assessments.models import AttemptType
+
 from utils import importer
 
 from utils.importer import (
@@ -15,6 +17,20 @@ from utils.importer import (
 def get_assessment_schema(apps, assessment_type):
 	AssessmentSchema = apps.get_model('assessments', 'AssessmentSchema')
 	return AssessmentSchema.objects.get(type=assessment_type)
+
+def set_assessment_option(apps, assessment_schema, subject_node_id, **kwargs):
+	AssessmentOptions = apps.get_model('assessments', 'AssessmentOptions')
+
+	options = {
+		f'_{AttemptType(assessment_schema.attempt_type).name}_{name}': value
+		for name, value in kwargs.items()
+	}
+
+	AssessmentOptions.objects.create(
+		schema=assessment_schema,
+		subject_node_id=subject_node_id,
+		**options
+	)
 
 def create_assessments(apps, shema_editor):
 	all_import_subjects = importer.subjects.Subject.all(subject_model=apps.get_model('subjects', 'Subject'))
@@ -27,12 +43,12 @@ def create_subject_descendent_assessments(apps, import_subject):
 	for import_unit in import_subject.units:
 		create_unit_descendent_assessments(apps, import_unit)
 
-
 def create_unit_descendent_assessments(apps, import_unit):
 	print('unit', import_unit.name)
 	for import_block in import_unit.blocks:
 		create_block_assessments(apps, import_block)
 		create_block_descendent_assessments(apps, import_block)
+
 
 
 def create_block_assessments(apps, import_block):
@@ -41,18 +57,25 @@ def create_block_assessments(apps, import_block):
 
 	schema = get_assessment_schema(apps, 'block-assessment')
 
+	max_available_mark = importer.assessments.BlockAssessment.max_available_mark(import_block)	
+	set_assessment_option(apps,
+		schema, 
+		import_block.id, 
+		max_available_rating=max_available_mark
+	)
+
 	all_block_assessments = importer.assessments.BlockAssessment.all_for_block(
 		import_block,
 		student_model=apps.get_model('schools', 'Student')
 	)
 
 	for import_block_assessment in all_block_assessments:
+
 		assessment = Assessment(
 			id=import_block_assessment.id,
 			schema=schema,
 			subject_node_id=import_block.id,
-			student_id=import_block_assessment.student.id,
-			_attempt_type_RATED_max_available_rating=import_block_assessment.max_available_mark
+			student_id=import_block_assessment.student.id
 		)
 		assessment.save()
 
@@ -60,7 +83,6 @@ def create_block_assessments(apps, import_block):
 			RatedAttempt(
 				id=import_attempt.id,
 				assessment=assessment,
-				max_available_rating=import_block_assessment.max_available_mark,
 				rating=import_attempt.raw_mark,
 				date=import_attempt.date
 			)
@@ -136,7 +158,6 @@ def create_lesson_outcome_self_assessments(apps, import_lesson_outcome):
 			assessment=assessment,
 			attempt_number=1,
 			created_at=import_assessment.date,
-			max_available_rating=4,
 			rating=import_assessment.rating
 		)
 		attempt.save()

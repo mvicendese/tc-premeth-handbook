@@ -156,6 +156,9 @@ class Attempt(BaseModel):
     def assessment_type(self):
         return self.assessment.type
 
+    def get_assessment_option(self, name):
+        return self.assessment.get_option(name)
+
     class QuerySet(models.QuerySet):
         def significant_attempt_numbers(self, max_significant_attempts=None):
             """
@@ -196,23 +199,23 @@ class Attempt(BaseModel):
             return super().create(*args, **kwargs)
 
     class Manager(models.Manager):
-        def __init__(self, attempt_type, attempt_parameters=None):
+        def __init__(self, attempt_type, attempt_parameters=None, **kwargs):
             self.attempt_type = attempt_type 
 
-            # Attempt parameters are parameters provided by either the 
-            # assessment or the schema and are used to parameterise the 
-            # creation of attempts
+            # Attempt parameters are parameters provided by the AssessmentOptions
+            # of the assessment schema.
             self.attempt_parameters = attempt_parameters or []
-            super().__init__()
+
+            self.options = {}
+            for param in self.attempt_parameters:
+                self.options[param] = kwargs.pop(param, None)
+
+            super().__init__(**kwargs)
 
         def create(self, *args, assessment=None, **kwargs):
             kwargs.update(attempt_type=self.attempt_type)
             if assessment is None:
                 raise ValueError('An assessment is required to create an attempt')
-
-            kwargs = dict(kwargs)
-            for param in self.attempt_parameters:
-                kwargs[param] = assessment.get_attempt_argument(param)
 
             return super().create(*args, assessment=assessment, **kwargs)
 
@@ -225,6 +228,22 @@ class Attempt(BaseModel):
                 is_attempted=models.Exists(has_attempts),
                 attempted_at=models.Subquery(has_attempts.values('created_at')[:1])
             )
+
+        def get_assessment_option(self, name):
+            if name not in self.attempt_parameters:
+                raise KeyError('option must be declared in attempt manager\'s parameter list')
+            return self.options[name]
+
+        def with_assessment_options(self, assessment_options):
+            """
+            Parameterises the manager with arguments from arguments.
+            """
+            options = {
+                name: assessment_options.get_option(name)
+                for name in self.attempt_parameters
+            } 
+
+            return type(self)(self.attempt_type, self.attempt_parameters, **options)
 
     @staticmethod
     def objects_of_type(attempt_type):
@@ -262,7 +281,6 @@ class PassFailAttempt(Attempt):
 
     objects = Manager.from_queryset(Attempt.QuerySet)()
 
-
 class CompletionBasedAttempt(Attempt):
     state = PartialCompletionStateField()
 
@@ -295,7 +313,6 @@ class CompletionBasedAttempt(Attempt):
 
 
 class RatedAttempt(Attempt):
-    max_available_rating = models.PositiveSmallIntegerField()
 
     rating = RatingField(max_rating_field='max_available_rating')
     rating_percent = calculated_percentage_property('rating', 'max_available_rating')
@@ -303,6 +320,20 @@ class RatedAttempt(Attempt):
     class Manager(Attempt.Manager):
         def __init__(self):
             super().__init__(AttemptType.RATED, attempt_parameters=['max_available_rating'])
+
+        def get_queryset(self):
+            return super().get_queryset().annotate(
+                max_available_rating=self.max_available_rating_value,
+                rating_percent=models.F('rating') / models.F('max_available_rating')
+            )
+
+        @property
+        def max_available_rating(self):
+            return self.get_assessment_option('max_available_rating')
+
+        @property
+        def max_available_rating_value(self):
+            return models.Value(self.max_available_rating, output_field=models.PositiveSmallIntegerField())
 
         def assessment_set_has_attempts(self, assessment_set):
             return self.filter(assessment__in=assessment_set).exists()
@@ -319,7 +350,7 @@ class RatedAttempt(Attempt):
             )
 
             return assessment_set.annotate(
-                max_available_rating=models.Subquery(most_recent_rating.values('max_available_rating')),
+                max_available_rating=self.max_available_rating_value,
                 rating=models.Subquery(most_recent_rating.values('rating'))
             )
 

@@ -112,7 +112,7 @@ class SubjectNode(MP_Node):
 
     def get_descendants_of_type(self, subject_node_type):
         if subject_node_type == self.node_type:
-            return SubjectNodes.objects.filter(pk__in=[self.id])
+            return SubjectNode.objects.filter(pk__in=[self.id])
 
         return (
             self.get_descendants()

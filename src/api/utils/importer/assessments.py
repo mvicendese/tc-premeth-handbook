@@ -46,27 +46,22 @@ class BlockAssessment():
         self.block = block
         self.attempt_rows = attempt_rows
 
-    @property
-    def assessment_data_row(self):
-        if not hasattr(self, '_assessment_data_row'):
-            ws = get_workbook()['MiniAssessData']
+    @classmethod
+    def assessment_data_row(cls, block):
+        ws = get_workbook()['MiniAssessData']
 
-            unit_key_col = col_index('C')
-            block_key_col = col_index('A')
+        unit_key_col = col_index('C')
+        block_key_col = col_index('A')
 
-            is_block_assessment_row = lambda row: (
-                row[unit_key_col].value == self.block.unit.key
-                and row[block_key_col].value == self.block.block_key
-            )
+        is_block_assessment_row = lambda row: (
+            row[unit_key_col].value == block.unit.key
+            and row[block_key_col].value == block.block_key
+        )
+        return [row for row in ws if is_block_assessment_row(row)][0]
 
-            self._assessment_data_row = [
-                row for row in ws if is_block_assessment_row(row)
-            ][0]
-        return self._assessment_data_row
-
-    @property
-    def max_available_mark(self):
-        return self.assessment_data_row[col_index('F')].value
+    @classmethod
+    def max_available_mark(cls, block):
+        return cls.assessment_data_row(block)[col_index('F')].value
 
     @property
     def attempts(self):

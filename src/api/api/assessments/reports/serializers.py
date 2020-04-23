@@ -79,6 +79,10 @@ class GradedReportSerializer(ReportSerializer):
 
 class RatedReportSerializer(ReportSerializer):
 	candidate_ratings = serializers.DictField(
-		child=serializers.IntegerField()
+		child=serializers.IntegerField(),
+		read_only=True
 	)
+
+	rating_average = serializers.DecimalField(decimal_places=2, max_digits=5, read_only=True)
+	rating_std_dev = serializers.DecimalField(decimal_places=2, max_digits=5, read_only=True)
 

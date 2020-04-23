@@ -16,6 +16,18 @@ def create_assessment_schema(apps, **kwargs):
 		subject_id=get_premeth_subject(apps).id,
 		**kwargs
 	)
+def set_assessment_option_default(apps, assessment_schema=None, **kwargs):
+	AssessmentOptions = apps.get_model('assessments', 'AssessmentOptions')
+
+	options = { 
+		f'_{AttemptType(assessment_schema.attempt_type).name}_{name}': value 
+		for name, value in kwargs.items()
+	}
+	AssessmentOptions.objects.create(
+		schema=assessment_schema,
+		subject_node=None,
+		**options
+	)
 
 def create_unit_assessment_schema(apps):
 	return create_assessment_schema(apps,
@@ -44,11 +56,8 @@ def create_lesson_outcome_self_assessment_schema(apps):
 		type='lesson-outcome-self-assessment',
 		attempt_type=AttemptType.RATED,
 		subject_node_type=SubjectNodeType.LESSON_OUTCOME,	
-		_attempt_type_RATED_max_available_rating=4
 	)
-	#schema.set_attempt_argument('max_available_rating', 4)
-	schema.save()
-
+	set_assessment_option_default(apps, schema, max_available_rating=4)
 
 def create_assessment_schemas(apps, schema_editor):
 	create_unit_assessment_schema(apps)
@@ -59,7 +68,7 @@ def create_assessment_schemas(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('assessments', '0001_initial'),
+        ('assessments', '0002_auto_20200421_1151'),
         ('subjects', 	'0009_data_prepopulate_subject_tree'),
         ('schools', 	'0002_data_import_teachers_students'),
     ]

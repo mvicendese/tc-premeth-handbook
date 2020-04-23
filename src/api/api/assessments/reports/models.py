@@ -104,6 +104,9 @@ class Report(Document):
     def attempt_type(self):
         return self.assessment_schema.attempt_type
 
+    def get_assessment_option(self, name):
+        return self.assessment_schema.get_option(self.subject_node, name)
+
     percent_attempted = calculated_percentage_property('attempted_candidate_count', 'candidate_count')
 
     def snapshot_candidate_ids(self):
@@ -297,6 +300,9 @@ class GradedReport(Report):
             ])
 
 class RatedReport(Report):
+    rating_average          = models.DecimalField(decimal_places=2, max_digits=5, null=True)
+    rating_std_dev          = models.DecimalField(decimal_places=2, max_digits=5, null=True)
+
     _candidate_ratings = models.TextField(default='')
 
     @property
@@ -315,19 +321,22 @@ class RatedReport(Report):
         pairs = [f'{candidate_id}:{rating}' for candidate_id, rating in ratings.items()]
         self._candidate_ratings = ','.join(pairs)
 
-    def generate(self):
-        super.generate()
-        
-        assessments = self.assessment_set_snapshot()
+    @property
+    def max_available_rating(self):
+        return self.get_assessment_option('max_available_rating')
 
     def generate(self):
         super().generate()
-        attempted_candidates = self.attempted_candidates
 
+        assessment_set = self.snapshot_assessment_set()
         self.candidate_ratings = {
             result['student_id']: result['rating']
-            for result in self.snapshot_assessment_set().values('student_id', 'rating')
+            for result in assessment_set.values('student_id', 'rating')
         }
+
+        self.rating_average = assessment_set.aggregate(rating_average=models.Avg('rating'))['rating_average']
+        self.rating_std_dev = assessment_set.aggregate(rating_std_dev=models.StdDev('rating'))['rating_std_dev']
+
         return self
 
 
