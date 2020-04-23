@@ -40,7 +40,7 @@ class ReportSerializer(DocumentSerializer):
 	attempted_candidate_count = serializers.IntegerField()
 
 	percent_attempted = serializers.FloatField()
-
+	
 
 class PassFailReportSerializer(ReportSerializer):
 	passed_candidates = RelatedStudentsField()

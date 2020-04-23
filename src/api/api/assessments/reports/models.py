@@ -334,8 +334,8 @@ class RatedReport(Report):
             for result in assessment_set.values('student_id', 'rating')
         }
 
-        self.rating_average = assessment_set.aggregate(rating_average=models.Avg('rating'))['rating_average']
-        self.rating_std_dev = assessment_set.aggregate(rating_std_dev=models.StdDev('rating'))['rating_std_dev']
+        self.rating_average = assessment_set.aggregate(rating_average=models.Avg('rating'))['rating_average'] or 0
+        self.rating_std_dev = assessment_set.aggregate(rating_std_dev=models.StdDev('rating'))['rating_std_dev'] or 0
 
         return self
 

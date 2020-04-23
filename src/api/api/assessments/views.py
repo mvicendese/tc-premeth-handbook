@@ -67,9 +67,6 @@ class AssessmentViewSet(SaveableModelViewSet):
             except SubjectNode.DoesNotExist: 
                 return Response.invalid({node: 'Node does not exist'})
 
-    def update(self, *args, **kwargs):
-        return super().update(*args, **kwargs)
-
     def get_subject_class_from_params(self):
         class_param = self.request.query_params.get('class', None)
         if class_param is None:
@@ -84,7 +81,7 @@ class AssessmentViewSet(SaveableModelViewSet):
 
         student_param = self.request.query_params.get('student', None)
         if student_param is not None:
-            student_ids = student_param.split('|')
+            student_ids = student_param.split(',')
             students = Student.objects.filter(id__in=student_ids)
             qs = qs.filter_students(students)
 
@@ -120,7 +117,7 @@ class AssessmentViewSet(SaveableModelViewSet):
 
         reports = [] 
         for node in page_nodes: 
-            print('generating report for', node)
+            print('generating report for', node, subject_class)
             report = schema.get_or_generate_report(subject_class=subject_class, subject_node=node)
             report.save()
             reports.append(report)

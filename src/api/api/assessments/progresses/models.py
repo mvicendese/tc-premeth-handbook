@@ -150,13 +150,13 @@ class CompletionBasedProgress(Progress):
 
         partially_complete_assessments = (
             self.snapshot_assessment_set()
-            .filter(state__in=[CompletionState.PARTIALLY_COMPLETE, CompletionState.COMPLETE])
+            .filter(completion_state__in=[CompletionState.PARTIALLY_COMPLETE, CompletionState.COMPLETE])
         )
         self.partially_complete_assessments = partially_complete_assessments
 
         complete_assessments = (
             self.snapshot_assessment_set()
-            .filter(state__in=[CompletionState.COMPLETE])
+            .filter(completion_state__in=[CompletionState.COMPLETE])
         )
         self.complete_assessments = complete_assessments
 
