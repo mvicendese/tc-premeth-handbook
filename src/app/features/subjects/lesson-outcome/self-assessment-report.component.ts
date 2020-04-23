@@ -29,13 +29,13 @@ import {SelfAssessmentResultDetailsDialogComponent} from './self-assessment-resu
     <dl>
       <dt>Average Rating</dt>
       <dd>
-        <app-star-rating disabled [value]="report.ratingAverage"></app-star-rating>
-        ({{report.ratingAverage | number:'1.1-1'}})
+        <app-star-rating disabled [value]="report?.ratingAverage"></app-star-rating>
+        ({{report?.ratingAverage | number:'1.1-1'}})
       </dd>
 
       <dt>Students</dt>
       <dd>
-          {{report.attemptedCandidateCount}} / {{report.candidateCount}} rated
+          {{report?.attemptedCandidateCount}} / {{report?.candidateCount}} rated
       </dd>
     </dl>
 
@@ -69,15 +69,6 @@ export class SelfAssessmentReportComponent {
   ) {
   }
 
-  get histogramDatas(): ReadonlyArray<{ value: number, label: string, command: any[] }> {
-    if (this.outcome == null || this.report == null) {
-      return [];
-    }
-    Object.entries(this.report.candidates).forEach(([candidateId, rating]) => ({
-      value: rating,
-    }));
-  }
-
   openStudentResults() {
     this.isLoadingAssessments = true;
     this.appState.activeSubjectClass$.pipe(
@@ -86,7 +77,7 @@ export class SelfAssessmentReportComponent {
         this.assessmentsService.queryAssessments('lesson-outcome-self-assessment', {
           params: {
             node: this.outcome as LessonOutcome,
-            class: subjectClass
+            subjectClass
           }
         })
       ),

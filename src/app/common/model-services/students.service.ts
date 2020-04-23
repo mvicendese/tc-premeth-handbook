@@ -1,9 +1,6 @@
-
 import {Injectable} from '@angular/core';
 import {ModelService, ModelServiceBackend} from '../model-base/model-service';
-import {BehaviorSubject, defer, EMPTY, merge, NEVER, Observable, of, race, timer, Unsubscribable} from 'rxjs';
-import {map, mapTo, switchMap, switchMapTo, tap} from 'rxjs/operators';
-import {modelRefId, ModelRef} from '../model-base/model-ref';
+import {Observable} from 'rxjs';
 import {ResponsePage} from '../model-base/pagination';
 import {Student} from '../model-types/schools';
 
@@ -19,9 +16,17 @@ export class StudentService extends ModelService<Student> {
 
   /**
    * Query schools.
-   * @param params
+   * @param options
    */
-  students(params: {class?: string | string[], student?: string | string[]}): Observable<ResponsePage<Student>> {
+  students(options: {class?: string | string[], student?: string | string[]}): Observable<ResponsePage<Student>> {
+    const params: {[k: string]: string | string[] } = {};
+    if (options.class) {
+      params.class = options.class;
+    }
+    if (options.student) {
+      params.student = options.student;
+    }
+
     Object.keys(params).forEach(k => params[k] === undefined && delete params[k]);
     return this.query('', {params});
   }

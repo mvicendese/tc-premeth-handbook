@@ -1,7 +1,6 @@
 import json, {isJsonObject, JsonObject, parseError} from '../json';
 import {BaseModel, Model, modelProperties} from '../model-base/model';
 import {Student, Teacher} from './schools';
-import {modelRefFromJson} from '../model-base/model-ref';
 
 export interface Person extends Model {
   readonly type: 'student' | 'teacher';
@@ -10,7 +9,7 @@ export interface Person extends Model {
 }
 
 function personFromJson(object: unknown): Person {
-  let type: string;
+  let type: string | undefined = undefined;
   if (isJsonObject(object)) {
     type = json.string(object.type);
     if (!['student', 'teacher'].includes(type)) {

@@ -2,13 +2,18 @@ import {Injectable, Provider} from '@angular/core';
 import {SubjectNodeRouteData} from '../subject-node-route-data';
 import {UnitAssessmentReport} from '../../../common/model-types/assessment-reports';
 import {Unsubscribable} from 'rxjs';
-import {AssessmentResolveQueue, provideSubjectNodeState, ReportLoader} from '../subjects-feature-state';
 import {StudentContextService} from '../../schools/students/student-context.service';
 import {UnitAssessment} from '../../../common/model-types/assessments';
+import {provideSubjectNodeState} from '../subject-node-state';
+import {AssessmentResolveQueue} from '../assessment-resolve-queue';
+import {AssessmentReportLoader} from '../assessment-report-loader';
 
 export function provideUnitState(): Provider[] {
   return [
-    ...provideSubjectNodeState('unit-assessment', ['block-assessment']),
+    ...provideSubjectNodeState({
+      assessmentType: 'unit-assessment',
+      childAssessmentTypes:  ['block-assessment']
+    }),
     UnitState
   ];
 }
@@ -26,7 +31,7 @@ export class UnitState {
     readonly students: StudentContextService,
     readonly subjectNodeRouteData: SubjectNodeRouteData,
     readonly assessmentResolveQueue: AssessmentResolveQueue<UnitAssessment>,
-    readonly reportLoader: ReportLoader<UnitAssessmentReport>
+    readonly reportLoader: AssessmentReportLoader<UnitAssessmentReport>
   ) {}
 
   init(): Unsubscribable {

@@ -1,6 +1,6 @@
-import json from '../json';
+import json, {parseError} from '../json';
 import {BaseModel, Model, modelProperties} from '../model-base/model';
-import {ModelRef, modelRefId} from '../model-base/model-ref';
+import {ModelRef} from '../model-base/model-ref';
 
 
 /********************************************
@@ -57,7 +57,7 @@ export class Subject extends BaseModel implements SubjectParams {
   }
 
   getUnit(ref: ModelRef<Unit>): Unit | undefined {
-    return this.units.find(unit => unit.id === modelRefId(ref));
+    return this.units.find(unit => unit.id === ModelRef.id(ref));
   }
 
   getNode(type: SubjectNodeType, id: string): SubjectNode | undefined {
@@ -111,7 +111,7 @@ export class Unit extends BaseModel implements UnitParams {
   }
 
   getBlock(block: ModelRef<Block>) {
-    const blockId = modelRefId(block);
+    const blockId = ModelRef.id(block);
     return this.blocks.find(b => b.id === blockId) || null;
   }
 
@@ -163,7 +163,7 @@ export class Block extends BaseModel implements BlockParams {
   }
 
   getLesson(lesson: ModelRef<LessonSchema>): LessonSchema | undefined {
-    const lessonId = modelRefId(lesson);
+    const lessonId = ModelRef.id(lesson);
     return this.lessons.find(item => item.id === lessonId);
   }
 
@@ -258,7 +258,7 @@ export interface LessonOutcomeParams extends Model {
 function lessonOutcomeParamsFromJson(obj: unknown): LessonOutcomeParams {
   return json.object<LessonOutcomeParams>({
     ...modelProperties<LessonOutcome>('lesson-outcome'),
-    name: json.nullable(json.string),
+    name: json.string,
     description: json.string
   }, obj);
 }
@@ -296,6 +296,13 @@ export class LessonOutcome extends BaseModel implements LessonOutcomeParams {
 
 export type SubjectNode = Subject | Unit | Block | LessonSchema | LessonOutcome;
 export type SubjectNodeType = SubjectNode['type'];
+
+export const SubjectNode = {
+  fromJson: (obj: unknown): SubjectNode => {
+    // The subject is always available, no need to ever pass it as a nested association.
+    throw parseError('subject node is always encoded as a string');
+  }
+};
 
 export function subjectNodeChildren(node: SubjectNode): SubjectNode[] {
   switch (node.type) {

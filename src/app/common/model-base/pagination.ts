@@ -3,7 +3,7 @@ import {Observable} from 'rxjs';
 import {Model} from './model';
 import {map} from 'rxjs/operators';
 import {Decoder, JsonObject} from '../json';
-import {modelRefId} from './model-ref';
+import {ModelRef} from './model-ref';
 
 export interface ResponsePageOptions<T> {
   params: { [k: string]: string | string[] };
@@ -38,7 +38,7 @@ export class ResponsePage<T extends object> {
   }
 
   resultMap(key: (obj: T) => string): Record<string, T> {
-    const keyFn = key || modelRefId;
+    const keyFn = key || ModelRef.id;
     return Object.fromEntries( this.results.map(result => {
       const key = keyFn(result);
       if (key == null) {

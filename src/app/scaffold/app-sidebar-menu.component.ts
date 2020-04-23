@@ -5,9 +5,9 @@ import {filter, first, map, shareReplay, skipWhile, withLatestFrom} from 'rxjs/o
 import {ActivationStart, Router, UrlSegment} from '@angular/router';
 import {FlatTreeControl} from '@angular/cdk/tree';
 import {MatTreeFlatDataSource, MatTreeFlattener} from '@angular/material/tree';
-import {ModelRef, modelRefId} from '../common/model-base/model-ref';
+import {ModelRef} from '../common/model-base/model-ref';
 import {FormControl, FormGroup} from '@angular/forms';
-import {Block, Unit} from '../common/model-types/subjects';
+import {Block, Subject, Unit} from '../common/model-types/subjects';
 import {SubjectClass} from '../common/model-types/schools';
 
 export interface MenuNode {
@@ -75,7 +75,7 @@ function unitsMenu(allUnits: readonly Unit[], level: number = 0): MenuNode {
 function isUnitDetailsUrl(unit: ModelRef<Unit>, url: UrlSegment[]) {
   return url.length >= 2
       && url[0].path === 'units'
-      && url[1].path === modelRefId(unit);
+      && url[1].path === ModelRef.id(unit);
 }
 
 function isUnitBlockDetailsUrl(block: Block, url: UrlSegment[]) {
@@ -193,7 +193,7 @@ export class AppSidebarMenuComponent implements OnInit, OnDestroy {
   );
 
   readonly allUnits$ = this.appState.subject$.pipe(
-    skipWhile(subject => subject == null),
+    filter((subject): subject is Subject => subject != null),
     map(subject => subject.units),
     shareReplay(1)
   );
@@ -214,7 +214,7 @@ export class AppSidebarMenuComponent implements OnInit, OnDestroy {
   ]).pipe(
     map(([activationStart, menuData]) => {
       const snapshot = activationStart.snapshot;
-      const url = [].concat(
+      const url = ([] as UrlSegment[]).concat(
         ...snapshot.pathFromRoot.map(path => path.url)
       );
       return getActiveMenuNodes(menuData, url);
@@ -253,6 +253,9 @@ export class AppSidebarMenuComponent implements OnInit, OnDestroy {
         this.treeControl.collapseAll();
         activeNodes.forEach(activeNode => {
           const node = this.treeControl.dataNodes.find(n => isEqualNodes(activeNode, n));
+          if (node == undefined) {
+            throw new Error('Could not find node in data')
+          }
           this.treeControl.expand(node);
         });
       })

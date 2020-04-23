@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, Output} from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
 import {LessonPrelearningReport} from '../../../common/model-types/assessment-reports';
-import {modelRefId, Resolve} from '../../../common/model-base/model-ref';
+import {ModelRef, Resolve} from '../../../common/model-base/model-ref';
 import {AppStateService} from '../../../app-state.service';
 import {LessonSchema} from '../../../common/model-types/subjects';
 import {LessonPrelearningAssessment} from '../../../common/model-types/assessments';
@@ -46,7 +46,7 @@ export class PrelearningResultComponent {
     switchMap(([report, assessments]) =>
       forkJoin(
         report.candidates.map(candidate => {
-          const assessment = assessments[modelRefId(candidate)];
+          const assessment = assessments[ModelRef.id(candidate)];
 
           return this.studentContext.student(candidate).pipe(
             first(),

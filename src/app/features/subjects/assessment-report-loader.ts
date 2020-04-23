@@ -6,7 +6,7 @@ import {AssessmentType} from '../../common/model-types/assessments';
 import {SubjectNodeRouteData} from './subject-node-route-data';
 import {combineLatest, merge, Observable, Unsubscribable} from 'rxjs';
 import {map, scan, shareReplay, switchMap} from 'rxjs/operators';
-import {ModelRef, modelRefId} from '../../common/model-base/model-ref';
+import {ModelRef} from '../../common/model-base/model-ref';
 import {SubjectNode} from '../../common/model-types/subjects';
 import {SubjectClass} from '../../common/model-types/schools';
 
@@ -48,7 +48,7 @@ export class AssessmentReportLoader<R extends AnyReport> {
         report.unsubscribe();
         childReports.unsubscribe();
       }
-    }
+    };
   }
 
   readonly report$ = combineLatest([
@@ -66,9 +66,9 @@ export class AssessmentReportLoader<R extends AnyReport> {
     switchMap(([node, subjectClass]) => this.loadChildReports(node, subjectClass))
   );
 
-  childReportsOfType<R extends AnyReport>(childAssessmentType: R['assessmentType']): Observable<{[subjectNodeId: string]: R}> {
+  childReportsOfType<T extends AnyReport>(childAssessmentType: T['assessmentType']): Observable<{[subjectNodeId: string]: T }> {
     return this.childReports$.pipe(
-      map(allReports => allReports[childAssessmentType] as {[subjectNodeId: string]: R}),
+      map(allReports => allReports[childAssessmentType] as {[subjectNodeId: string]: T}),
       map(report => report == null ? {} : report)
     );
   }
@@ -88,7 +88,7 @@ export class AssessmentReportLoader<R extends AnyReport> {
     function loadChildReports(childType: AssessmentType): Observable<[AssessmentType, {[childId: string]: AnyReport}]> {
       const params = {node, subjectClass};
       return (this as AssessmentReportLoader<R>).assessments.queryReports(childType, { params }).pipe(
-        map(page => page.resultMap((result) => modelRefId(result.subjectNode))),
+        map(page => page.resultMap((result) => ModelRef.id(result.subjectNode))),
         map(reports => [childType, reports])
       );
     }

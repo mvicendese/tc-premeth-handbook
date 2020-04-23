@@ -2,10 +2,8 @@ import {Component} from '@angular/core';
 import {LessonState} from './lesson-state';
 import {LessonOutcomeSelfAssessmentReport} from '../../../common/model-types/assessment-reports';
 import {map, shareReplay} from 'rxjs/operators';
-import {LessonOutcomeSelfAssessment} from '../../../common/model-types/assessments';
 import {LessonOutcome} from '../../../common/model-types/subjects';
 import {combineLatest} from 'rxjs';
-import {modelRefId} from '../../../common/model-base/model-ref';
 
 interface OutcomeView {
     readonly outcome: LessonOutcome;

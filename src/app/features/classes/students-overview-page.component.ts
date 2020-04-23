@@ -3,7 +3,6 @@ import {filter, first, map, pluck, shareReplay, startWith, switchMap, tap, withL
 import {BehaviorSubject, combineLatest, defer, Observable, Subscription} from 'rxjs';
 import {ActivatedRoute} from '@angular/router';
 import {AppStateService} from '../../app-state.service';
-import {modelRefId} from '../../common/model-base/model-ref';
 import {Student, SubjectClass} from '../../common/model-types/schools';
 import {FormControl} from '@angular/forms';
 import {MatAutocompleteSelectedEvent} from '@angular/material/autocomplete';

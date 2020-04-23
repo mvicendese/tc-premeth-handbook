@@ -16,12 +16,13 @@ export interface TableRowData {
   readonly unitResult: any | null;
 }
 export function tableRows(state: TableState): TableRowData[] {
-  if (state.unit == null) {
+  const unit = state.unit;
+  if (unit == null) {
     return [];
   }
   return state.students.map(student => ({
     student,
-    unit: state.unit,
+    unit,
     unitResult: state.studentResults[student.id] || null
   }));
 }

@@ -26,50 +26,43 @@ export type Resolve<T extends object, K extends keyof T> = {
   [K1 in keyof T]: K1 extends K ? Exclude<T[K1], string> : T[K1];
 };
 
-export function isRefId(ref: unknown): ref is string {
-  return typeof ref === 'string';
-}
-export function isRefModel<T extends Model>(ref: ModelRef<T> | null): ref is T {
-  return isJsonObject(ref);
-}
+export const ModelRef = {
+  isId: (ref: unknown): ref is string => typeof ref === 'string',
+  isModel: <T extends Model>(ref: ModelRef<T> | null): ref is T => isJsonObject(ref),
 
-export function modelRefId(ref: ModelRef<any>): string {
-  if (ref === undefined) {
-    throw new Error(`Undefined ref`);
-  }
-  if (isRefId(ref)) {
+  id: (ref: ModelRef<any>) => {
+    if (ref === undefined) {
+      throw new Error(`Undefined ref`);
+    }
+    if (ModelRef.isId(ref)) {
+      return ref;
+    } else {
+      return ref.id;
+    }
+  },
+  model: <T extends Model>(ref: ModelRef<T>): T => {
+    if (ModelRef.isId(ref)) {
+      throw new Error(`Unresolved ref: ${ref}`);
+    }
     return ref;
-  } else {
-    return ref.id;
+  },
+
+  fromJson: modelRefFromJson
+};
+
+function modelRefFromJson<T extends Model>(fromObject: (obj: JsonObject) => T): Decoder<ModelRef<T>>;
+function modelRefFromJson<T extends Model>(fromObject: (obj: JsonObject) => T, obj: unknown): ModelRef<T>;
+function modelRefFromJson<T extends Model>(fromObject: (obj: JsonObject) => T, obj?: unknown): Decoder<ModelRef<T>> | ModelRef<T> {
+  if (arguments.length === 1) {
+    return obj => modelRefFromJson(fromObject, obj);
   }
-}
-
-export function modelRefModel<T extends Model>(ref: ModelRef<T>): T {
-  if (isRefId(ref)) {
-    throw new Error(`Unresolved ref: ${ref}`);
-  }
-  return ref;
-}
-
-export function modelRefFromJson<T extends Model>(): Decoder<ModelRef<T>>;
-export function modelRefFromJson<T extends Model>(obj: ModelRef<T>): ModelRef<T>;
-export function modelRefFromJson<T extends Model>(fromObject: (obj: JsonObject) => T): Decoder<ModelRef<T>>;
-export function modelRefFromJson<T extends Model>(fromObject: (obj: JsonObject) => T, ref: ModelRef<T>): ModelRef<T>;
-
-export function modelRefFromJson<T extends Model>(fromObject?: ((obj: JsonObject) => T | ModelRef<T>), ref?: ModelRef<T>): Decoder<ModelRef<T>> | ModelRef<T> {
-  ref = typeof fromObject === 'function' ? ref : fromObject;
   return json.union(
-    obj => typeof obj as "string" | "object",
+    obj => (typeof obj) as "string" | "object",
     {
       string: (obj) => obj as ModelRef<T>,
-      object: (obj) => {
-        if (isJsonObject(fromObject)) {
-          return fromObject;
-        }
-        return fromObject(obj as JsonObject);
-      }
+      object: (obj) => fromObject(obj as JsonObject)
     },
-    ref
+    obj
   );
 }
 

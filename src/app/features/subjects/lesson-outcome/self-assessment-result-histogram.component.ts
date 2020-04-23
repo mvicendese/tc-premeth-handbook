@@ -1,9 +1,8 @@
 import {AfterViewInit, Component, ElementRef, Host, Input, OnDestroy, Renderer2, ViewChild, ViewEncapsulation} from '@angular/core';
-import {modelRefId} from '../../../common/model-base/model-ref';
 import * as d3 from 'd3';
 import {Set} from 'immutable';
 import {asyncScheduler, AsyncSubject, BehaviorSubject, combineLatest, defer, Observable, of, timer, Unsubscribable,} from 'rxjs';
-import {LessonOutcomeSelfAssessmentReport} from '../../../common/model-types/assessment-reports';
+import {LessonOutcomeSelfAssessmentReport, Report} from '../../../common/model-types/assessment-reports';
 import {
   debounceTime,
   distinctUntilChanged,
@@ -19,6 +18,7 @@ import {
 } from 'rxjs/operators';
 import {Student} from '../../../common/model-types/schools';
 import {LessonOutcomeSelfAssessment} from '../../../common/model-types/assessments';
+import {ModelRef} from '../../../common/model-base/model-ref';
 
 interface Cell {
   readonly candidateId: string;
@@ -34,13 +34,14 @@ function histogramBinData(report: LessonOutcomeSelfAssessmentReport): Bin[] {
   const bins = Array.from(
     new Array(6)).map((_, i) => ({
       rating: i,
-      cells: []
+      cells: [] as Cell[]
     }));
   const candidateScores = report.candidateRatings;
 
-  report.candidates.forEach(candidateId => {
+  report.candidates.forEach(candidate => {
+    const candidateId = ModelRef.id(candidate);
     if (report.attemptedCandidates.includes(candidateId)) {
-      const rating = candidateScores[modelRefId(candidateId)];
+      const rating = candidateScores[candidateId];
       if (rating === undefined) {
         throw new Error(`No score for attempted candidate`);
       }
@@ -111,7 +112,11 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
     activeRating: null
   });
 
-  private binData$ = defer(() => this.reportSubject.pipe(map(report => histogramBinData(report))));
+  private binData$ = defer(() =>
+    this.reportSubject.pipe(
+      filter((r): r is LessonOutcomeSelfAssessmentReport => r !== undefined),
+      map(report => histogramBinData(report))
+  ));
 
   readonly displayCandidates$: Observable<{candidateId: string, isHover: boolean, isActive: boolean}[]> = combineLatest([
       this.binData$,
@@ -141,8 +146,7 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
   get report() {
     return this.reportSubject.value;
   }
-
-  set report(report: LessonOutcomeSelfAssessmentReport) {
+  set report(report: LessonOutcomeSelfAssessmentReport | undefined) {
     this.reportSubject.next(report);
   }
 
@@ -253,7 +257,7 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
       });
   }
 
-  protected selectRating(rating: {value: number | null}) {
+  protected selectRating(rating: {value: number | null} | null) {
     console.log('select rating', rating);
     this.stateSubject.next({ ...this.stateSubject.value, activeCandidate: null, activeRating: rating });
   }
@@ -266,7 +270,7 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
     this.stateSubject.next({...this.stateSubject.value, activeRating: null, activeCandidate: null});
   }
 
-  hoverRating(rating: {value: number | null}) {
+  hoverRating(rating: {value: number | null} | null) {
     this.stateSubject.next({...this.stateSubject.value, hoverRating: rating, hoverCandidate: null});
   }
 

@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {ActivatedRouteSnapshot, Resolve, RouterStateSnapshot} from '@angular/router';
-import {SubjectNode, SubjectNodeType} from '../../common/model-types/subjects';
+import {Subject, SubjectNode, SubjectNodeType} from '../../common/model-types/subjects';
 import {Observable} from 'rxjs';
 import {filter, first, map} from 'rxjs/operators';
 import {SubjectsFeatureState} from './subjects-feature-state';
@@ -20,12 +20,16 @@ export class SubjectNodeRouteResolver implements Resolve<SubjectNode> {
   }
 
   protected nodeIdFromRoute(route: ActivatedRouteSnapshot): string {
-    return route.paramMap.get('node_id');
+    const nodeId = route.paramMap.get('node_id');
+    if (nodeId == null) {
+      throw new Error('No :node_id in route');
+    }
+    return nodeId;
   }
 
   protected subjectNodeFromParams(nodeType: SubjectNodeType, id: string): Observable<SubjectNode> {
     return this.subjectsFeature.subject$.pipe(
-      filter(subject => subject != null),
+      filter((subject): subject is Subject => subject != null),
       map(subject => {
         const node = subject.getNode(nodeType, id);
         if (node == null) {

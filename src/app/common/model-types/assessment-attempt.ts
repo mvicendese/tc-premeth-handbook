@@ -1,4 +1,4 @@
-import {ModelRef, modelRefFromJson, modelRefId} from '../model-base/model-ref';
+import {ModelRef} from '../model-base/model-ref';
 import {
   AnyAssessment,
   Assessment,
@@ -22,7 +22,7 @@ export interface AssessmentAttempt<T extends Assessment = Assessment> {
 export const AssessmentAttempt = {
   properties: <T extends Assessment>(assessmentType: T['type']) => ({
     assessmentType: {value: assessmentType},
-    assessment: modelRefFromJson(AnyAssessment.fromJson as Decoder<T>),
+    assessment: ModelRef.fromJson(AnyAssessment.fromJson as Decoder<T>),
     attemptNumber: json.number,
     createdAt: json.date
   })
@@ -53,7 +53,7 @@ export const CompletionBasedAssessmentAttempt = {
   }),
   toJson: <T extends Assessment>(obj: CompletionBasedAssessmentAttempt<T>) => ({
     assessmentType: obj.assessmentType,
-    assessment: modelRefId(obj.assessment),
+    assessment: ModelRef.id(obj.assessment),
     completionState: obj.completionState,
   }),
 };

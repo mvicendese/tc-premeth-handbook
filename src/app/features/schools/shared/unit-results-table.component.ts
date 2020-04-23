@@ -1,8 +1,6 @@
-import {Component, Input, OnDestroy, OnInit} from '@angular/core';
-import {AppStateService} from '../../../app-state.service';
-import {mark} from '@angular/compiler-cli/src/ngtsc/perf/src/clock';
-import {BehaviorSubject, combineLatest, concat, Observable, of, Subscription, zip} from 'rxjs';
-import {concatMap, filter, first, map, shareReplay, switchMap} from 'rxjs/operators';
+import {Component, Input} from '@angular/core';
+import {BehaviorSubject, Subscription} from 'rxjs';
+import {map, shareReplay} from 'rxjs/operators';
 import {Subject, Unit} from '../../../common/model-types/subjects';
 import {Student} from '../../../common/model-types/schools';
 

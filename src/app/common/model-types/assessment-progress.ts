@@ -1,4 +1,4 @@
-import json, {Decoder} from '../json';
+import json from '../json';
 
 import {
   AnyAssessment,
@@ -10,7 +10,7 @@ import {
   UnitAssessment
 } from './assessments';
 import {ModelDocument} from '../model-base/document';
-import {ModelRef, modelRefFromJson} from '../model-base/model-ref';
+import {ModelRef} from '../model-base/model-ref';
 import {Student} from './schools';
 import {Subject, SubjectNode} from './subjects';
 
@@ -37,15 +37,15 @@ export const Progress = {
   properties: <T extends Assessment>(type: T['type']) => ({
     ...ModelDocument.properties,
     assessmentType: {value: type},
-    student: modelRefFromJson(Student.fromJson),
-    subject: modelRefFromJson(Subject.fromJson),
-    node: json.nullable(modelRefFromJson as Decoder<ModelRef<SubjectNode>>),
+    student: ModelRef.fromJson(Student.fromJson),
+    subject: ModelRef.fromJson(Subject.fromJson),
+    node: json.nullable(ModelRef.fromJson(SubjectNode.fromJson)),
 
     assessmentCount: json.number,
-    assessments: json.array(modelRefFromJson(AnyAssessment.fromJson)),
+    assessments: json.array(ModelRef.fromJson(AnyAssessment.fromJson)),
 
     attemptedAssessmentCount: json.number,
-    attemptedAssessments: json.array(modelRefFromJson(AnyAssessment.fromJson)),
+    attemptedAssessments: json.array(ModelRef.fromJson(AnyAssessment.fromJson)),
 
     percentAttempted: json.number
   })
@@ -74,9 +74,9 @@ export const CompletionBasedProgress = {
   properties: <T extends Assessment>(type: T['type']) => ({
     ...Progress.properties<T>(type),
     completeAssessmentCount: json.number,
-    completeAssessments: json.array(modelRefFromJson(AnyAssessment.fromJson)),
+    completeAssessments: json.array(ModelRef.fromJson(AnyAssessment.fromJson)),
     partiallyCompleteAssessmentCount: json.number,
-    partiallyCompleteAssessments: json.array(modelRefFromJson(AnyAssessment.fromJson))
+    partiallyCompleteAssessments: json.array(ModelRef.fromJson(AnyAssessment.fromJson))
   }),
   fromJson: (obj) => json.object(CompletionBasedProgress.properties, obj)
 };

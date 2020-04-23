@@ -1,6 +1,5 @@
 import {InjectionToken, NgModule} from '@angular/core';
 import {Resolve, RouterModule, Routes} from '@angular/router';
-import {modelServiceResolverFactory} from '../../common/model-base/model-resolver.service';
 import {SubjectClassService} from '../../common/model-services/subject-class.service';
 import {CommonModule} from '@angular/common';
 import {StudentsOverviewPageComponent} from './students-overview-page.component';
@@ -45,13 +44,6 @@ export const routes: Routes = [
 
     SchoolsSharedModule,
     SubjectsSharedModule
-  ],
-  providers: [
-    {
-      provide: RESOLVE_SUBJECT_CLASS,
-      useFactory: modelServiceResolverFactory({idParam: 'class_id'}),
-      deps: [SubjectClassService]
-    }
   ],
   declarations: [
     StudentsOverviewPageComponent,

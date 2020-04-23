@@ -26,7 +26,7 @@ export class SubjectSelectorComponent {
 
   @Input()
   get value() {
-    return this.values.find((item) => item.id === this.selectionControl.value);
+    return this.values.find((item) => item.id === this.selectionControl.value) || null;
   }
   set value(selection: SubjectIndex | null) {
     this.selectionControl.setValue(selection && selection.id);

@@ -14,7 +14,13 @@ export class StudentRouteResolver implements Resolve<Student> {
 
   resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<Student> {
     return this.studentContext.all$.pipe(
-      map(students => students[route.paramMap.get('student_id')]),
+      map(students => {
+        const studentId = route.paramMap.get('student_id');
+        if (studentId == null) {
+          throw new Error('No student id in params');
+        }
+        return students[studentId];
+      }),
       filter((student): student is Student => student != null),
       first(),
       tap(student => console.log('resolved', student))

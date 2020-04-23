@@ -1,6 +1,6 @@
 import json, {Decoder} from '../json';
-import {ModelRef, modelRefFromJson} from '../model-base/model-ref';
-import {School, schoolFromJson, Student, SubjectClass, subjectClassFromJson} from './schools';
+import {ModelRef} from '../model-base/model-ref';
+import {School, schoolFromJson, Student, SubjectClass} from './schools';
 import {LessonSchema, Subject, SubjectNode} from './subjects';
 import {
   Assessment,
@@ -34,18 +34,18 @@ export interface Report<T extends Assessment> {
 export const Report = {
   properties: <A extends AssessmentType>(assessmentType: A) => ({
     assessmentType: {value: assessmentType},
-    school: modelRefFromJson(schoolFromJson),
-    subject: modelRefFromJson(Subject.fromJson),
+    school: ModelRef.fromJson(schoolFromJson),
+    subject: ModelRef.fromJson(Subject.fromJson),
 
-    subjectNode: modelRefFromJson<SubjectNode>(),
+    subjectNode: ModelRef.fromJson(SubjectNode.fromJson),
 
-    subjectClass: json.nullable(modelRefFromJson(subjectClassFromJson)),
+    subjectClass: json.nullable(ModelRef.fromJson(SubjectClass.fromJson)),
     generatedAt: json.date,
 
     candidateCount: json.number,
-    candidates: json.array(modelRefFromJson(Student.fromJson)),
+    candidates: json.array(ModelRef.fromJson(Student.fromJson)),
     attemptedCandidateCount: json.number,
-    attemptedCandidates: json.array(modelRefFromJson(Student.fromJson)),
+    attemptedCandidates: json.array(ModelRef.fromJson(Student.fromJson)),
 
     percentAttempted: json.number
   })
@@ -92,9 +92,9 @@ export const LessonPrelearningReport = {
   fromJson: (obj) => json.object<LessonPrelearningReport>({
     ...Report.properties('lesson-prelearning-assessment'),
     completeCandidateCount: json.number,
-    completeCandidates: json.array(modelRefFromJson(Student.fromJson)),
+    completeCandidates: json.array(ModelRef.fromJson(Student.fromJson)),
     partiallyCompleteCandidateCount: json.number,
-    partiallyCompleteCandidates: json.array(modelRefFromJson(Student.fromJson)),
+    partiallyCompleteCandidates: json.array(ModelRef.fromJson(Student.fromJson)),
 
     percentComplete: json.number,
     percentPartiallyComplete: json.number,

@@ -1,7 +1,7 @@
 import {Inject, Injectable, InjectionToken} from '@angular/core';
 import {Model} from './model';
 import {HttpClient, HttpErrorResponse} from '@angular/common/http';
-import {isRefId, ModelRef} from './model-ref';
+import {ModelRef} from './model-ref';
 import {defer, iif, Observable, of, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {modelServiceResponsePageFactory, ResponsePage, ResponsePageOptions} from './pagination';
@@ -23,22 +23,22 @@ export class ModelServiceBackend {
 
   constructor(
     readonly http: HttpClient,
-
     @Inject(API_BASE_HREF)
     readonly apiBaseHref: string
-  ) {}
+  ) {
+  }
 
   protected normalPath(path: string | string[]) {
     const components = typeof path === 'string' ? [path] : path;
     if (!/^\//.test(components[0] || '')) {
-      throw new Error(`First path component must begin with an '/'`)
+      throw new Error(`First path component must begin with an '/'`);
     }
     return this.apiBaseHref + [...components]
       .map(component => component.replace(/([^/])$/, '$1/'))
       .join('');
   }
 
-  get(path: string | string[], params?: {[k: string]: string | string[]}): Observable<JsonObject> {
+  get(path: string | string[], params?: { [k: string]: string | string[] }): Observable<JsonObject> {
     params = Object.assign({}, DEFAULT_PARAMS, params);
     return this.http.get<JsonObject>(this.normalPath(path), {
       params,
@@ -50,7 +50,7 @@ export class ModelServiceBackend {
   }
 
   post(path: string | string[], body: JsonObject, options: {
-    params?: {[k: string]: string | string[]};
+    params?: { [k: string]: string | string[] };
   }): Observable<JsonObject> {
     const params = Object.assign({}, DEFAULT_PARAMS, options.params);
     return this.http.post<JsonObject>(
@@ -67,7 +67,7 @@ export class ModelServiceBackend {
   }
 
   put(path: string | string[], body: JsonObject, options: {
-    params?: {[k: string]: string | string[]}
+    params?: { [k: string]: string | string[] }
   } = {}): Observable<JsonObject> {
     const params = Object.assign({}, DEFAULT_PARAMS, options.params);
     return this.http.put<JsonObject>(
@@ -96,11 +96,12 @@ export abstract class ModelService<T extends Model> {
   protected constructor(
     protected backend: ModelServiceBackend,
     readonly path: string
-  ) {}
+  ) {
+  }
 
   fetch(ref: ModelRef<T>): Observable<T> {
     return iif(
-      () => isRefId(ref),
+      () => ModelRef.isId(ref),
       defer(() => this.backend.get([this.path, ref].join('/'))).pipe(
         map((params) => this.fromJson(params))
       ),
@@ -109,7 +110,7 @@ export abstract class ModelService<T extends Model> {
   }
 
   put<Result extends object = T>(path: string, body: JsonObject, options: {
-    params?: {[k: string]: string | string[] },
+    params?: { [k: string]: string | string[] },
     useDecoder?: (obj: unknown) => Result;
   } = {}): Observable<Result> {
     const decoder = options.useDecoder || this.fromJson.bind(this);
@@ -119,7 +120,7 @@ export abstract class ModelService<T extends Model> {
   }
 
   post<Result extends object = T>(path: string, body: JsonObject, options: {
-    params?: {[k: string]: string | string[]},
+    params?: { [k: string]: string | string[] },
     useDecoder?: (obj: unknown) => Result;
   } = {}): Observable<Result> {
     const decoder = options.useDecoder || this.fromJson.bind(this);
@@ -128,18 +129,18 @@ export abstract class ModelService<T extends Model> {
     );
   }
 
-  resolve(ids: readonly string[]): Observable<{[id: string]: T}> {
-    return this.query('', { params: { resolve: [...ids] }}).pipe(
+  resolve(ids: readonly string[]): Observable<{ [id: string]: T }> {
+    return this.query('', {params: {resolve: [...ids]}}).pipe(
       // There will only be at most one page, because there is a 1-[0..1] correspondence between ids and results
       map(page => Object.fromEntries<T>(page.results.map(item => [item.id, item])))
     );
   }
 
   query<Result extends object = T>(path: string,
-               options: {
-                 params: {[k: string]: string | string[]};
-                 useDecoder?: Decoder<Result>
-               }): Observable<ResponsePage<Result>> {
+                                   options: {
+                                     params: { [k: string]: string | string[] };
+                                     useDecoder?: Decoder<Result>
+                                   }): Observable<ResponsePage<Result>> {
     path = this.path + path;
     const sOptions: ResponsePageOptions<Result> = {
       ...options,
@@ -166,7 +167,7 @@ export abstract class ModelService<T extends Model> {
    * @param options: object
    */
   queryUnique<U = T>(path: string, options?: {
-    params: {[k: string]: string | string[]};
+    params: { [k: string]: string | string[] };
     useDecoder?: (obj: JsonObject) => U;
   }): Observable<U | null> {
     path = this.path + path;

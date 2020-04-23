@@ -1,14 +1,7 @@
 import {Injectable, Provider} from '@angular/core';
-import {BehaviorSubject, combineLatest, defer, Observable, Subject, Subscription, Unsubscribable} from 'rxjs';
-import {AssessmentsService} from '../../../common/model-services/assessments.service';
-import {AppStateService} from '../../../app-state.service';
-import {Block, LessonSchema, Unit} from '../../../common/model-types/subjects';
-import {distinctUntilChanged, filter, first, map, pluck, shareReplay, switchMap, withLatestFrom} from 'rxjs/operators';
-import {ModelRef, modelRefId, Resolve} from '../../../common/model-base/model-ref';
-import {SubjectClass} from '../../../common/model-types/schools';
-import {BlockAssessmentReport, LessonPrelearningReport} from '../../../common/model-types/assessment-reports';
+import {Unsubscribable} from 'rxjs';
+import {BlockAssessmentReport} from '../../../common/model-types/assessment-reports';
 import {SubjectNodeRouteData} from '../subject-node-route-data';
-import {ModelResolveQueue} from '../../../common/model-base/resolve-queue';
 import {BlockAssessment} from '../../../common/model-types/assessments';
 import {StudentContextService} from '../../schools/students/student-context.service';
 import {provideSubjectNodeState} from '../subject-node-state';

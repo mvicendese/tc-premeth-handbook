@@ -48,7 +48,7 @@ export class AppStateService {
     return this.stateSubject.pipe(pluck('year'));
   }
 
-  get subject$(): Observable<Subject | null> {
+  get subject$(): Observable<Subject| null> {
     return this.stateSubject.pipe(
       pluck('subject'),
       distinctUntilChanged()

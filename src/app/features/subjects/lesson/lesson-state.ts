@@ -1,8 +1,8 @@
 import {CompletionState, LessonPrelearningAssessment} from '../../../common/model-types/assessments';
 import {Injectable, Provider} from '@angular/core';
-import {combineLatest, forkJoin, Observable, of, Unsubscribable} from 'rxjs';
+import {combineLatest, defer, forkJoin, Observable, of, Unsubscribable} from 'rxjs';
 import {filter, first, map, shareReplay, switchMap, switchMapTo, tap, withLatestFrom} from 'rxjs/operators';
-import {ModelRef, modelRefId} from '../../../common/model-base/model-ref';
+import {ModelRef} from '../../../common/model-base/model-ref';
 import {Student} from '../../../common/model-types/schools';
 import {LessonSchema} from '../../../common/model-types/subjects';
 import {SubjectNodeRouteData} from '../subject-node-route-data';
@@ -34,7 +34,9 @@ export class LessonState {
     readonly reportLoader: AssessmentReportLoader<LessonPrelearningReport>
   ) {}
 
-  readonly lesson$: Observable<LessonSchema> = this.nodeRouteData.lesson$;
+  readonly lesson$: Observable<LessonSchema> = defer(() => this.nodeRouteData.lesson$.pipe(
+    filter((lesson): lesson is LessonSchema => lesson != null)
+  ));
 
   readonly lessonPrelearningReport$: Observable<LessonPrelearningReport> = this.reportLoader.report$;
   readonly outcomeSelfAssessmentReports$ = this.reportLoader.childReportsOfType('lesson-outcome-self-assessment');
@@ -45,7 +47,7 @@ export class LessonState {
   ]).pipe(
     switchMap(([lesson, report]) => {
       function createInitialAssessment(candidate: Student): [string, LessonPrelearningAssessment] {
-        return [modelRefId(candidate), LessonPrelearningAssessment.create(lesson, candidate)];
+        return [ModelRef.id(candidate), LessonPrelearningAssessment.create(lesson, candidate)];
       }
       return forkJoin(
         report.candidates.map(candidate => {
@@ -63,7 +65,7 @@ export class LessonState {
   readonly prelearningAssessments$ = this.lessonPrelearningReport$.pipe(
     tap(report => {
       report.candidates.forEach(candidate =>
-        this.assessmentResolveQueue.loadAssessment(modelRefId(candidate))
+        this.assessmentResolveQueue.loadAssessment(ModelRef.id(candidate))
       );
     }),
     switchMapTo(this.assessmentResolveQueue.assessments$),
@@ -77,7 +79,7 @@ export class LessonState {
   );
 
   loadPrelearningAssessment(candidateId: ModelRef<Student>, options?: {force: boolean}): Observable<LessonPrelearningAssessment> {
-    return this.assessmentResolveQueue.loadAssessment(modelRefId(candidateId), options);
+    return this.assessmentResolveQueue.loadAssessment(ModelRef.id(candidateId), options);
   }
 
   init(): Unsubscribable {
@@ -93,7 +95,7 @@ export class LessonState {
   }
 
   setPrelearningAssessmentCompletionState(student: ModelRef<Student>, completionState: CompletionState): Promise<LessonPrelearningAssessment> {
-    const studentId = modelRefId(student);
+    const studentId = ModelRef.id(student);
 
     return this.prelearningAssessments$.pipe(
       map(assessments => assessments[studentId]),

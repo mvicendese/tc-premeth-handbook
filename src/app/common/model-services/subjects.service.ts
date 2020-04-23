@@ -11,7 +11,7 @@ export class SubjectsService extends ModelService<Subject> {
     super(backend, '/subjects');
   }
 
-  index(params?: {search: string}) {
+  index(params: {search: string} = {search: ''}) {
     return this.query('', {params, useDecoder: subjectIndexFromJson });
   }
 }

@@ -2,7 +2,7 @@ import {Inject, Injectable, InjectionToken} from '@angular/core';
 import {BehaviorSubject, combineLatest, defer, Observable, Unsubscribable} from 'rxjs';
 import {Student} from '../../../common/model-types/schools';
 import {ActivatedRoute} from '@angular/router';
-import {distinctUntilChanged, filter, map, switchMap} from 'rxjs/operators';
+import {distinctUntilChanged, filter, map, pluck, switchMap} from 'rxjs/operators';
 import {AssessmentsService} from '../../../common/model-services/assessments.service';
 import {SubjectNode} from '../../../common/model-types/subjects';
 import {
@@ -29,8 +29,20 @@ export class ProgressLoader<T extends AnyProgress> {
     readonly options: ProgressLoaderOptions
   ) {}
 
-  loadProgresses(student: ModelRef<Student>, node: ModelRef<SubjectNode>): Observable<T> {
-    return this.assessments.fetchProgress(student, node);
+  get assessmentType(): T['assessmentType'] {
+    return this.options.assessmentType;
+  }
+
+  readonly progress$ = defer(() =>
+    combineLatest([
+      this.route.data.pipe(pluck('student'), filter((s): s is Student => s != null)),
+    ])
+  );
+
+  protected loadProgress(student: ModelRef<Student>, node: ModelRef<SubjectNode> | null): Observable<T | null> {
+    return this.assessments.fetchProgress(this.assessmentType, {
+      params: {student, node}
+    });
   }
 }
 

@@ -6,7 +6,7 @@ import {SubjectNodeRouteData} from './subject-node-route-data';
 import {Observable, Unsubscribable} from 'rxjs';
 import {ModelResolveQueue} from '../../common/model-base/resolve-queue';
 import {first, map, switchMap} from 'rxjs/operators';
-import {ModelRef, modelRefId} from '../../common/model-base/model-ref';
+import {ModelRef} from '../../common/model-base/model-ref';
 import {SubjectNode} from '../../common/model-types/subjects';
 
 export interface AssessmentResolveQueueOptions {
@@ -65,7 +65,7 @@ export class AssessmentResolveQueue<T extends Assessment> {
       ),
       map(page => {
         console.log('page', page.results);
-        return page.resultMap(result => modelRefId(result.student))
+        return page.resultMap(result => ModelRef.id(result.student))
       })
     );
   }

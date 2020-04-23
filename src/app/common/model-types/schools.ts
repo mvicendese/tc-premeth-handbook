@@ -1,6 +1,6 @@
 import json, {JsonObject} from '../json';
 import {BaseModel, Model, modelProperties} from '../model-base/model';
-import {ModelRef, modelRefFromJson} from '../model-base/model-ref';
+import {ModelRef} from '../model-base/model-ref';
 import {Subject} from './subjects';
 
 export interface School extends Model {
@@ -31,14 +31,8 @@ function personProperties<T extends Person>(type: T['type']) {
     surname: json.string,
     fullName: json.string,
     email: json.string,
-    school: modelRefFromJson(schoolFromJson)
+    school: ModelRef.fromJson(schoolFromJson)
   };
-}
-
-export function personFromJson(obj: JsonObject): Person {
-  const type = json.string(obj.type);
-
-  return json.object(personProperties(type), obj);
 }
 
 export interface StudentParams extends Person {
@@ -106,12 +100,12 @@ export interface Teacher extends Person {
   readonly teacherCode: string;
 }
 
-export function teacherFromJson(obj: unknown): Teacher {
-  return json.object<Teacher>({
+export const Teacher = {
+  fromJson: json.object<Teacher>({
     ...personProperties<Teacher>('teacher'),
     teacherCode: json.string
-  }, obj);
-}
+  })
+};
 
 export interface SubjectClass extends Model {
   readonly type: 'class';
@@ -125,15 +119,15 @@ export interface SubjectClass extends Model {
   readonly students: Student[];
 }
 
-export function subjectClassFromJson(obj: unknown): SubjectClass {
-  return json.object<SubjectClass>({
+export const SubjectClass = {
+  fromJson: json.object<SubjectClass>({
     ...modelProperties<SubjectClass>('class'),
-    subject: modelRefFromJson(Subject.fromJson),
+    subject: ModelRef.fromJson(Subject.fromJson),
     year: json.number,
-    teacher: modelRefFromJson(teacherFromJson),
+    teacher: ModelRef.fromJson(Teacher.fromJson),
     subgroup: json.string,
     classCode: json.string,
     students: json.array(Student.fromJson)
-  }, obj);
-}
+  })
+};
 

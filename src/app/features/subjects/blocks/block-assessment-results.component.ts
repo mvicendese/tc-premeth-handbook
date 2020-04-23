@@ -36,14 +36,17 @@ function numberOfAttempts(results: any[]) {
 }
 
 export function tableRows(state: TableState): TableRowData[] {
-  if (state.unit == null || state.studentResults == null) {
+  const unit = state.unit, block = state.block;
+  const studentResults = state.studentResults;
+
+  if (unit == null || block == null || studentResults == null) {
     return [];
   }
   return state.students
     .map(student => ({
       student,
-      unit: state.unit,
-      block: state.block,
+      unit,
+      block,
       isAttempted: state.studentResults[student.id] != null && state.studentResults[student.id].length > 0,
       maxBlockResult: maxBlockResult(state.studentResults[student.id] || []),
       numberOfAttempts: numberOfAttempts(state.studentResults[student.id] || [])
