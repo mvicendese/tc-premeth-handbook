@@ -25,18 +25,31 @@ class ProgressSerializer(DocumentSerializer):
     assessment_type = serializers.CharField()
 
     student = serializers.PrimaryKeyRelatedField(queryset=Student.objects.all())
-    subject_node = serializers.PrimaryKeyRelatedField(queryset=SubjectNode.objects.all())
+    subject_node = serializers.PrimaryKeyRelatedField(queryset=SubjectNode.objects.all(), allow_null=True)
 
     school = serializers.PrimaryKeyRelatedField(source='assessment_schema.school', read_only=True)
     subject = serializers.PrimaryKeyRelatedField(source='assessment_schema.subject', read_only=True)
 
-    assessments = RelatedAssessmentsField()
     assessment_count = serializers.IntegerField()
 
     attempted_assessments = RelatedAssessmentsField()
     attempted_assessment_count = serializers.IntegerField()
 
     percent_attempted = serializers.FloatField()
+
+    def to_representation(self, instance):
+        from api.assessments.serializers import AssessmentSerializer
+
+        representation = super().to_representation(instance)
+
+        assessment_serializer = AssessmentSerializer.for_assessment_type(
+            instance.assessment_type,
+            instance.assessments.all(),
+            many=True
+        )
+
+        representation.update(assessments=assessment_serializer.data)
+        return representation
 
 
 class PassFailProgressSerializer(ProgressSerializer):

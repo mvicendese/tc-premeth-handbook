@@ -6,6 +6,7 @@ from uuid import uuid4, UUID
 from django.core import validators
 from django.core.exceptions import MultipleObjectsReturned
 from django.db import models
+from django.db.models import functions
 
 from django.utils.translation import gettext_lazy as _
 
@@ -59,9 +60,9 @@ class AssessmentSchema(BaseModel):
 
     @property
     def attempt_set(self):
-        return (
-            Attempt.objects_of_type(self.attempt_type)
-        )
+        return (Attempt
+            .objects_of_type(self.attempt_type)
+            .filter(schema_id=self.id))
 
     @property
     def report_set(self):
@@ -79,21 +80,36 @@ class AssessmentSchema(BaseModel):
     def assessment_set(self):
         return Assessment.objects_of_type(self.type)
 
-    def get_assessment_option_default(self, param_name):
-        AssessmentOptions.objects.get_option_default(self, param_name)
+    @property
+    def assessment_properties(self):
+        """
+        Properties (as in, built-in `property` objects) contributed
+        by the schema and it's associated classes to provide 
+        properties to the python assessment instance.
 
-    def set_assessment_option_default(self, param_name, value):
-        AssessmentOptions.objects.set_option_default(self, param_name, value)
+        The primary use of assessment properties is to provide a 
+        fallback implementation for information about the assessment
+        which is typically annotated into the queryset and potentially
+        not exist if the asssment is fetched through the default manager.
 
+        However, it is entirely possible to define properties which do not
+        exist in any queryset annotation.
 
-    def get_assessment_option(self, subject_node, param_name):
-        AssessmentOptions.objects.get_option(self, subject_node, param_name)
+        """
+        if not hasattr(self, '_assessment_properties'):
+            props = dict(Attempt.objects_of_type(self.attempt_type).assessment_properties)
+            props.update(
+                type=property(lambda assessment: assessment.schema.type)
+            )
+            self._assessment_properties = props
+        return self._assessment_properties
 
-    def get_assessment_option(self, subject_node, param_name, value):
+    def get_assessment_options(self, subject_node):
+        if subject_node is None:
+            raise ValueError('Expected a subject node')
         if subject_node.node_type != self.subject_node_type:
-            raise ValueError(f'Can only set assessment options on {self} for {self.subject_node_type} subject nodes')
-        AssessmentOptions.objects.set_option(self, subject_node, param_name, value)
-
+            raise ValueError(f'Can only get assessment options on {self.type} for {self.subject_node_type} subject nodes')
+        return AssessmentOptions.objects.get_options(self, subject_node)
 
     def get_or_generate_progress(self, student, subject_node=None):
 
@@ -149,7 +165,7 @@ class AssessmentOptions(BaseModel):
     # A `null` subject node is used to provide parameters that are common to all subjects
     subject_node = models.ForeignKey(SubjectNode, related_name='+', on_delete=models.CASCADE, null=True)
 
-    _RATED_max_available_rating = models.PositiveSmallIntegerField(null=True)
+    _ratedattempt_max_available_rating = models.PositiveSmallIntegerField(null=True)
 
     class Meta:
         indexes = [
@@ -161,54 +177,72 @@ class AssessmentOptions(BaseModel):
             models.UniqueConstraint(fields=['schema_id'], condition=models.Q(subject_node_id=None), name='unique_schema_default')
         ]
 
-    def _option_name(self, name):
-        # For now, everything that would use an assessment option is parameterised by the attempt type.
-        # We need a database capable of unstructured data.
-        attempt = AttemptType(self.schema.attempt_type)
-        return f'_{attempt_type.name}_{name}'
+    def get_option(self, option_name):
+        field_name = '_' + option_name
 
-    def get_option(self, name):
-        option_name = self._option_name(name)
+        value = getattr(self, field_name, None)
+        if value is not None:
+            return value
 
-        if hasattr(self, name):
-            return getattr(self, name)
+        if self.subject_node is None:
+            raise KeyError(f'No such assessment option: {option_name}')
 
         try:
-            attempt_option_defaults = AssessmentOptions.get(schema=self.schema, subject_node=None)
-            return attempt_options.get_option(name)
+            attempt_option_defaults = AssessmentOptions.objects.get_options(self.schema, None)
+            return attempt_option_defaults.get_option(option_name)
         except AssessmentOptions.DoesNotExist:
-            pass
-
-        raise KeyError(f'{self.attempt_type} attempt has no {name} parameter')
+            raise KeyError(f'No assessment options default exists')
 
     def set_option(self, name, value):
         setattr(self, self._option_name(name), value)
 
+    class QuerySet(models.QuerySet):
+        def annotate_defaults(self, option_name):
+            default_values = AssessmentOptions.objects.filter(
+                schema_id=models.OuterRef('schema_id'),
+                subject_node_id=None
+            )
+            default_annotation_name = option_name + '_default'
+            field_name = '_' + option_name
+
+            return self.annotate(
+                **{ default_annotation_name : models.Subquery(default_values.values(field_name)) }
+            )
+
+        def annotate_value_or_default(self, option_name):
+            """
+            then annotate_option_values will annotate the queryset with
+                - The default value of the option as '<option_name>_default'
+                - COALSCE of the field value and the default value annotated as '<option_name>''
+                - raw value of the field available as '_' + 'option_name'
+            """ 
+
+            field_name = '_' + option_name
+            default_annotation_name = option_name + '_default'
+
+            return (self.annotate_defaults(option_name)
+                .annotate(**{option_name: functions.Coalesce(field_name, default_annotation_name)}))
+
+        def option_values(self, option_name):
+            return self.annotate_value_or_default(option_name).values(option_name)
+
+
+        def filter_subject_node_or_defaults(self, schema_id, subject_node_id):
+            """
+            Filters for the given subject node and schema , or returns a query set of default objects.
+            """
+            return (self
+                .filter(schema_id=schema_id)
+                .filter(models.Q(subject_node_id=subject_node_id) | models.Q(subject_node_id=None)))
 
     class Manager(models.Manager):
-        def get_option_default(self, assessment_schema, name):
-            return self.get_option(self, assessment_schema, None, name)
-
-        def set_option_default(self, assessment_schema, param_name, value):
-            return self.set_option(assessment_schema, None, name, value)
-
-        def get_option(self, assessment_schema, subject_node, param_name, value):
-            attempt_options = self.get_or_create(
-                schema=assessment_schema, 
-                subject_node=subject_node
-            )
-            return attempt_otpions.get_option(name)
+        def get_options(self, schema, subject_node):
+            try:
+                return self.get(schema=schema, subject_node=subject_node)
+            except ObjectDoesNotExist:
+                return self.get_or_create(schema=schema, subject_node=None)[0]
             
-        def set_option(self, assessment_schema, subject_node, param_name, value):
-            attempt_options = self.get_or_create(
-                schema=assessment_schema,
-                subject_node=subject_node
-            )
-            attempt_options.set_option(name, value)
-            attempt_options.save()
-            return attempt_options
-
-        objects = models.Manager()
+    objects = Manager.from_queryset(QuerySet)()
 
 
 ####################################
@@ -265,15 +299,24 @@ class Assessment(BaseModel):
 
     @property
     def options(self):
-        if not hasattr(self, '_options'):
-            self._options = AssessmentOptions.get(schema=self.schema, subject_node=self.subject_node)
-        return self._options
+        return self.schema.get_assessment_options(self.subject_node)
+
+    def get_option(self, param_name):
+        return self.options.get_option(param_name)
 
     @property
     def attempt_set(self):
-        if not hasattr(self, '_attempt_set'):
-            self._attempt_set = self.schema.attempt_set.with_options(self.options).filter(assessment=self)
-        return self._attempt_set
+        return self.schema.attempt_set.filter(assessment=self)
+
+    def __getattr__(self, attr_name):
+        schema_props = self.schema.assessment_properties
+
+        if attr_name in schema_props:
+            print('using assessment property implementation', attr_name)
+            prop = schema_props[attr_name]
+            return prop.__get__(self)
+
+        raise AttributeError(f'{type(self)} has no attribute {attr_name}')
 
     class QuerySet(models.QuerySet):
         def filter_node(self, subject_node, include_descendants=False):

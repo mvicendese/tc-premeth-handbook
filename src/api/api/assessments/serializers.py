@@ -35,18 +35,18 @@ class AssessmentSerializer(serializers.Serializer):
     """
 
     @staticmethod
-    def class_for_assessment_type(assessment_type):
+    def for_assessment_type(assessment_type, *args, **kwargs):
         if assessment_type is None:
             return AssessmentSerializer
 
         if assessment_type == 'unit-assessment':
-            return UnitAssessmentSerializer
+            return UnitAssessmentSerializer(*args, **kwargs)
         elif assessment_type == 'block-assessment':
-            return BlockAssessmentSerializer
+            return BlockAssessmentSerializer(*args, **kwargs)
         elif assessment_type == 'lesson-prelearning-assessment':
-            return LessonPrelearningAssessmentSerializer
+            return LessonPrelearningAssessmentSerializer(*args, **kwargs)
         elif assessment_type == 'lesson-outcome-self-assessment':
-            return LessonOutcomeSelfAssessmentSerializer
+            return LessonOutcomeSelfAssessmentSerializer(*args, **kwargs)
         else:
             raise ValueError(f'Unrecognised assessment type {assessment_type}')
 
@@ -112,7 +112,7 @@ class CompletionBasedAssessmentSerializer(AssessmentSerializer):
         if completion_state is not None:
             serializer = CompletionAttemptSerializer(data={
                 assessment: instance.id,
-                })
+            })
             attempt = CompletionAttempt(id=uuid4(), assessment=instance, completion_state=completion_state)
             attempt.save()
         return instance

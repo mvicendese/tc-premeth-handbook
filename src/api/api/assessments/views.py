@@ -54,8 +54,8 @@ class AssessmentViewSet(SaveableModelViewSet):
 
         return raw_type
 
-    def get_serializer_class(self):
-        return AssessmentSerializer.class_for_assessment_type(self.get_assessment_type())
+    def get_serializer(self, *args, **kwargs):
+        return AssessmentSerializer.for_assessment_type(self.get_assessment_type(), *args, **kwargs)
 
     def get_node_from_params(self):
         node_param = self.request.query_params.get('node', None)

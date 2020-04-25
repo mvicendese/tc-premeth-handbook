@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -160,27 +161,27 @@ class Attempt(BaseModel):
         return self.assessment.get_option(name)
 
     class QuerySet(models.QuerySet):
-        def significant_attempt_numbers(self, max_significant_attempts=None):
+            
+        def annotate_assessment_options(self, attempt_parameters):
             """
-            A set of attempts has a configurable number of attempts that are used when calculating
-            the mark for the assessment.
-
-            If [:max_significant_attempts:] is `None`, then all attempts are used when calculating
-            the mark
-
-            If [:max_significant_attempts:] is an int,  then only the most recent (when ordering by 
-            [:attempt_number:] attempts are used to calculate the mark.
-            """ 
-            if isinstance(max_significant_attempts, int):
-                return self.order_by('-attempt_number')[:max_significant_attempts].values('id')
-            return self.order_by('-attempt_number').values('id')
-
-
-        def filter_significant(self, max_significant_attempts=None):
+            Annotates any assessment options for the current subject node
+            onto the assessment instance
             """
-            Include only the significant attempts in the queryset
-            """
-            return self.filter(attempt_number__in=self.significant_attempt_numbers(max_significant_attempts))
+            from api.assessments.models import AssessmentOptions
+
+            assessment_options = (AssessmentOptions.objects
+                .filter_subject_node_or_defaults(
+                    schema_id=models.OuterRef('schema_id'), 
+                    subject_node_id=models.OuterRef('subject_node_id')))
+
+            annotations = {}
+            for param in attempt_parameters:
+               annotations[param] = assessment_options.option_values(attempt_parameters[param])[:1]
+
+            return self.annotate(
+                schema_id=models.F('assessment__schema_id'),
+                subject_node_id=models.F('assessment__subject_node_id')
+            ).annotate(**annotations)
 
         def max_attempt_number(self):
             return self.aggregate(max_attempt_number=models.Max('attempt_number'))['max_attempt_number'] or 0
@@ -199,18 +200,19 @@ class Attempt(BaseModel):
             return super().create(*args, **kwargs)
 
     class Manager(models.Manager):
-        def __init__(self, attempt_type, attempt_parameters=None, **kwargs):
+        def __init__(self, attempt_type, attempt_parameters=None):
             self.attempt_type = attempt_type 
 
             # Attempt parameters are parameters provided by the AssessmentOptions
             # of the assessment schema.
-            self.attempt_parameters = attempt_parameters or []
+            self.attempt_parameters = attempt_parameters or {}
 
-            self.options = {}
-            for param in self.attempt_parameters:
-                self.options[param] = kwargs.pop(param, None)
+            super().__init__()
 
-            super().__init__(**kwargs)
+        def get_queryset(self):
+            return (super()
+                .get_queryset()
+                .annotate_assessment_options(self.attempt_parameters))
 
         def create(self, *args, assessment=None, **kwargs):
             kwargs.update(attempt_type=self.attempt_type)
@@ -218,6 +220,23 @@ class Attempt(BaseModel):
                 raise ValueError('An assessment is required to create an attempt')
 
             return super().create(*args, assessment=assessment, **kwargs)
+
+        @property
+        def assessment_properties(self):
+            def get_is_attempted(assessment):
+                return assessment.attempt_set.exists()
+
+            def get_attempted_at(assessment):
+                try:
+                    last_assessment = assessment.attempt_set.last() 
+                    return last_assessment.created_at
+                except ObjectDoesNotExist:
+                    return None
+
+            return dict(
+                is_attempted=property(get_is_attempted),
+                attempted_at=property(get_attempted_at)
+            )
 
         def annotate_assessments(self, assessments):
             has_attempts = (
@@ -229,21 +248,11 @@ class Attempt(BaseModel):
                 attempted_at=models.Subquery(has_attempts.values('created_at')[:1])
             )
 
-        def get_assessment_option(self, name):
+        def get_assessment_option(self, schema, subject_node, name):
             if name not in self.attempt_parameters:
                 raise KeyError('option must be declared in attempt manager\'s parameter list')
-            return self.options[name]
+            return AssessmentOptions.get(schema=schema, subject_node=subject_node).get_option(name)
 
-        def with_assessment_options(self, assessment_options):
-            """
-            Parameterises the manager with arguments from arguments.
-            """
-            options = {
-                name: assessment_options.get_option(name)
-                for name in self.attempt_parameters
-            } 
-
-            return type(self)(self.attempt_type, self.attempt_parameters, **options)
 
     @staticmethod
     def objects_of_type(attempt_type):
@@ -267,8 +276,23 @@ class PassFailAttempt(Attempt):
         return self.state == PassFailState.PASS
 
     class Manager(Attempt.Manager):
-        def __init__(self):
-            super().__init__(AttemptType.PASS_FAIL)
+        def __init__(self, **kwargs):
+            super().__init__(AttemptType.PASS_FAIL, **kwargs)
+
+        @property
+        def assessment_properties(self):
+            def get_is_pass(assessment):
+                try: 
+                    attempt = self.attempt_set.last()
+                    return attempt.state == PassFailState.PASS
+                except ObjectDoesNotExist:
+                    return None
+
+            props = dict(super().assessment_properties)
+            props.update(
+                is_pass=property(get_is_pass)
+            )
+            return props
 
         def annotate_assessments(self, assessment_set):
             is_pass = (
@@ -292,9 +316,33 @@ class CompletionBasedAttempt(Attempt):
     def is_complete(self):
         return self.state == CompletionState.COMPLETE
 
+   
     class Manager(Attempt.Manager):
-        def __init__(self):
-            super().__init__(AttemptType.COMPLETION_BASED)
+        def __init__(self, **kwargs):
+            super().__init__(AttemptType.COMPLETION_BASED, **kwargs)
+
+        @property
+        def assessment_properties(self):
+            def get_completion_state(assessment):
+                try:
+                    attempt = assessment.attempt_set.last()
+                    return attempt.state
+                except ObjectDoesNotExist:
+                    return None
+
+            def get_is_partially_complete(assessment):
+                return assessment.completion_state in {CompletionState.PARTIALLY_COMPLETE, CompletionState.COMPLETE}
+
+            def get_is_complete(assessment):
+                return assessment.completion_state == CompletionState.COMPLETE
+
+            props = dict(super().assessment_properties)
+            props.update(
+                completion_state=property(get_completion_state),
+                is_partially_complete=property(get_is_partially_complete),
+                is_complete=property(get_is_complete)
+            )
+            return props
 
         def annotate_assessments(self, assessment_set):
             assessment_set = super().annotate_assessments(assessment_set)
@@ -315,28 +363,51 @@ class CompletionBasedAttempt(Attempt):
 class RatedAttempt(Attempt):
 
     rating = RatingField(max_rating_field='max_available_rating')
-    rating_percent = calculated_percentage_property('rating', 'max_available_rating')
+    #rating_percent = calculated_percentage_property('rating', 'max_available_rating')
 
     class Manager(Attempt.Manager):
-        def __init__(self):
-            super().__init__(AttemptType.RATED, attempt_parameters=['max_available_rating'])
+        def __init__(self, **kwargs):
+            super().__init__(AttemptType.RATED, attempt_parameters={'max_available_rating': 'ratedattempt_max_available_rating'}, **kwargs)
 
         def get_queryset(self):
-            return super().get_queryset().annotate(
-                max_available_rating=self.max_available_rating_value,
-                rating_percent=models.F('rating') / models.F('max_available_rating')
-            )
+            return (super().get_queryset()
+                .annotate(
+                   rating_percent=models.F('rating') / models.F('max_available_rating')
+                ))
 
-        @property
         def max_available_rating(self):
-            return self.get_assessment_option('max_available_rating')
-
-        @property
-        def max_available_rating_value(self):
-            return models.Value(self.max_available_rating, output_field=models.PositiveSmallIntegerField())
+            return self.assessment.get_option('ratedattempt_max_available_rating')
 
         def assessment_set_has_attempts(self, assessment_set):
             return self.filter(assessment__in=assessment_set).exists()
+
+        @property
+        def assessment_properties(self):
+            def rating(assessment):
+                try:
+                    attempt = assessment.attempt_set.last()
+                    return attempt.rating
+                except ObjectDoesNotExist:
+                    return None
+
+            def max_available_rating(assessment):
+                return assessment.get_option('ratedattempt_max_available_rating')
+
+            def rating_percent(assessment):
+                try:
+                    attempt = assessment.attempt_set.last()
+                    return attempt.rating_percent
+                except ObjectDoesNotExist:
+                    return None
+
+            props = dict(super().assessment_properties)
+            props.update(
+                rating=property(rating),
+                max_available_rating=property(max_available_rating),
+                rating_percent=property(rating_percent)
+            )
+            return props
+
 
         def annotate_assessments(self, assessment_set):
             assessment_set = super().annotate_assessments(assessment_set)
@@ -350,7 +421,6 @@ class RatedAttempt(Attempt):
             )
 
             return assessment_set.annotate(
-                max_available_rating=self.max_available_rating_value,
                 rating=models.Subquery(most_recent_rating.values('rating'))
             )
 
@@ -361,8 +431,24 @@ class GradedAttempt(Attempt):
     grade = GradeStateField()
 
     class Manager(Attempt.Manager):
-        def __init__(self):
-            super().__init__(AttemptType.GRADED)
+        def __init__(self, **kwargs):
+            super().__init__(AttemptType.GRADED, **kwargs)
+
+        @property
+        def assesment_poroperties(self):
+            def get_grade(assessment):
+                try:
+                    assessment = assessment.attempt_set.last()
+                    return attempt.grade
+                except ObjectDoesNotExist:
+                    return None
+
+            props = dict(super().assessment_properties)
+            props.update(
+                grade=property(get_grade)
+            )
+            return props
+
 
         def annotate_assessments(self, assessment_set):
             assessment_set = super().annotate_assessments(assessment_set)

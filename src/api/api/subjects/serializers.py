@@ -7,10 +7,12 @@ from .models import Subject, Unit, Block, Lesson, LessonOutcome
 
 class LessonOutcomeSerializer(BaseSerializer):
 	subject = serializers.UUIDField(read_only=True, source='subject.id')
+	name = serializers.CharField(source='description', read_only=True)
+
 	class Meta:
 		model = LessonOutcome
 		model_name = 'lesson-outcome'
-		fields = BaseSerializer.Meta.fields + ('lesson', 'subject', 'description')
+		fields = BaseSerializer.Meta.fields + ('lesson', 'subject', 'description', 'name')
 
 
 class LessonSerializer(BaseSerializer):
