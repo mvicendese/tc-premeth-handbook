@@ -12,13 +12,13 @@
     "directive-selector": [
       true,
       "attribute",
-      ["app", "ass", "sch", "subjects"],
+      ["app", "ass", "sch", "schools", "subjects"],
       "camelCase"
     ],
     "component-selector": [
       true,
       "element",
-      ["app", "ass", "sch", "subjects"],
+      ["app", "ass", "sch", "schools", "subjects"],
       "kebab-case"
     ],
     "import-blacklist": [
