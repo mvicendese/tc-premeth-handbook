@@ -80,7 +80,4 @@ class GradedProgressSerializer(ProgressSerializer):
     )
 
 class RatedProgressSerializer(ProgressSerializer):
-    assessment_ratings = serializers.DictField(
-        child=serializers.IntegerField()
-    )
-
+    pass
