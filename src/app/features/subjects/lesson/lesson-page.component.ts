@@ -8,32 +8,44 @@ import {ChangeCompletionStateEvent} from './prelearning-result-item.component';
 import {LessonSchema} from '../../../common/model-types/subjects';
 import {SubjectNodeRouteData} from '../subject-node-route-data';
 import {BlockState} from '../blocks/block-state';
+import {AppStateService} from '../../../app-state.service';
 
 
 @Component({
   selector: 'subjects-lesson-page',
   template: `
-    <ng-container *ngIf="lesson$ | async as lesson">
-      <div class="title">
-        <h2><span>{{lesson.context.unit.name}}</span></h2>
-        <h2><mat-icon inline>chevron_right</mat-icon><span>{{lesson.context.block.name}}</span></h2>
-        <h2><mat-icon inline>chevron_right</mat-icon><span>{{lesson.name}}</span></h2>
-      </div>
-    </ng-container>
+    <header *ngIf="lesson$ | async as lesson">
 
-    <mat-tab-group>
-      <mat-tab label="Prelearning">
-        <ng-template matTabContent>
-          <subjects-lesson-prelearning-tab class="tab-content"></subjects-lesson-prelearning-tab>
+      <subjects-breadcrumb [leafNode]="lesson"></subjects-breadcrumb>
+      <div class="class-info">
+        <ng-container *ngIf="activeSubjectClass$ | async as subjectClass; else allStudents">
+          {{subjectClass.classCode.toLocaleUpperCase()}}
+        </ng-container>
+
+        <ng-template #allStudents>
+          ALL STUDENTS
         </ng-template>
-      </mat-tab>
-      <mat-tab label="Student outcomes" class="d-flex">
-       <ng-template matTabContent>
-         <subjects-lesson-outcomes-tab class="tab-content"></subjects-lesson-outcomes-tab>
-       </ng-template>
-      </mat-tab>
-    </mat-tab-group>
+      </div>
+    </header>
+
+    <main>
+      <mat-tab-group>
+        <mat-tab label="Prelearning">
+          <ng-template matTabContent>
+            <subjects-lesson-prelearning-tab class="tab-content"></subjects-lesson-prelearning-tab>
+          </ng-template>
+        </mat-tab>
+        <mat-tab label="Student outcomes" class="d-flex">
+          <ng-template matTabContent>
+            <subjects-lesson-outcomes-tab class="tab-content"></subjects-lesson-outcomes-tab>
+          </ng-template>
+        </mat-tab>
+      </mat-tab-group>
+    </main>
   `,
+  styleUrls: [
+    './lesson-page.component.scss'
+  ],
   styles: [`
     :host {
       display: block;
@@ -41,14 +53,20 @@ import {BlockState} from '../blocks/block-state';
       width: 100%;
       padding-top: 2rem;
     }
+    
+    .class-info {
+      padding-left: 2em;
+    }
+
     :host .title {
       display: flex;
     }
+
     :host .title h2 {
       display: flex;
       align-items: center;
     }
-    
+
     .tab-content {
       display: flex;
       padding-top: 1rem;
@@ -69,15 +87,20 @@ export class LessonPageComponent implements OnInit, OnDestroy {
     shareReplay(1)
   );
 
-  readonly prelearningAssessments$: Observable<{[candidateId: string]: Resolve<LessonPrelearningAssessment, 'student'>}>;
+  readonly activeSubjectClass$ = this.appState.activeSubjectClass$;
+
+  readonly prelearningAssessments$: Observable<{ [candidateId: string]: Resolve<LessonPrelearningAssessment, 'student'> }>;
 
   constructor(
+    readonly appState: AppStateService,
     readonly lessonState: LessonState
-  ) {}
+  ) {
+  }
 
   ngOnInit() {
     this.resources.push(this.lessonState.init());
   }
+
   ngOnDestroy(): void {
     this.resources.forEach(r => r.unsubscribe());
   }

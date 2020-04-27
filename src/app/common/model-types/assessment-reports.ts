@@ -64,7 +64,6 @@ export const UnitAssessmentReport = {
 };
 
 export interface BlockAssessmentReport extends Report<BlockAssessment> {
-
 }
 
 export const BlockAssessmentReport = {

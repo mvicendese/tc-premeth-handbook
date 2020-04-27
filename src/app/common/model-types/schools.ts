@@ -1,5 +1,5 @@
 import json, {JsonObject} from '../json';
-import {BaseModel, Model, modelProperties} from '../model-base/model';
+import {BaseModel, Model} from '../model-base/model';
 import {ModelRef} from '../model-base/model-ref';
 import {Subject} from './subjects';
 
@@ -10,7 +10,8 @@ export interface School extends Model {
 
 export function schoolFromJson(obj: unknown): School {
   return json.object({
-    ...modelProperties<School>('school'),
+    ...Model.properties,
+    type: {value: 'school'},
     name: json.string
   }, obj);
 }
@@ -24,16 +25,14 @@ export interface Person extends Model {
   readonly email: string;
 }
 
-function personProperties<T extends Person>(type: T['type']) {
-  return {
-    ...modelProperties<T>(type),
-    firstName: json.string,
-    surname: json.string,
-    fullName: json.string,
-    email: json.string,
-    school: ModelRef.fromJson(schoolFromJson)
-  };
-}
+const personProperties = {
+  ...Model.properties,
+  firstName: json.string,
+  surname: json.string,
+  fullName: json.string,
+  email: json.string,
+  school: ModelRef.fromJson(schoolFromJson)
+};
 
 export interface StudentParams extends Person {
   readonly type: 'student';
@@ -43,9 +42,11 @@ export interface StudentParams extends Person {
   readonly compassNumber: number;
 }
 
+
 function studentParamsFromJson(obj: unknown): StudentParams {
   return json.object<StudentParams>({
-    ...personProperties<StudentParams>('student'),
+    ...personProperties,
+    type: { value: 'student' },
     studentCode: json.string,
     yearLevel: json.number,
     compassNumber: json.number,
@@ -102,7 +103,8 @@ export interface Teacher extends Person {
 
 export const Teacher = {
   fromJson: json.object<Teacher>({
-    ...personProperties<Teacher>('teacher'),
+    ...personProperties,
+    type: { value: 'teacher' },
     teacherCode: json.string
   })
 };
@@ -121,7 +123,8 @@ export interface SubjectClass extends Model {
 
 export const SubjectClass = {
   fromJson: json.object<SubjectClass>({
-    ...modelProperties<SubjectClass>('class'),
+    ...Model.properties,
+    type: { value: 'class' },
     subject: ModelRef.fromJson(Subject.fromJson),
     year: json.number,
     teacher: ModelRef.fromJson(Teacher.fromJson),

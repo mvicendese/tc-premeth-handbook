@@ -1,9 +1,10 @@
-import json, {parseError} from '../json';
+import json, {Decoder, parseError} from '../json';
 
 import {ModelRef} from '../model-base/model-ref';
 import {School, schoolFromJson, Student} from './schools';
 import {Block, LessonOutcome, LessonSchema, Subject, SubjectNode, Unit} from './subjects';
-import {createModel, Model, modelProperties} from '../model-base/model';
+import {Model} from '../model-base/model';
+import {modelEnum, ModelEnum, modelMeta} from '../model-base/model-meta';
 
 export type AssessmentType
   = 'unit-assessment'
@@ -11,22 +12,15 @@ export type AssessmentType
   | 'lesson-prelearning-assessment'
   | 'lesson-outcome-self-assessment';
 
-const allAssessmentTypes = [
-  'unit-assessment',
-  'block-assessment',
-  'lesson-prelearning-assessment',
-  'lesson-outcome-self-assessment'
-];
-
-export const AssessmentType = {
-  fromJson: (obj: unknown) => {
-    const str = json.string(obj);
-    if (allAssessmentTypes.includes(str)) {
-      return str as AssessmentType;
-    }
-    throw parseError(`Expected an assessment type`);
-  }
-};
+export const AssessmentType = modelEnum<AssessmentType>({
+  name: 'AssessmentType',
+  values: [
+    'unit-assessment',
+    'block-assessment',
+    'lesson-prelearning-assessment',
+    'lesson-outcome-self-assessment'
+  ]
+});
 
 export interface Assessment extends Model {
   readonly type: AssessmentType;
@@ -41,9 +35,11 @@ export interface Assessment extends Model {
   readonly attemptedAt: Date | null;
 }
 
-export const Assessment = {
-  properties: <T extends Assessment>(assessmentType: T['type']) => ({
-    ...modelProperties<T>(assessmentType),
+export const Assessment = modelMeta<Assessment>({
+  properties: {
+    ...Model.properties,
+    type: AssessmentType.fromJson,
+
     school: ModelRef.fromJson(schoolFromJson),
     subject: ModelRef.fromJson(Subject.fromJson),
     student: ModelRef.fromJson(Student.fromJson),
@@ -52,14 +48,14 @@ export const Assessment = {
 
     isAttempted: json.bool,
     attemptedAt: json.nullable(json.date)
-  }),
+  },
 
-  create: <T extends Assessment>(assessmentType: T['type'], options: Partial<Assessment>) => {
+  create: (options: Partial<Assessment>) => {
     if (options.subject == null) {
       throw new Error(`A subject is required`);
     }
     if (options.subjectNode == null) {
-      throw new Error(`A subjectNode is required`)
+      throw new Error(`A subjectNode is required`);
     }
     if (options.student == null) {
       throw new Error(`A student is required`);
@@ -68,7 +64,9 @@ export const Assessment = {
       throw new Error(`A school is required`);
     }
     return {
-      ...createModel<T>(assessmentType),
+      ...Model.create(options),
+      type: options.type as AssessmentType,
+
       school: options.school,
       subject: options.subject,
       student: options.student,
@@ -77,18 +75,14 @@ export const Assessment = {
       attemptedAt: null
     };
   }
-};
+});
 
 export type CompletionState = 'none' | 'partially-complete' | 'complete';
-export const CompletionState = {
-  fromJson: (obj: unknown) => {
-    const str = json.string(obj);
-    if (['none', 'partially-complete', 'complete'].includes(str)) {
-      return str as CompletionState;
-    }
-    throw parseError('Unrecognised completion state: ' + str);
-  }
-};
+export const CompletionState = modelEnum<CompletionState>({
+  name: 'CompletionState',
+  values: ['none', 'partially-complete', 'complete']
+});
+
 
 export interface CompletionBasedAssessment extends Assessment {
   readonly completionState: CompletionState | null;
@@ -96,89 +90,158 @@ export interface CompletionBasedAssessment extends Assessment {
   readonly isComplete: boolean;
 }
 
-export const CompletionBasedAssessment = {
-  create: (type: AssessmentType, options: Partial<Assessment>): Partial<CompletionBasedAssessment> => ({
-    ...Assessment.create(type, options),
-    completionState: null,
-    isPartiallyComplete: false,
-    isComplete: false
-  } as Partial<CompletionBasedAssessment>),
+export const CompletionBasedAssessment = modelMeta({
+  create: (options: Partial<CompletionBasedAssessment>): CompletionBasedAssessment => {
+    const assessment = Assessment.create(options);
 
-  properties: <T extends Assessment>(assessmentType: T['type']) => {
     return {
-      ...Assessment.properties<T>(assessmentType),
-      isComplete: json.bool,
-      isPartiallyComplete: json.bool,
-      completionState: json.nullable(CompletionState.fromJson)
+      ...Assessment.create(options),
+      completionState: options.completionState || null,
+      isPartiallyComplete: options.completionState === 'partially-complete',
+      isComplete: options.completionState === 'complete'
     };
+  },
+  properties: {
+    ...Assessment.properties,
+    isComplete: json.bool,
+    isPartiallyComplete: json.bool,
+    completionState: json.nullable(CompletionState.fromJson)
   }
-};
+});
 
 export interface RatingBasedAssessment extends Assessment {
   readonly rating: number;
 }
 
-export const RatingBasedAssessment = {
-  properties: <T extends RatingBasedAssessment>(assessmentType: T['type']) => ({
-    ...Assessment.properties<T>(assessmentType),
+export const RatingBasedAssessment = modelMeta<RatingBasedAssessment>({
+  create(args: Partial<RatingBasedAssessment>) {
+    return {
+      ...Assessment.create(args),
+      rating: 0
+    };
+  },
+  properties: {
+    ...Assessment.properties,
     rating: json.number
-  })
-};
+  }
+});
 
 export interface UnitAssessment extends RatingBasedAssessment {
   readonly type: 'unit-assessment';
   readonly unit: ModelRef<Unit>;
 }
 
-export const UnitAssessment = {
-  fromJson: json.object<UnitAssessment>({
-    ...RatingBasedAssessment.properties<UnitAssessment>('unit-assessment'),
-  })
-};
+export const UnitAssessment = modelMeta<UnitAssessment>({
+  create: (options: {
+    unit: Unit;
+    student: Student;
+  }) => ({
+    ...RatingBasedAssessment.create({
+      school: options.student.school,
+      subject: options.unit.context.subject,
+    }),
+    type: 'unit-assessment',
+    unit: options.unit
+  }),
+
+  properties: {
+    ...RatingBasedAssessment.properties,
+    type: { value: 'unit-assessment' },
+    unit: { get() { return this.subjectNode as Unit; } }
+  },
+});
 
 export interface BlockAssessment extends RatingBasedAssessment {
   readonly type: 'block-assessment';
   readonly block: ModelRef<Block>;
 }
 
-export const BlockAssessment = {
-  fromJson: json.object<BlockAssessment>({
-    ...RatingBasedAssessment.properties<BlockAssessment>('block-assessment'),
-  })
-};
+export const BlockAssessment = modelMeta<BlockAssessment>({
+  create: (options: {
+    block: Block;
+    student: Student
+  }) => ({
+    ...RatingBasedAssessment.create({
+      school: options.student.school,
+      subject: options.block.context.subject
+    }),
+    type: 'block-assessment',
+    block: options.block
+  }),
+
+  properties: {
+    ...RatingBasedAssessment.properties,
+    type: { value: 'block-assessment' },
+    block: { get() { return this.subjectNode; } }
+  }
+});
 
 export interface LessonPrelearningAssessment extends CompletionBasedAssessment {
   readonly type: 'lesson-prelearning-assessment';
   readonly lesson: ModelRef<LessonSchema>;
 }
 
-export const LessonPrelearningAssessment = {
-  create: (lesson: LessonSchema, student: Student): LessonPrelearningAssessment => ({
-    ...CompletionBasedAssessment.create('lesson-prelearning-assessment', {
-      school: student.school,
-      subject: lesson.context.subject,
-      subjectNode: lesson,
-      student
+export const LessonPrelearningAssessment = modelMeta<LessonPrelearningAssessment>({
+  create: (options: {
+    lesson: LessonSchema;
+    student: Student;
+    completionState: CompletionState | null;
+  }) => ({
+    ...CompletionBasedAssessment.create({
+      type: 'lesson-prelearning-assessment',
+      school: options.student.school,
+      subject: options.lesson.context.subject,
+      subjectNode: options.lesson,
+      student: options.student,
+      completionState: options.completionState
     }),
-    lesson,
-  } as LessonPrelearningAssessment),
+    type: 'lesson-prelearning-assessment',
+    lesson: options.lesson
+  }),
 
-  fromJson: (obj) =>
-    json.object<LessonPrelearningAssessment>({
-      ...CompletionBasedAssessment.properties<LessonPrelearningAssessment>('lesson-prelearning-assessment'),
-  }, obj)
-};
+  properties: {
+    ...CompletionBasedAssessment.properties,
+    type: { value: 'lesson-prelearning-assessment' },
+    lesson: {
+      get: () => this.subjectNode as LessonSchema
+    }
+  },
+});
 
 export interface LessonOutcomeSelfAssessment extends RatingBasedAssessment {
   readonly type: 'lesson-outcome-self-assessment';
   readonly lessonOutcome: ModelRef<LessonOutcome>;
 }
 
-export const LessonOutcomeSelfAssessment = {
-  fromJson: json.object<LessonOutcomeSelfAssessment>({
-    ...RatingBasedAssessment.properties<LessonOutcomeSelfAssessment>('lesson-outcome-self-assessment'),
-  })
-};
+export const LessonOutcomeSelfAssessment = modelMeta<LessonOutcomeSelfAssessment>({
+  create: (options: {
+    lessonOutcome: LessonOutcome;
+    student: Student;
+  }) => ({
+    ...RatingBasedAssessment.create({
+      type: 'lesson-outcome-self-assessment',
+      school: options.student.school,
+      subject: options.lessonOutcome.context.subject,
+      subjectNode: options.lessonOutcome
+    }),
+    type: 'lesson-outcome-self-assessment',
+    lessonOutcome: options.lessonOutcome
+  }),
+
+  properties: {
+    ...RatingBasedAssessment.properties,
+    type: { value: 'lesson-outcome-self-assessment' },
+    lessonOutcome: { get() { return this.subjectNode; } }
+  }
+});
+
+export type TypedAssessment<T extends AssessmentType>
+  = T extends 'unit-assessment' ? UnitAssessment
+    : T extends 'block-assessment' ? BlockAssessment
+      : T extends 'lesson-prelearning-assessment' ? LessonPrelearningAssessment
+        : T extends 'lesson-outcome-self-assessment' ? LessonOutcomeSelfAssessment
+          : never;
+
 
 export type AnyAssessment
   = UnitAssessment
@@ -187,12 +250,12 @@ export type AnyAssessment
   | LessonOutcomeSelfAssessment;
 
 export const AnyAssessment = {
-  fromJson: <T extends AnyAssessment>(obj: unknown) => {
-    function getAssessmentType(obj: unknown): AssessmentType {
-      return json.object({type: AssessmentType.fromJson}, obj).type;
+  fromJson: <T extends Assessment>(obj: unknown) => {
+    function getAssessmentType(object: unknown): AssessmentType {
+      return json.object({type: AssessmentType.fromJson}, object).type;
     }
 
-    return json.union<AnyAssessment>(
+    return json.union<any>(
       getAssessmentType,
       {
         'unit-assessment': UnitAssessment.fromJson,
@@ -201,6 +264,6 @@ export const AnyAssessment = {
         'lesson-outcome-self-assessment': LessonOutcomeSelfAssessment.fromJson
       },
       obj
-    ) as T;
+    );
   }
 };

@@ -26,7 +26,7 @@ function objectFromProperties<T extends object>(properties: JsonObjectProperties
       const decoder = properties[key];
       if (typeof decoder === 'object') {
         result = Object.defineProperty(result, key, decoder as PropertyDescriptor);
-      } if (typeof decoder === 'function') {
+      } else if (typeof decoder === 'function') {
         result[key] = (decoder as Decoder<T>)(obj[key]);
       }
     });

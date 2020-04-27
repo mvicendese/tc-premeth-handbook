@@ -14,28 +14,50 @@ interface Tab {
   selector: 'app-student-page',
   template: `
     <ng-container *ngIf="student$ | async as student">
-      <h1>{{student.fullName}}</h1>
 
-      <nav mat-tab-nav-bar>
-        <a mat-tab-link *ngFor="let tab of tabs"
-           [active]="tab.path === (activeTabPath$ | async)"
-           (click)="openTab(tab)">
-        </a>
-      </nav>
+      <header>
+        <schools-student-info [student]="student"></schools-student-info>
+      </header>
 
-      <mat-tab-group>
-        <mat-tab label="Progress">
-          <ng-template matTabContent>
-            <schools-student-progress></schools-student-progress>
-          </ng-template>
-        </mat-tab>
-      </mat-tab-group>
+      <main>
+        <nav mat-tab-nav-bar>
+          <a mat-tab-link *ngFor="let tab of tabs"
+             [active]="tab.path === (activeTabPath$ | async)"
+             (click)="openTab(tab)">
+          </a>
+        </nav>
 
-      <router-outlet></router-outlet>
+        <mat-tab-group>
+          <mat-tab label="Overview">
+            <ng-template matTabContent>
+              <schools-student-progress-overview-tab>
+              </schools-student-progress-overview-tab>
+            </ng-template>
+          </mat-tab>
+          <mat-tab label="Prelearning">
+            <ng-template matTabContent>
+              <schools-student-progress-prelearning-assessment-tab
+                  [progress]="state.lessonPrelearningAssessmentProgress$ | async">
+              </schools-student-progress-prelearning-assessment-tab>
+            </ng-template>
+          </mat-tab>
+          <mat-tab label="Lesson outcomes">
+            <ng-template matTabContent>
+              <schools-student-progress-lesson-outcome-self-assessment-tab
+                  [progress]="state.lessonOutcomeSelfAssessmentProgress$ | async">
+              </schools-student-progress-lesson-outcome-self-assessment-tab>
+            </ng-template>
+          </mat-tab>
+        </mat-tab-group>
+      </main>
     </ng-container>
+
   `,
   providers: [
     StudentState
+  ],
+  styleUrls: [
+    './student-page.component.scss'
   ]
 })
 export class StudentPageComponent implements OnInit, OnDestroy {
@@ -47,7 +69,8 @@ export class StudentPageComponent implements OnInit, OnDestroy {
     readonly router: Router,
     readonly route: ActivatedRoute,
     readonly state: StudentState,
-  ) {}
+  ) {
+  }
 
   readonly student$: Observable<Student> = this.route.data.pipe(
     pluck('student')

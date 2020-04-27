@@ -1,10 +1,10 @@
-import json from '../json';
+import json, {Decoder, JsonObjectProperties} from '../json';
 
 import {
   AnyAssessment,
   Assessment,
   AssessmentType,
-  BlockAssessment,
+  BlockAssessment, CompletionBasedAssessment,
   LessonOutcomeSelfAssessment,
   LessonPrelearningAssessment,
   UnitAssessment
@@ -13,6 +13,7 @@ import {ModelDocument} from '../model-base/document';
 import {ModelRef} from '../model-base/model-ref';
 import {Student} from './schools';
 import {Subject, SubjectNode} from './subjects';
+import {ModelDocumentMeta, modelDocumentMeta} from '../model-base/model-meta';
 
 export interface Progress<T extends Assessment = AnyAssessment> extends ModelDocument {
   readonly assessmentType: T['type'];
@@ -22,45 +23,47 @@ export interface Progress<T extends Assessment = AnyAssessment> extends ModelDoc
 
   // Aggregtes the results over all children of the specified node.
   // If null, all results over the course of the subject are included
-  readonly node: ModelRef<SubjectNode> | null;
+  readonly subjectNode: ModelRef<SubjectNode> | null;
 
   readonly assessmentCount: number;
-  readonly assessments: (ModelRef<AnyAssessment>)[];
+  readonly assessments: T[];
 
   readonly attemptedAssessmentCount: number;
-  readonly attemptedAssessments: (ModelRef<AnyAssessment>)[];
+  readonly attemptedAssessments: ModelRef<T>[];
 
   readonly percentAttempted: number;
 }
 
-export const Progress = {
-  properties: <T extends Assessment>(type: T['type']) => ({
+export const Progress = modelDocumentMeta<Progress<any>>({
+  properties: {
     ...ModelDocument.properties,
-    assessmentType: {value: type},
+    assessmentType: AssessmentType.fromJson,
+
     student: ModelRef.fromJson(Student.fromJson),
     subject: ModelRef.fromJson(Subject.fromJson),
-    node: json.nullable(ModelRef.fromJson(SubjectNode.fromJson)),
+    subjectNode: json.nullable(ModelRef.fromJson(SubjectNode.fromJson)),
 
     assessmentCount: json.number,
-    assessments: json.array(ModelRef.fromJson(AnyAssessment.fromJson)),
+    assessments: json.array(AnyAssessment.fromJson),
 
     attemptedAssessmentCount: json.number,
     attemptedAssessments: json.array(ModelRef.fromJson(AnyAssessment.fromJson)),
 
-    percentAttempted: json.number
-  })
-};
+    percentAttempted: json.number,
+  }
+});
 
-export interface RatingsBasedProgress<T extends Assessment = AnyAssessment> extends Progress<T> {
-
+export interface PassFailProgress<T extends Assessment = AnyAssessment> extends Progress<T> {
+  passedAssessments: ModelRef<T>[];
 }
 
-export const RatingsBasedProgress = {
-  properties: <T extends Assessment>(type: T['type']) => ({
-    ...Progress.properties<T>(type),
- }),
-  fromJson: (obj) => json.object(RatingsBasedProgress.properties, obj)
-};
+export const PassFailProgress = modelDocumentMeta<PassFailProgress>({
+  properties: {
+    ...Progress.properties,
+    passedAssessments: json.array(ModelRef.fromJson(AnyAssessment.fromJson))
+  }
+});
+
 
 export interface CompletionBasedProgress<T extends Assessment = AnyAssessment> extends Progress<T> {
   readonly completeAssessmentCount: number;
@@ -70,60 +73,170 @@ export interface CompletionBasedProgress<T extends Assessment = AnyAssessment> e
   readonly partiallyCompleteAssessments: (ModelRef<AnyAssessment>)[];
 }
 
-export const CompletionBasedProgress = {
-  properties: <T extends Assessment>(type: T['type']) => ({
-    ...Progress.properties<T>(type),
+export const CompletionBasedProgress = modelDocumentMeta<CompletionBasedProgress>({
+  properties: {
+    ...Progress.properties,
     completeAssessmentCount: json.number,
     completeAssessments: json.array(ModelRef.fromJson(AnyAssessment.fromJson)),
     partiallyCompleteAssessmentCount: json.number,
     partiallyCompleteAssessments: json.array(ModelRef.fromJson(AnyAssessment.fromJson))
-  }),
-  fromJson: (obj) => json.object(CompletionBasedProgress.properties, obj)
-};
+  },
+});
 
-export interface UnitAssessmentProgress extends RatingsBasedProgress {
+export type Grade
+  = 'A+' | 'A' | 'A-'
+  | 'B+' | 'B' | 'B-'
+  | 'C+' | 'C' | 'C-'
+  | 'D+' | 'D' | 'D-'
+  | 'E+' | 'E' | 'E-'
+  | 'F';
+
+interface GradeItemProgress<T extends Assessment = AnyAssessment> extends ModelDocument {
+  readonly assessments: T[];
+
+  readonly assessmentCount: number;
+}
+
+const GradeItemProgress = modelDocumentMeta<GradeItemProgress<any>>({
+  properties: {
+    ...ModelDocument.properties,
+    assessments: json.array(AnyAssessment.fromJson),
+    assessmentCount: json.number
+  }
+});
+
+export interface GradedProgress<T extends Assessment = AnyAssessment> extends Progress<T> {
+  gradeAssessments: Record<Grade, GradeItemProgress<T>>;
+}
+
+export const GradedProgress = modelDocumentMeta<GradedProgress<any>>({
+  properties: {
+    ...Progress.properties,
+    gradeAssessments: json.record<Grade, GradeItemProgress<any>>(GradeItemProgress.fromJson)
+  }
+});
+
+export interface RatedProgress<T extends Assessment = AnyAssessment> extends Progress<T> {
+}
+
+export const RatedProgress = modelDocumentMeta<RatedProgress>({
+  properties: Progress.properties
+});
+
+
+export interface UnitAssessmentProgress extends RatedProgress<UnitAssessment> {
   readonly assessmentType: 'unit-assessment';
 }
 
-export const UnitAssessmentProgress = {
-  properties: {
-    ...RatingsBasedProgress.properties<UnitAssessment>('unit-assessment'),
-  },
-  fromJson: (obj: unknown) => json.object(UnitAssessmentProgress.properties, obj)
-};
+export const UnitAssessmentProgress = modelDocumentMeta<UnitAssessmentProgress>({
+  properties: (RatedProgress.properties as JsonObjectProperties<RatedProgress<UnitAssessment>>)
+});
 
-export interface BlockAssessmentProgress extends RatingsBasedProgress {
+export interface BlockAssessmentProgress extends RatedProgress<BlockAssessment> {
   readonly assessmentType: 'block-assessment';
 }
 
-export const BlockAssessmentProgress = {
+export const BlockAssessmentProgress = modelDocumentMeta<BlockAssessmentProgress>({
   properties: {
-    ...RatingsBasedProgress.properties<BlockAssessment>('block-assessment'),
+    ...(RatedProgress.properties as JsonObjectProperties<RatedProgress<BlockAssessment>>),
+    assessmentType: {value: 'block-assessment'}
   },
-  fromJson: (obj: unknown) => json.object(BlockAssessmentProgress.properties, obj)
-};
+});
 
-export interface LessonPrelearningAssessmentProgress extends CompletionBasedProgress {
+export interface LessonPrelearningAssessmentProgress extends CompletionBasedProgress<LessonPrelearningAssessment> {
   readonly assessmentType: 'lesson-prelearning-assessment';
+
+  readonly partiallyCompleteAssessmentPercent: number;
+  readonly completeAssessmentPercent: number;
+
+  readonly notAttemptedCount: number;
+  readonly notAttemptedPercent: number;
+  readonly noCompletionCount: number;
+  readonly noCompletionPercent: number;
+
+  /**
+   * Assigns a numeric value to this progress for use when comparing the results to other students.
+   *
+   * The calculated value is calculated from the assessments of the progress by assigning:
+   * - 1 for every completed assessment
+   * - 0 for every partially complete or not-attempted assessment
+   * - -1  for every "no completion" assessment
+   */
+  readonly score: number;
 }
 
-export const LessonPrelearningAssessmentProgress = {
+export const LessonPrelearningAssessmentProgress = modelDocumentMeta<LessonPrelearningAssessmentProgress>({
   properties: {
-    ...CompletionBasedProgress.properties<LessonPrelearningAssessment>('lesson-prelearning-assessment'),
-  },
-  fromJson: (obj: unknown) => json.object(LessonPrelearningAssessmentProgress.properties, obj)
-};
+    ...(CompletionBasedProgress.properties as JsonObjectProperties<CompletionBasedProgress<LessonPrelearningAssessment>>),
+    assessmentType: { value: 'lesson-prelearning-assessment' as 'lesson-prelearning-assessment' },
+    partiallyCompleteAssessmentPercent: {
+      get() {
+        return (100 * this.partiallyCompleteAssessmentCount) / this.assessmentCount;
+      }
+    },
+    completeAssessmentPercent: {
+      get() {
+        return (100 * this.completeAssessmentCount) / this.assessmentCount;
+      }
+    },
 
-export interface LessonOutcomeSelfAssessmentProgress extends RatingsBasedProgress {
+    notAttemptedCount: {
+      get() {
+        return this.assessmentCount - this.attemptedAssessmentCount;
+      }
+    },
+    notAttemptedPercent: {
+      get() {
+        return (100 * this.notAttemptedCount) / this.attemptedAssessmentCount;
+      }
+
+    },
+    noCompletionCount: {
+      get() {
+        return this.attemptedAssessmentCount - this.partiallyCompleteAssessmentCount;
+      }
+    },
+    noCompletionPercent: {
+      get() {
+        return (100 * this.noCompletionCount) / this.attemptedAssessmentCount;
+      }
+    },
+
+    score: {
+      get() {
+        const assessments: CompletionBasedAssessment[] = this.assessments;
+        return assessments.map((assessment) => {
+          switch (assessment.completionState) {
+            case 'complete':
+              return 1;
+            case 'none':
+              return -1;
+            case 'partially-complete':
+            default:
+              return 0;
+          }
+        }).reduce((acc, value) => acc + value, 0);
+      }
+    }
+  }
+});
+
+export interface LessonOutcomeSelfAssessmentProgress extends RatedProgress<LessonOutcomeSelfAssessment> {
   readonly assessmentType: 'lesson-outcome-self-assessment';
 }
 
-export const LessonOutcomeSelfAssessmentProgress = {
+export const LessonOutcomeSelfAssessmentProgress = modelDocumentMeta<LessonOutcomeSelfAssessmentProgress>({
   properties: {
-    ...RatingsBasedProgress.properties<LessonOutcomeSelfAssessment>('lesson-outcome-self-assessment')
-  },
-  fromJson: (obj: unknown) => json.object(LessonOutcomeSelfAssessmentProgress.properties, obj)
-};
+    ...(RatedProgress.properties as JsonObjectProperties<RatedProgress<LessonOutcomeSelfAssessment>>)
+  }
+});
+
+export type ProgressForAssessment<T extends Assessment>
+  = T extends UnitAssessment ? UnitAssessmentProgress
+  : T extends BlockAssessment ? BlockAssessmentProgress
+  : T extends LessonPrelearningAssessment ? LessonPrelearningAssessmentProgress
+  : T extends LessonOutcomeSelfAssessment ? LessonOutcomeSelfAssessmentProgress
+  : never;
 
 export type AnyProgress
   = UnitAssessmentProgress
@@ -150,3 +263,13 @@ export const AnyProgress = {
 
   }
 };
+
+export type ProgressLite<T extends Progress> = Omit<T, 'assessments'>;
+export function progressLiteFromJson<T extends Progress<any>>(meta: ModelDocumentMeta<T>): Decoder<ProgressLite<T>> {
+  return json.object<ProgressLite<T>>({
+    ...meta.properties,
+    assessments: undefined
+  });
+}
+
+

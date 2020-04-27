@@ -47,7 +47,7 @@ export class LessonState {
   ]).pipe(
     switchMap(([lesson, report]) => {
       function createInitialAssessment(candidate: Student): [string, LessonPrelearningAssessment] {
-        return [ModelRef.id(candidate), LessonPrelearningAssessment.create(lesson, candidate)];
+        return [ModelRef.id(candidate), LessonPrelearningAssessment.create({lesson, student: candidate})];
       }
       return forkJoin(
         report.candidates.map(candidate => {

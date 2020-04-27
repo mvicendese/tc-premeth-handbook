@@ -1,17 +1,30 @@
-import {Inject, Injectable, InjectionToken} from '@angular/core';
-import {BehaviorSubject, combineLatest, defer, Observable, Unsubscribable} from 'rxjs';
+import {Inject, Injectable, InjectionToken, Provider} from '@angular/core';
+import {BehaviorSubject, combineLatest, concat, defer, merge, Observable, Subject, Unsubscribable} from 'rxjs';
 import {Student} from '../../../common/model-types/schools';
 import {ActivatedRoute} from '@angular/router';
-import {distinctUntilChanged, filter, map, pluck, switchMap} from 'rxjs/operators';
+import {
+  distinctUntilChanged,
+  filter,
+  first,
+  map,
+  pluck,
+  repeat,
+  shareReplay,
+  skip,
+  skipUntil,
+  startWith,
+  switchMap, switchMapTo,
+  tap
+} from 'rxjs/operators';
 import {AssessmentsService} from '../../../common/model-services/assessments.service';
 import {SubjectNode} from '../../../common/model-types/subjects';
 import {
   AnyProgress,
   LessonOutcomeSelfAssessmentProgress,
-  LessonPrelearningAssessmentProgress
+  LessonPrelearningAssessmentProgress, Progress, ProgressForAssessment
 } from '../../../common/model-types/assessment-progress';
 import {ModelRef} from '../../../common/model-base/model-ref';
-import {AssessmentType} from '../../../common/model-types/assessments';
+import {Assessment, AssessmentType} from '../../../common/model-types/assessments';
 import {StudentService} from '../../../common/model-services/students.service';
 
 export const PROGRESS_LOADER_OPTIONS = new InjectionToken<ProgressLoaderOptions>('PROGRESS_LOADER_OPTIONS');
@@ -60,30 +73,45 @@ export class StudentState {
     this.subjectNodeSubject.pipe(filter((n): n is SubjectNode => n != null))
   );
 
-  readonly assessmentParams$ = combineLatest([
+  readonly loadProgressSubject = new Subject<AssessmentType>();
+
+  readonly assessmentParams$ = defer(() => combineLatest([
     this.studentId$.pipe(distinctUntilChanged()),
   ]).pipe(
     map(([studentId]) => ({
       student: studentId,
       year: 2020
     }))
-  );
+  ));
 
   readonly lessonPrelearningAssessmentProgress$: Observable<LessonPrelearningAssessmentProgress>
-    = this.assessmentParams$.pipe(
-      switchMap(params =>
+    = this.loadProgressSubject.pipe(
+      filter(type => type === 'lesson-prelearning-assessment'),
+      first(),
+      switchMapTo(this.assessmentParams$),
+      switchMap((params) =>
         this.assessments.queryProgresses<LessonPrelearningAssessmentProgress>('lesson-prelearning-assessment', { params })
       ),
-      map(page => page.results[0])
+      map(page => page.results[0]),
+      shareReplay(1)
     );
 
   readonly lessonOutcomeSelfAssessmentProgress$: Observable<LessonOutcomeSelfAssessmentProgress>
-    = this.assessmentParams$.pipe(
+    = this.loadProgressSubject.pipe(
+      filter(type => type === 'lesson-outcome-self-assessment'),
+      first(),
+      switchMapTo(this.assessmentParams$),
       switchMap(params =>
           this.assessments.queryProgresses<LessonOutcomeSelfAssessmentProgress>('lesson-outcome-self-assessment', { params })
       ),
-      map(page => page.results[0])
+      map(page => page.results[0]),
+      shareReplay(1)
     );
+
+  readonly progress$: Observable<Progress<any>> = defer(() => merge(
+    this.lessonPrelearningAssessmentProgress$,
+    this.lessonOutcomeSelfAssessmentProgress$,
+  ));
 
   constructor(
     readonly route: ActivatedRoute,
@@ -93,10 +121,15 @@ export class StudentState {
   init(): Unsubscribable {
     this.route.data.pipe(map(data => data.student)).subscribe(this.studentSubject);
 
+    const progresses = this.progress$.subscribe();
+
     return {
       unsubscribe: () => {
         this.studentSubject.complete();
+        progresses.unsubscribe();
       }
-    }
+    };
   }
 }
+
+

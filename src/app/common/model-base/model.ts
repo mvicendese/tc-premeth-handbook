@@ -1,5 +1,6 @@
 import {v4 as uuid4} from 'uuid';
-import json, {JsonObject} from '../json';
+import json, {JsonObject, JsonObjectProperties} from '../json';
+import {modelMeta} from './model-meta';
 
 export interface Model {
   readonly type: string;
@@ -24,17 +25,22 @@ export abstract class BaseModel implements Model {
   }
 }
 
-export function modelProperties<T extends Model>(type: T['type']) {
-  return {
-    type: { value: type },
+export const Model = modelMeta<Model>({
+  properties: {
+    type: json.string,
     id: json.string,
     createdAt: json.date,
     updatedAt: json.nullable(json.date)
-  };
-}
-export function createModel<T extends Model>(type: T['type']) {
-  return { type, id: uuid4() };
-}
+  },
+
+  create(args: Partial<Model>): Model {
+    const type = args.type;
+    if (type == null) {
+      throw new Error(`A 'type' is required`);
+    }
+    return { type, id: uuid4(), createdAt: null, updatedAt: null };
+  }
+});
 
 
 

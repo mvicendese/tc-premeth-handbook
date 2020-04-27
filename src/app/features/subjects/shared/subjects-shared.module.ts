@@ -12,6 +12,7 @@ import {SubjectsTreeNavComponent} from './tree-nav.component';
 import {MatTreeModule} from '@angular/material/tree';
 import {MatIconModule} from '@angular/material/icon';
 import {MatButtonModule} from '@angular/material/button';
+import {SubjectsBreadcrumbComponent} from './breadcrumb.component';
 
 @NgModule({
   imports: [
@@ -30,13 +31,15 @@ import {MatButtonModule} from '@angular/material/button';
     UnitResultsTableComponent,
     BlockAssessmentResultsComponent,
     SubjectSelectorComponent,
-    SubjectsTreeNavComponent
+    SubjectsTreeNavComponent,
+    SubjectsBreadcrumbComponent
   ],
   exports: [
     UnitResultsTableComponent,
     BlockAssessmentResultsComponent,
     SubjectSelectorComponent,
-    SubjectsTreeNavComponent
+    SubjectsTreeNavComponent,
+    SubjectsBreadcrumbComponent
   ]
 })
 export class SubjectsSharedModule {

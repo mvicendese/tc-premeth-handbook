@@ -1,0 +1,29 @@
+@import "~@angular/material/_theming";
+
+  /**
+   * Instructs a component to behave like an application page
+   */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  padding: 1rem 0.5rem;
+
+  header, main {
+    @include mat-elevation(2);
+    background-color: #fff;
+  }
+
+  header {
+    padding: 1rem 0 1rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  main {
+    flex-grow: 1;
+  }
+
+}
+
+

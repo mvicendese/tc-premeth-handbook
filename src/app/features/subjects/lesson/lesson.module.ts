@@ -17,6 +17,7 @@ import {LessonPageComponent} from './lesson-page.component';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {PrelearningOverviewComponent} from './prelearning-overview.component';
 import {SchoolsSharedModule} from '../../schools/shared/schools-shared.module';
+import {SubjectsSharedModule} from '../shared/subjects-shared.module';
 
 @NgModule({
   imports: [
@@ -32,7 +33,8 @@ import {SchoolsSharedModule} from '../../schools/shared/schools-shared.module';
     MatExpansionModule,
 
     SchoolsSharedModule,
-    LessonOutcomeModule
+    LessonOutcomeModule,
+    SubjectsSharedModule
   ],
   declarations: [
     PrelearningOverviewComponent,

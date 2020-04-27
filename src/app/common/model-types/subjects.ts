@@ -1,5 +1,5 @@
-import json, {parseError} from '../json';
-import {BaseModel, Model, modelProperties} from '../model-base/model';
+import json, {JsonObjectProperties, parseError} from '../json';
+import {BaseModel, Model} from '../model-base/model';
 import {ModelRef} from '../model-base/model-ref';
 
 
@@ -14,11 +14,14 @@ export interface SubjectIndex extends Model {
   readonly name: string;
 }
 
+export const subjectIndexProperties: JsonObjectProperties<SubjectIndex> = {
+  ...Model.properties,
+  type: { value: 'subject' },
+  name: json.string
+};
+
 export function subjectIndexFromJson(obj: unknown): SubjectIndex {
-  return json.object({
-    ...modelProperties<Subject>('subject'),
-    name: json.string
-  }, obj);
+  return json.object(subjectIndexProperties, obj);
 }
 
 export interface SubjectParams extends Model {
@@ -30,8 +33,7 @@ export interface SubjectParams extends Model {
 
 function subjectParamsFromJson(obj: unknown): SubjectParams {
   return json.object<SubjectParams>({
-    ...modelProperties<SubjectParams>('subject'),
-    name: json.string,
+    ...subjectIndexProperties,
     units: json.array(unitParamsFromJson)
   }, obj);
 }
@@ -40,7 +42,7 @@ type SubjectNodeContext<T extends SubjectNode> =
   (T extends (Unit | Block | LessonSchema | LessonOutcome) ? { readonly subject: Subject } : {})
     & ( T extends (Block | LessonSchema | LessonOutcome)    ? { readonly unit: Unit} : {} )
     & ( T extends (LessonSchema | LessonOutcome)            ? { readonly block: Block } : {} )
-    & ( T extends LessonOutcome                             ? { readonly lesson: LessonSchema} : {})
+    & ( T extends LessonOutcome                             ? { readonly lesson: LessonSchema} : {});
 
 export class Subject extends BaseModel implements SubjectParams {
   readonly type = 'subject';
@@ -89,7 +91,8 @@ export interface UnitParams extends Model {
 
 function unitParamsFromJson(obj: unknown): UnitParams {
   return json.object<UnitParams>({
-    ...modelProperties<UnitParams>('unit'),
+    ...Model.properties,
+    type: { value: 'unit' },
     name: json.string,
     blocks: json.array(blockParamsFromJson)
   }, obj);
@@ -140,7 +143,8 @@ export interface BlockParams extends Model {
 
 function blockParamsFromJson(obj: unknown): BlockParams {
   return json.object<BlockParams>({
-    ...modelProperties('subject'),
+    ...Model.properties,
+    type: { value: 'block' },
     name: json.string,
     lessons: json.array(lessonSchemaParamsFromJson)
   }, obj);
@@ -196,7 +200,8 @@ export interface LessonSchemaParams extends Model {
 
 function lessonSchemaParamsFromJson(obj: unknown): LessonSchemaParams {
   return json.object<LessonSchemaParams>({
-    ...modelProperties('subject'),
+    ...Model.properties,
+    type: { value: 'lesson' },
     code: json.string,
     name: json.string,
     number: json.number,
@@ -257,7 +262,8 @@ export interface LessonOutcomeParams extends Model {
 
 function lessonOutcomeParamsFromJson(obj: unknown): LessonOutcomeParams {
   return json.object<LessonOutcomeParams>({
-    ...modelProperties<LessonOutcome>('lesson-outcome'),
+    ...Model.properties,
+    type: { value: 'lesson-outcome' },
     name: json.string,
     description: json.string
   }, obj);
@@ -330,6 +336,15 @@ export function subjectNodeParent(node: SubjectNode): SubjectNode | undefined {
     case 'lesson-outcome':
       return node.context.lesson;
   }
+}
+
+export function subjectNodePath(node: SubjectNode | undefined): SubjectNode[]  {
+  if (node === undefined) {
+    return [];
+  }
+
+  const pathToParent = subjectNodePath(subjectNodeParent(node));
+  return [...pathToParent, node];
 }
 
 

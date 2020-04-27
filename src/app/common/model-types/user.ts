@@ -1,6 +1,14 @@
 import json, {isJsonObject, JsonObject, parseError} from '../json';
-import {BaseModel, Model, modelProperties} from '../model-base/model';
+import {BaseModel, Model} from '../model-base/model';
 import {Student, Teacher} from './schools';
+import {modelEnum} from '../model-base/model-meta';
+
+export type PersonType = 'student' | 'teacher';
+export const PersonType = modelEnum<PersonType>({
+  name: 'PersonType',
+  values: ['student', 'teacher']
+});
+
 
 export interface Person extends Model {
   readonly type: 'student' | 'teacher';
@@ -9,16 +17,9 @@ export interface Person extends Model {
 }
 
 function personFromJson(object: unknown): Person {
-  let type: string | undefined = undefined;
-  if (isJsonObject(object)) {
-    type = json.string(object.type);
-    if (!['student', 'teacher'].includes(type)) {
-      throw parseError(`Unexpected model type for Person '${type}`);
-    }
-  }
-
   return json.object<Person>({
-    ...modelProperties<Person>(type as 'student' | 'teacher'),
+    ...Model.properties,
+    type: PersonType.fromJson,
     name: json.string
   }, object);
 }
@@ -29,7 +30,7 @@ export interface UserParams extends Model {
 
 function userParamsFromJson(obj: unknown): UserParams {
   return json.object<UserParams>({
-    ...modelProperties('user'),
+    ...Model.properties,
     person: personFromJson,
   }, obj);
 }
