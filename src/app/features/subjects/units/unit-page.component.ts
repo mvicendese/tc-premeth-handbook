@@ -8,9 +8,9 @@ import {SubjectNodeRouteData} from '../subject-node-route-data';
   selector: 'subjects-unit-page',
   template: `
     <ng-container *ngIf="(unit$ | async) as unit">
-      <h1>{{unit.name}}</h1>
-
-      <subjects-tree-nav [root]="unit"></subjects-tree-nav>
+      <header>
+        <subjects-breadcrumb [leafNode]="unit"></subjects-breadcrumb>
+      </header>
     </ng-container>
 
     <main>

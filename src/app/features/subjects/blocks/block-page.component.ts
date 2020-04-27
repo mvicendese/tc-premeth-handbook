@@ -13,7 +13,11 @@ import {SubjectNodeRouteData} from '../subject-node-route-data';
 @Component({
   selector: 'subjects-block-page',
   template: `
-    <ng-container *ngIf="(block$ | async) as block">
+  <ng-container *ngIf="(block$ | async) as block">
+    <header>
+      <subjects-breadcrumb [leafNode]="block"></subjects-breadcrumb>
+    </header>
+    
       <div class="title-container">
         <h1>{{block.context.unit.name}}</h1>
         <h1><mat-icon>chevron_right</mat-icon>{{block.name}}</h1>
@@ -36,25 +40,11 @@ import {SubjectNodeRouteData} from '../subject-node-route-data';
         </mat-expansion-panel>
       </mat-accordion>
       -->
-      
-      
-    </ng-container>
+  </ng-container>
   `,
-  styles: [`
-    .title-container {
-      display: flex;
-    } 
-    
-    .title-container h1 {
-      display: flex;
-      align-items: center;
-    }
-    
-    span.lesson-code {
-      width: 2rem;
-      font-weight: 700;
-    }
-  `],
+  styleUrls: [
+    './block-page.component.scss'
+  ],
   providers: [
     ...provideBlockState()
   ]
