@@ -30,4 +30,3 @@ def col_index(col_letter):
 			total_index *= len(all_letters)
 			total_index += index
 		return total_index
-

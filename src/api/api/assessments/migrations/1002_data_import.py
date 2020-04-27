@@ -84,7 +84,8 @@ def create_block_assessments(apps, import_block):
 				id=import_attempt.id,
 				assessment=assessment,
 				rating=import_attempt.raw_mark,
-				date=import_attempt.date
+				created_at=import_attempt.date,
+				attempt_number=import_attempt.attempt_number
 			)
 			for import_attempt in import_block_assessment.attempts
 		)

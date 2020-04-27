@@ -176,11 +176,15 @@ class Lesson():
 				if row[col_index('C')].value == self.lesson_key
 			)
 
-			statement_col = col_index('H')
+			statement_col = col_index('J')
 
 			def lesson_outcome_for_ican_key(ican_key):
 				row = ican_keys[ican_key]
-				return self.db_lesson and self.db_lesson.lessonoutcome_set.get(description=row[statement_col].value)
+				try:
+					return self.db_lesson and self.db_lesson.lessonoutcome_set.get(description=row[statement_col].value)
+				except:
+					import pdb; pdb.set_trace()
+
 
 			self._outcomes = [
 				LessonOutcome(self, ican_key, db_lesson_outcome=lesson_outcome_for_ican_key(ican_key))
@@ -205,4 +209,4 @@ class LessonOutcome():
 
 	@property
 	def description(self):
-		return self.ican_row[col_index('H')].value
+		return self.ican_row[col_index('J')].value

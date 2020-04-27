@@ -39,7 +39,6 @@ class UnitResultAggregate():
 		return 
 
 
-
 class BlockResultAggregate():
 	def __init__(self, unit_results, block):
 		self.unit_results = unit_results

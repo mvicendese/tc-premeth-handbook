@@ -17,7 +17,7 @@ class BlockAssessment():
 
         ws = get_workbook()['MiniAssessResults']
         student_key_col = col_index('A')
-        block_key_col = col_index('D')
+        block_key_col = col_index('B')
 
         block_rows = [
             row for row in ws
@@ -66,18 +66,27 @@ class BlockAssessment():
     @property
     def attempts(self):
         if not hasattr(self, '_attempts'):
+            try:
+                db_attempt = self.db_block_assessment and self.db_block_assessment.attempt_set.get(
+                    attempt_number=row[col_index('I')].value
+                )
+            except ObjectDoesNotExist:
+                db_attempt = None
+
             self._attempts = [
-                BlockAssessmentAttemt(self, row)
+                BlockAssessmentAttempt(self, row, db_attempt=db_attempt)
                 for row in self.attempt_rows
             ]
         return self._attempts
     
 class BlockAssessmentAttempt():
-    def __init__(self, block_assessment):
+    def __init__(self, block_assessment, row, db_attempt=None):
         self.block_assessment = block_assessment
-        self.id = uuid4()
 
-        self.row = row
+        self.db_attempt=db_attempt
+        self.id = db_attempt.id if db_attempt else uuid4()
+
+        self.mini_assessments_row = row
 
     @property
     def attempt_number(self):
@@ -190,7 +199,6 @@ class LessonOutcomeSelfAssessment():
         ])
 
         lesson_outcome_rows = [ row for row in ws if is_outcome_row(row) ]
-
 
         all_students = Student.all(student_model=student_model)
         all_assessments = (
