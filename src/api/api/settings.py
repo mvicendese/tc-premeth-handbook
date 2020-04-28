@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
 
+    'api.base',
     'api.subjects',
     'api.schools',
     'api.assessments'
@@ -171,4 +172,15 @@ LOGGING = {
             'handlers': ['console']
         }
     },
+}
+
+MARKDOWN = {
+    'extensions': ['markdown.extensions.codehilite', 'markdown.extensions.extra', 'ext.markdown.emojify'],
+    'extension_configs': {
+        'markdown.extensions.codehilite': {'css_class': 'highlight'},
+        'markdown.extensions.extra': {},
+        'markdown.extensions.meta': {},
+        'ext.markdown.emojify': {}
+    },
+    'output_format': 'html5'
 }

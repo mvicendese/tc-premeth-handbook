@@ -1,6 +1,11 @@
+from django.conf import settings
+
 from collections import OrderedDict
 from rest_framework import serializers
 
+from markdown import Markdown
+
+from .attachables.serializers import *
 
 class BaseSerializer(serializers.ModelSerializer):
 	@property
@@ -24,3 +29,13 @@ class DocumentSerializer(serializers.Serializer):
 
 	class Meta:
 		fields = ('id', 'generation', 'generated_at')
+
+
+class MarkdownField(serializers.Serializer):
+
+	def __init__(self, *args, **kwargs):
+		self.markdown = markdown.Markdown(**settings.MARKDOWN)
+		super().__init__(*args, **kwargs)
+
+	def to_representation(self, value):
+		return self.markdown.convert(value)
