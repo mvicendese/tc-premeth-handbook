@@ -10,7 +10,7 @@ from django.db.models import functions
 
 from django.utils.translation import gettext_lazy as _
 
-from api.base.models import BaseModel, Document
+from api.base.models import BaseModel, Document, Comment
 
 from api.schools.models import School, Student, SubjectClass
 from api.subjects.models import (
@@ -23,6 +23,8 @@ from api.subjects.models import (
     Unit, 
     LessonOutcome
 )
+
+from api.base.models import Comment
 
 from .attempts.models import *
 from .progresses.models import *
@@ -96,7 +98,7 @@ class AssessmentSchema(BaseModel):
         exist in any queryset annotation.
 
         """
-        if not hasattr(self, '_assessment_properties'):
+        if not hasattr(self, '_assessmen/vot_properties'):
             props = dict(Attempt.objects_of_type(self.attempt_type).assessment_properties)
             props.update(
                 type=property(lambda assessment: assessment.schema.type)
@@ -107,7 +109,7 @@ class AssessmentSchema(BaseModel):
     def get_assessment_options(self, subject_node):
         if subject_node is None:
             raise ValueError('Expected a subject node')
-        if subject_node.node_type != self.subject_node_type:
+        if subject_node.node_type != self.subject_node_/type:
             raise ValueError(f'Can only get assessment options on {self.type} for {self.subject_node_type} subject nodes')
         return AssessmentOptions.objects.get_options(self, subject_node)
 
@@ -307,6 +309,13 @@ class Assessment(BaseModel):
     @property
     def attempt_set(self):
         return self.schema.attempt_set.filter(assessment=self)
+
+    @property
+    def comments(self):
+        return Comment.objects.filter(
+            attach_to_id=self.id
+        )
+
 
     def __getattr__(self, attr_name):
         schema_props = self.schema.assessment_properties

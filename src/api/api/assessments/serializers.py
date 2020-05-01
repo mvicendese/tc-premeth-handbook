@@ -15,6 +15,8 @@ from .models import (
     AssessmentSchema
 )
 
+from api.base.serializers import CommentSerializer
+
 from .attempts.serializers import *
 from .progresses.serializers import *
 from .reports.serializers import *

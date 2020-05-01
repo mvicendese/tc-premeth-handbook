@@ -15,7 +15,7 @@ def create_premeth_subject_tree(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('subjects', '0008_data_import_subjects'),
+        ('subjects', '0002_data_import_subjects'),
     ]
 
     operations = [

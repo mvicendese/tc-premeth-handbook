@@ -9,6 +9,97 @@ from ._excel import get_workbook, col_index
 from .subjects import Subject
 from .schools import Student
 
+class UnitAssessment():
+
+    @classmethod
+    def all_for_unit(cls, unit, student_model=None, assessment_model=None):
+        all_students = Student.all(student_model=student_model)
+
+        ws = get_workbook()['UnitAssessFeedback']
+        student_key_col = col_index('A')
+        unit_key_col = col_index('B')
+
+        unit_rows = [
+            row for row in ws
+            if row[unit_key_col].value == unit.key
+        ]
+
+        def student_rows(student):
+            return [
+                row for row in unit_rows
+                if row[student_key_col].value == student.row_key
+            ]
+
+        def unit_assessment_for_student(student):
+            try:
+                return assessment_model and assessment_model.unit_assessments.get(student_id=student.id, subject_node_id=unit.id)
+            except assessment_model.DoesNotExist:
+                return None
+
+        return [
+            cls(student, unit , student_rows(student), db_unit_assessment=unit_assessment_for_student(student))
+            for student in all_students
+        ]
+
+    def __init__(self, student, unit, rows, db_unit_assessment=None):
+        self.id = db_unit_assessment.id if db_unit_assessment else uuid4()
+        self.db_unit_assessment = db_unit_assessment
+
+        self.unit = unit
+        self.rows = rows
+
+    @classmethod
+    def assessment_data_row(cls, unit):
+        ws = get_workbook()['UnitAssessData']
+
+        unit_key_col = col_index('A')
+        is_unit_assessment_row = lambda row: row[unit_key_col].value == unit.key
+        return [row for row in ws if is_unit_assessment_row(row)][0]
+
+    @classmethod
+    def max_available_mark(cls, unit):
+        return cls.assessment_data_row[col_index('D')].value
+
+    @property
+    def comment(self):
+        return self.rows and self.rows[0][col_index('Q')].value
+
+    @property
+    def attempts(self):
+        if not hasattr(self, '_attempts'):
+            def db_attempt_for_row(row):
+                try:
+                    return self.db_unit_assessment and self.db_unit_assessment.attempt_set.get(attempt_number=1)
+                except ObjectDoesNotExist:
+                    return None
+
+            self._attempts = [
+                UnitAssessmentAttempt(self, row, db_attempt=db_attempt_for_row(row))
+                for row in self.rows
+            ]
+        return self._attempts
+ 
+class UnitAssessmentAttempt():
+    def __init__(self, unit_assessment, row, db_attempt=None):
+        self.unit_assessment = unit_assessment
+
+        self.db_attempt=db_attempt
+        self.id = db_attempt.id if db_attempt else uuid4()
+
+        self.unit_assess_feedback_row = row
+
+    @property
+    def date(self):
+        return self.unit_assess_feedback_row[col_index('P')].value
+
+    @property
+    def raw_mark(self):
+        return self.unit_assess_feedback_row[col_index('N')].value
+
+    @property
+    def mark_percent(self):
+        return self.unit_assess_feedback_row[col_index('O')].value
+
 class BlockAssessment():
 
     @classmethod
@@ -39,7 +130,7 @@ class BlockAssessment():
         ]   
 
     def __init__(self, student, block, attempt_rows, db_block_assessment=None):
-        self.id = block_assessment.id if db_block_assessment else uuid4()
+        self.id = db_block_assessment.id if db_block_assessment else uuid4()
         self.db_block_assessment = db_block_assessment
 
         self.student = student 

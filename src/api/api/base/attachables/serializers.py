@@ -1,18 +1,10 @@
 from django.conf import settings
 
 from rest_framework import serializers
-
-import markdown
+from ext.markdown.serializer_fields import MarkdownField
 
 from .models import Comment
 
-class MarkdownField(serializers.Serializer):
-	def __init__(self, *args, **kwargs):
-		self.markdown = markdown.Markdown(**settings.MARKDOWN)
-		super().__init__(*args, **kwargs)
-
-	def to_representation(self, value):
-		return self.markdown.convert(value)
 
 class AttachableSerializer(serializers.ModelSerializer):
 	class Meta:

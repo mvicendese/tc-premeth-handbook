@@ -26,8 +26,5 @@ class EmojifyPreprocessor(Preprocessor):
 		emoji_regexp = emoji.get_emoji_regexp()
 		return emoji_regexp.sub(r'<span class="emoji">\1</span>', line)
 
-
-
-
 def makeExtension(**kwargs):
 	return EmojifyExtension(**kwargs)

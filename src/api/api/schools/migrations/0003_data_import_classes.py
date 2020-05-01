@@ -25,6 +25,7 @@ def create_classes(apps, schema_editor):
 			school_id=tc_school.id,
 			subject_id=premeth_subject.id,
 			teacher_id=get_teacher(apps, import_cls.teacher_code).id,
+			year=2020
 		)
 		for import_cls in all_import_classes
 	)
@@ -41,7 +42,7 @@ def create_classes(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('subjects', '0008_data_import_subjects'),
+        ('subjects', '0002_data_import_subjects'),
         ('schools',  '0002_data_import_teachers_students')
     ]
 

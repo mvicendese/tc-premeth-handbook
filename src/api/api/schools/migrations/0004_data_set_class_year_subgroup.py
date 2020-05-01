@@ -24,7 +24,7 @@ def set_class_subgroup(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('schools', '0005_auto_20200322_1726')
+        ('schools', '0003_data_import_classes')
     ]
 
     operations = [

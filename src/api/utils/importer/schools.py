@@ -31,13 +31,13 @@ class School():
 class Teacher():
 	@classmethod
 	def mvi_teacher(cls, teacher_model=None):
-		db_teacher = teacher_model and teacher_model.get(teacher_code='MVI')
+		db_teacher = teacher_model and teacher_model.objects.get(teacher_code='MVI')
 		return Teacher('MVI', 'Matthew', 'VICENDESE', db_teacher=db_teacher)
 
 	@classmethod
 	def eraw_teacher(cls, teacher_model=None):
 		db_teacher = teacher_model and teacher_model.objects.get(teacher_code='ERAW')
-		return Teacher('ERAW', 'Unknown', 'UNKNOWN')
+		return Teacher('ERAW', 'Unknown', 'UNKNOWN', db_teacher=db_teacher)
 
 	@classmethod
 	def all(cls, teacher_model=None):
@@ -52,7 +52,11 @@ class Teacher():
 
 		self.teacher_code = teacher_code
 		self.first_name = first_name
-		self.last_name = last_name
+		self.last_name = surname 
+
+	@property
+	def email(self):
+		return self.teacher_code.lower() + '@tc.vic.edu.au'
 
 class Student():
 	@classmethod
@@ -77,6 +81,10 @@ class Student():
 		self.id = db_student.id if db_student else uuid4()
 		self.db_student = db_student
 		self.students_worksheet_row = students_worksheet_row
+
+	@property
+	def email(self):
+		return self.code + '@tc.vic.edu.au'
 
 	@property
 	def full_name(self):

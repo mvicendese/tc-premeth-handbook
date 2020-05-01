@@ -44,12 +44,16 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
 
+    'self',
+
     'api.base',
     'api.subjects',
     'api.schools',
     'api.assessments'
 
 ]
+
+AUTH_USER_MODEL = 'self.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -157,16 +161,12 @@ LOGGING = {
     },
     'handlers': {
         'console': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             #'filters': ['require_debug_true'],
             'class': 'logging.StreamHandler'
         }
     },
     'loggers': {
-        '': {
-            'level': 'DEBUG',
-            'handlers': ['console']
-        },
         'django.db.backends': {
             'level': 'INFO',
             'handlers': ['console']

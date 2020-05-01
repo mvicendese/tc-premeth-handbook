@@ -97,7 +97,7 @@ def create_lesson_outcomes(apps, import_lesson):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('subjects', '0007_auto_20200404_0811'),
+        ('subjects', '0001_initial'),
     ]
 
     operations = [

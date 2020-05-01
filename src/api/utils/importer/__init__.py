@@ -46,8 +46,14 @@ def get_eraw_teacher(apps):
 	global _eraw_teacher
 	if _eraw_teacher is None:
 		teacher_model = apps.get_model('schools', 'Teacher')
-		_eraw_teacher = schools.Teadcher.eraw_teacher(teacher_model=teacher_model)
+		_eraw_teacher = schools.Teacher.eraw_teacher(teacher_model=teacher_model)
 	return _eraw_teacher
+
+def get_teachers(apps):
+	return [
+		get_mvi_teacher(apps),
+		get_eraw_teacher(apps)
+	]
 
 def get_premeth_subject(apps):
 	reset_cached_if_apps_changed(apps)
