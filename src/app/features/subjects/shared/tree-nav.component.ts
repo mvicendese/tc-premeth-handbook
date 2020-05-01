@@ -59,7 +59,12 @@ export class TreeNavExtendLayoutDirective extends TemplatePortal<EmbeddedSubject
   ) {
     super(templateRef, viewContainerRef);
   }
+
+  ngOnDestroy() {
+    console.log('destroying', this.context.subjectNode);
+  }
 }
+
 
 interface SubjectNodeView {
   readonly parentView?: SubjectNodeView;
@@ -69,7 +74,6 @@ interface SubjectNodeView {
   readonly name: string;
   readonly children: SubjectNodeView[];
   readonly routerLink: any[];
-
 }
 
 export interface EmbeddedSubjectNodeView extends SubjectNodeView {
@@ -248,10 +252,11 @@ export class SubjectsTreeNavComponent implements OnChanges, AfterViewInit {
   expandView(view: SubjectNodeView) {
     console.log('expanding view', view);
     this.treeControl.collapseAll();
-    if (view.parentView) {
-      this.treeControl.expand(view.parentView);
-    }
     this.treeControl.expand(view);
+    while (view.parentView != null) {
+      this.treeControl.expand(view.parentView);
+      view = view.parentView;
+    }
   }
 }
 
