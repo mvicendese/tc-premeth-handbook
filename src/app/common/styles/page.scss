@@ -3,7 +3,8 @@
   /**
    * Instructs a component to behave like an application page
    */
-:host {
+
+@mixin application-page {
   display: flex;
   flex-direction: column;
   height: 100%;

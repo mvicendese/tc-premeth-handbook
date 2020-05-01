@@ -79,6 +79,10 @@ export class Student extends BaseModel implements StudentParams {
     this.school = params.school;
   }
 
+  get avatarHref(): string {
+    return '';
+  }
+
   get group(): 'junior' | 'senior' {
     return this.yearLevel <= 9 ? 'junior' : 'senior';
   }

@@ -13,6 +13,7 @@ import {provideSubjectNodeState} from '../subject-node-state';
 import {AssessmentReportLoader} from '../assessment-report-loader';
 import {AssessmentsService} from '../../../common/model-services/assessments.service';
 import {LessonPrelearningAssessmentAttempt} from '../../../common/model-types/assessment-attempt';
+import {SubjectNodePageContainerState} from '../subject-node-page-container-state';
 
 export function provideLessonState(): Provider[] {
   return [
@@ -27,6 +28,7 @@ export function provideLessonState(): Provider[] {
 @Injectable()
 export class LessonState {
   constructor(
+    readonly subjectNodePageState: SubjectNodePageContainerState,
     readonly assessmentsService: AssessmentsService,
     readonly students: StudentContextService,
     readonly nodeRouteData: SubjectNodeRouteData,
@@ -83,11 +85,14 @@ export class LessonState {
   }
 
   init(): Unsubscribable {
+    const container = this.subjectNodePageState.addSubjectNodeSource(this.lesson$);
+
     const resolveQueue = this.assessmentResolveQueue.init();
     const reportLoader = this.reportLoader.init();
 
     return {
       unsubscribe: () => {
+        container.unsubscribe();
         resolveQueue.unsubscribe();
         reportLoader.unsubscribe();
       }

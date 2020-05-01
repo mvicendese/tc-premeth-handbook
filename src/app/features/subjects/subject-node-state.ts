@@ -15,9 +15,6 @@ export function provideSubjectNodeState(options: {
     AssessmentResolveQueue,
     provideReportLoaderOptions(options),
     AssessmentReportLoader,
-
-
-
   ];
-
 }
+

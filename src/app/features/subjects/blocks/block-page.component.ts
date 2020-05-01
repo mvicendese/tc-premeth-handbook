@@ -14,15 +14,6 @@ import {SubjectNodeRouteData} from '../subject-node-route-data';
   selector: 'subjects-block-page',
   template: `
   <ng-container *ngIf="(block$ | async) as block">
-    <header>
-      <subjects-breadcrumb [leafNode]="block"></subjects-breadcrumb>
-    </header>
-    
-      <div class="title-container">
-        <h1>{{block.context.unit.name}}</h1>
-        <h1><mat-icon>chevron_right</mat-icon>{{block.name}}</h1>
-      </div>
-      <subjects-tree-nav [root]="block"></subjects-tree-nav>
       <!--
       <mat-accordion>
         <mat-expansion-panel *ngFor="let lesson of block.lessons"

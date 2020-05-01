@@ -15,8 +15,6 @@ import {AppStateService} from '../../../app-state.service';
   selector: 'subjects-lesson-page',
   template: `
     <header *ngIf="lesson$ | async as lesson">
-
-      <subjects-breadcrumb [leafNode]="lesson"></subjects-breadcrumb>
       <div class="class-info">
         <ng-container *ngIf="activeSubjectClass$ | async as subjectClass; else allStudents">
           {{subjectClass.classCode.toLocaleUpperCase()}}

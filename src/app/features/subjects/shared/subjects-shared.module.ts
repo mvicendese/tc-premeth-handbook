@@ -8,17 +8,19 @@ import {SubjectSelectorComponent} from './subject-selector.component';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {SubjectsTreeNavComponent} from './tree-nav.component';
+import {SubjectsTreeNavComponent, TreeNavExtendLayoutDirective} from './tree-nav.component';
 import {MatTreeModule} from '@angular/material/tree';
 import {MatIconModule} from '@angular/material/icon';
 import {MatButtonModule} from '@angular/material/button';
-import {SubjectsBreadcrumbComponent} from './breadcrumb.component';
+import {PortalModule} from '@angular/cdk/portal';
 
 @NgModule({
   imports: [
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
+
+    PortalModule,
 
     MatButtonModule,
     MatFormFieldModule,
@@ -32,14 +34,14 @@ import {SubjectsBreadcrumbComponent} from './breadcrumb.component';
     BlockAssessmentResultsComponent,
     SubjectSelectorComponent,
     SubjectsTreeNavComponent,
-    SubjectsBreadcrumbComponent
+
+    TreeNavExtendLayoutDirective
   ],
   exports: [
     UnitResultsTableComponent,
     BlockAssessmentResultsComponent,
     SubjectSelectorComponent,
     SubjectsTreeNavComponent,
-    SubjectsBreadcrumbComponent
   ]
 })
 export class SubjectsSharedModule {

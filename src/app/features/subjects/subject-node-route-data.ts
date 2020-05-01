@@ -3,7 +3,8 @@ import {ActivatedRoute, ActivatedRouteSnapshot, ParamMap, Resolve, RouterStateSn
 import {Injectable} from '@angular/core';
 import {AppStateService} from '../../app-state.service';
 import {combineLatest, defer, Observable, of, Unsubscribable} from 'rxjs';
-import {filter, map, pluck, skipWhile} from 'rxjs/operators';
+import {filter, map, multicast, pluck, skipWhile, tap} from 'rxjs/operators';
+import {SubjectNodePageContainerState} from './subject-node-page-container-state';
 
 
 @Injectable()
@@ -69,13 +70,9 @@ export class SubjectNodeRouteData {
   ));
 
   constructor(
+    readonly pageState: SubjectNodePageContainerState,
     readonly appState: AppStateService,
     readonly route: ActivatedRoute
-  ) {
-  }
-
-  destroy(): void {
-
-  }
+  ) {}
 }
 

@@ -1,0 +1,9 @@
+@import "common/styles/page";
+
+:host {
+  @include application-page;
+
+  header {
+    padding-bottom: 0;
+  }
+}

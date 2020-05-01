@@ -15,7 +15,7 @@ import {MatSidenav} from '@angular/material/sidenav';
     </mat-toolbar>
 
     <mat-sidenav-container>
-      <mat-sidenav mode="side" opened>
+      <mat-sidenav mode="side">
         <app-sidebar-menu></app-sidebar-menu>
       </mat-sidenav>
       <mat-sidenav-content>

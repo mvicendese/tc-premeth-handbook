@@ -31,6 +31,12 @@ export class SubjectNodeRouteResolver implements Resolve<SubjectNode> {
     return this.subjectsFeature.subject$.pipe(
       filter((subject): subject is Subject => subject != null),
       map(subject => {
+        if (nodeType === 'subject') {
+          if (id !== subject.id) {
+            throw new Error(`Cannot access external subject`);
+          }
+          return subject;
+        }
         const node = subject.getNode(nodeType, id);
         if (node == null) {
           throw new Error(`Could not find node ${nodeType} ${id} in current subject`);
