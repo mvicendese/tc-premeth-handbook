@@ -237,7 +237,7 @@ export class SubjectsTreeNavComponent implements OnChanges, AfterViewInit {
     }
   }
 
-  protected isActiveNode(node: SubjectNode) {
+  isActiveNode(node: SubjectNode) {
     return false;
   }
 
