@@ -109,7 +109,8 @@ export class UnitResultsTableDataSource extends MatTableDataSource<UnitAssessmen
         <th mat-header-cell *matHeaderCellDef> Comment </th>
         <td mat-cell *matCellDef="let item">
           <ng-container *ngIf="item.assessment != null && item.assessment.comments.length">
-            <span [innerHTML]="domSanitizer.sanitize(item.assessment.comments[0])"></span>
+            <!--
+            -->
           </ng-container>
         </td>
       </ng-container>

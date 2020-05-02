@@ -5,6 +5,7 @@ import {School, schoolFromJson, Student} from './schools';
 import {Block, LessonOutcome, LessonSchema, Subject, SubjectNode, Unit} from './subjects';
 import {Model} from '../model-base/model';
 import {modelEnum, ModelEnum, modelMeta} from '../model-base/model-meta';
+import {Comment} from './base-attachables';
 
 export type AssessmentType
   = 'unit-assessment'
@@ -34,7 +35,7 @@ export interface Assessment extends Model {
   readonly isAttempted: boolean;
   readonly attemptedAt: Date | null;
 
-  readonly comments: Comment[];
+  //readonly comments: Comment[];
 }
 
 export const Assessment = modelMeta<Assessment>({
@@ -49,7 +50,7 @@ export const Assessment = modelMeta<Assessment>({
     subjectNode: ModelRef.fromJson<SubjectNode>(SubjectNode.fromJson),
 
     isAttempted: json.bool,
-    attemptedAt: json.nullable(json.date)
+    attemptedAt: json.nullable(json.date),
   },
 
   create: (options: Partial<Assessment>) => {
@@ -74,7 +75,8 @@ export const Assessment = modelMeta<Assessment>({
       student: options.student,
       subjectNode: options.subjectNode,
       isAttempted: false,
-      attemptedAt: null
+      attemptedAt: null,
+      comments: []
     };
   }
 });
