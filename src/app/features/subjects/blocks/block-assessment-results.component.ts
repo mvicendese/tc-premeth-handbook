@@ -36,7 +36,8 @@ function numberOfAttempts(results: any[]) {
 }
 
 export function tableRows(state: TableState): TableRowData[] {
-  const unit = state.unit, block = state.block;
+  const unit = state.unit;
+  const block = state.block;
   const studentResults = state.studentResults;
 
   if (unit == null || block == null || studentResults == null) {
@@ -91,7 +92,7 @@ export function tableRows(state: TableState): TableRowData[] {
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="tableColumns"></tr>
-        <tr mat-row *matRowDef="let row: columns: tableColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: tableColumns"></tr>
       </table>
     </ng-container>
 

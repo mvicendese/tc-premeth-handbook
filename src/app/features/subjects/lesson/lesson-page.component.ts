@@ -14,32 +14,21 @@ import {AppStateService} from '../../../app-state.service';
 @Component({
   selector: 'subjects-lesson-page',
   template: `
-    <header *ngIf="lesson$ | async as lesson">
-      <div class="class-info">
-        <ng-container *ngIf="activeSubjectClass$ | async as subjectClass; else allStudents">
-          {{subjectClass.classCode.toLocaleUpperCase()}}
-        </ng-container>
-
-        <ng-template #allStudents>
-          ALL STUDENTS
+    <mat-tab-group>
+      <mat-tab label="Overview">
+        <subjects-lesson-overview-tab></subjects-lesson-overview-tab>
+      </mat-tab>
+      <mat-tab label="Prelearning">
+        <ng-template matTabContent>
+          <subjects-lesson-prelearning-tab class="tab-content"></subjects-lesson-prelearning-tab>
         </ng-template>
-      </div>
-    </header>
-
-    <main>
-      <mat-tab-group>
-        <mat-tab label="Prelearning">
-          <ng-template matTabContent>
-            <subjects-lesson-prelearning-tab class="tab-content"></subjects-lesson-prelearning-tab>
-          </ng-template>
-        </mat-tab>
-        <mat-tab label="Student outcomes" class="d-flex">
-          <ng-template matTabContent>
-            <subjects-lesson-outcomes-tab class="tab-content"></subjects-lesson-outcomes-tab>
-          </ng-template>
-        </mat-tab>
-      </mat-tab-group>
-    </main>
+      </mat-tab>
+      <mat-tab label="Student outcomes" class="d-flex">
+        <ng-template matTabContent>
+          <subjects-lesson-outcomes-tab class="tab-content"></subjects-lesson-outcomes-tab>
+        </ng-template>
+      </mat-tab>
+    </mat-tab-group>
   `,
   styleUrls: [
     './lesson-page.component.scss'
@@ -49,9 +38,8 @@ import {AppStateService} from '../../../app-state.service';
       display: block;
       height: 100%;
       width: 100%;
-      padding-top: 2rem;
     }
-    
+
     .class-info {
       padding-left: 2em;
     }

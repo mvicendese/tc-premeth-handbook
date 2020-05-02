@@ -89,14 +89,16 @@ function fromSubjectNode(node: SubjectNode, parentView?: SubjectNodeView) {
     name: node.name,
     routerLink: ['/subjects', node.type, node.id],
   };
-  view.children = subjectNodeChildren(node).map((n) => fromSubjectNode(n, view));
+  const nodeChildren = ['lesson', 'lesson-outcome'].includes(node.type) ? [] : subjectNodeChildren(node);
+  view.children = nodeChildren.map((n) => fromSubjectNode(n, view));
   return view;
 }
 
 function embeddedSubjectNodeView(view: SubjectNodeView, viewAttributes: {
   isActive: boolean;
   isExpanded: boolean;
-  parentOffset: number;}): EmbeddedSubjectNodeView {
+  parentOffset: number;
+}): EmbeddedSubjectNodeView {
   return {
     ...view,
     ...viewAttributes

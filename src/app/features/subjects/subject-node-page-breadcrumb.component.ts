@@ -3,7 +3,7 @@ import {SubjectNode, subjectNodeChildren, subjectNodePath} from '../../common/mo
 import {Router} from '@angular/router';
 import {ThemePalette} from '@angular/material/core';
 import {SubjectNodePageContainerState} from './subject-node-page-container-state';
-import {map, shareReplay, tap, distinctUntilChanged, distinctUntilKeyChanged} from 'rxjs/operators';
+import {map, shareReplay, tap, distinctUntilChanged, distinctUntilKeyChanged, mapTo} from 'rxjs/operators';
 import {BehaviorSubject, combineLatest, Observable, Unsubscribable} from 'rxjs';
 
 interface CrumbElement {
@@ -31,11 +31,6 @@ interface BreadcrumbState {
 
   readonly isMenuTreeOpen: boolean;
 }
-export function isBreadcrumbStateChange(prev, curr): boolean {
-  return prev.menuTreeRootNode !== curr.menuTreeRootNode
-    || prev.isMenuTreeOpen !== curr.isMenuTreeOpen;
-}
-
 
 @Component({
   selector: 'subjects-node-page-breadcrumb',
@@ -126,17 +121,18 @@ export function isBreadcrumbStateChange(prev, curr): boolean {
   `]
 })
 export class SubjectNodePageBreadcrumbComponent implements OnInit, OnDestroy {
-  private resources: Unsubscribable[] = [];
+private resources: Unsubscribable[] = [];
   protected readonly hoverNodeSubject = new BehaviorSubject<SubjectNode | null>(null);
+  protected readonly isMenuTreeOpenSubject = new BehaviorSubject<boolean>(false);
 
   readonly pageNode$: Observable<SubjectNode> = this.subjectNodePageState.subjectNode$.pipe(
     shareReplay(1)
   );
 
   readonly state$: Observable<BreadcrumbState> = combineLatest([
-    this.pageNode$.pipe(distinctUntilChanged()),
+    this.pageNode$,
     this.hoverNodeSubject.pipe(distinctUntilChanged()),
-    this.subjectNodePageState.isMenuTreeOpen
+    this.isMenuTreeOpenSubject.pipe(distinctUntilChanged())
   ]).pipe(
     map(([pageNode, hoverNode, isMenuTreeOpen]) => {
       const menuTreeRootNode = hoverNode || pageNode;
@@ -158,8 +154,6 @@ export class SubjectNodePageBreadcrumbComponent implements OnInit, OnDestroy {
         isMenuTreeOpen
       };
     }),
-    // distinctUntilChanged(isBreadcrumbStateChange),
-    tap(() => console.log('state')),
     shareReplay(1)
   );
 
@@ -169,15 +163,24 @@ export class SubjectNodePageBreadcrumbComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.resources.push(
+      this.subjectNodePageState.subjectNode$.pipe(
+        tap(subjectNode => console.log('new subject node', subjectNode)),
+        mapTo(false)
+      ).subscribe(this.isMenuTreeOpenSubject)
+    ) ;
+
     this.resources.push(this.state$.subscribe());
   }
 
   ngOnDestroy(): void {
+    this.isMenuTreeOpenSubject.complete();
+    this.hoverNodeSubject.complete();
     this.resources.forEach(r => r.unsubscribe());
   }
 
-  hoverNode(node: SubjectNode) {
+  hoverNode(node: SubjectNode | null) {
     this.hoverNodeSubject.next(node);
-    return this.subjectNodePageState.toggleMenuTreeOpen(node != null);
+    this.isMenuTreeOpenSubject.next(node != null);
   }
 }

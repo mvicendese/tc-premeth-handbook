@@ -1,6 +1,6 @@
 import {Component, Input, OnDestroy} from '@angular/core';
-import {BehaviorSubject, defer, Observable} from 'rxjs';
-import {first, map, pluck, shareReplay} from 'rxjs/operators';
+import {BehaviorSubject} from 'rxjs';
+import {map, pluck, shareReplay} from 'rxjs/operators';
 import {Student} from '../../../common/model-types/schools';
 import {Unit} from '../../../common/model-types/subjects';
 
@@ -48,7 +48,7 @@ export function tableRows(state: TableState): TableRowData[] {
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="tableColumns"></tr>
-        <tr mat-row *matRowDef="let row: columns: tableColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: tableColumns"></tr>
       </table>
     </ng-container>
   `

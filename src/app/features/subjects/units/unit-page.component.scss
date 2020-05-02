@@ -1,1 +1,35 @@
-@import "common/styles/page";
+
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: calc(100% - 2rem);
+  width: calc(100% - 2rem);
+
+  padding: 1rem 1rem;
+}
+
+.unit-title {
+  position: relative;
+  width: 100%;
+}
+
+.unit-name {
+  font: 500 32px/54px Roboto, "Helvetica Neue", sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.node-type {
+  color: #4f4f4f;
+  position: absolute;
+  text-transform: uppercase;
+
+  font: 400 12px/12px Roboto, "Helvetica Neue", sans-serif;
+}
+
+subjects-unit-results-table {
+  flex-grow: 1;
+  width: 80%;
+
+}

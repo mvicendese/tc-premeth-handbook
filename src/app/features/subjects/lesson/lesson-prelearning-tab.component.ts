@@ -12,22 +12,16 @@ import {combineLatest} from 'rxjs';
       <subjects-prelearning-overview [lesson]="view.lesson" [report]="view.report">
       </subjects-prelearning-overview>
       <mat-divider vertical></mat-divider>
-      <subjects-lesson-prelearning-results 
-          [lesson]="view.lesson" 
+      <subjects-lesson-prelearning-results
+          [lesson]="view.lesson"
           (completionStateChange)="lessonState.setPrelearningAssessmentCompletionState($event.assessment, $event.completionState)">
       </subjects-lesson-prelearning-results>
     </ng-container>
   `,
-  styles: [`
-    subjects-prelearning-overview {
-      flex-basis: 20%;
-      margin-left: 1rem;
-    }
-    
-    subjects-lesson-prelearning-results {
-      flex-basis: 80%;
-    }
-  `]
+  styleUrls: [
+    './lesson-prelearning-tab.component.scss'
+  ]
+
 })
 export class LessonPrelearningTabComponent {
   readonly lesson$ = this.lessonState.lesson$.pipe(

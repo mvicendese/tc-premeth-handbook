@@ -4,6 +4,16 @@
   @include application-page;
 
   header {
+    padding-left: 0;
     padding-bottom: 0;
   }
+
+  main {
+    .node-title {
+      font: 500 36px/36px Roboto, "Helvetica Neue", sans-serif;
+      letter-spacing: 0.1em;
+    }
+
+  }
 }
+

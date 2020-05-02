@@ -33,6 +33,8 @@ export interface Assessment extends Model {
 
   readonly isAttempted: boolean;
   readonly attemptedAt: Date | null;
+
+  readonly comments: Comment[];
 }
 
 export const Assessment = modelMeta<Assessment>({

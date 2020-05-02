@@ -1,5 +1,7 @@
 @import "common/styles/tab-content";
 
 :host {
-  @include fullbleed-tab-group;
+  @include tab-content;
 }
+
+

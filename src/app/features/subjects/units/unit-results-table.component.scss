@@ -1,0 +1,10 @@
+@import "common/styles/fullbleed";
+
+:host {
+  display: block;
+  position: relative;
+}
+
+table {
+  @include fullbleed;
+}

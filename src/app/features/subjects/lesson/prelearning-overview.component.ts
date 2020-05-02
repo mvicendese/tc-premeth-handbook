@@ -5,7 +5,7 @@ import {LessonSchema} from '../../../common/model-types/subjects';
 @Component({
   selector: 'subjects-prelearning-overview',
   template: `
-    <div class="report-container" *ngIf="report">
+    <div class="report-container mat-elevation-z3" *ngIf="report">
       <dl>
         <dt>Students Complete</dt>
         <dd>
@@ -19,7 +19,24 @@ import {LessonSchema} from '../../../common/model-types/subjects';
 </form>
 -->
     </div>
-  `
+  `,
+  styles: [`
+    :host {
+      display: flex;
+      justify-content: center;
+    }
+    .report-container {
+       flex-basis: 80%;
+       background-color: #fff;
+       display: flex;
+    }
+    
+    dt {
+      display: inline;
+      font: 500 12px "Roboto", sans-serif;
+    }
+    
+  `]
 })
 export class PrelearningOverviewComponent {
   @Input() lesson: LessonSchema;

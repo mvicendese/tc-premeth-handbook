@@ -18,6 +18,7 @@ import {MatExpansionModule} from '@angular/material/expansion';
 import {PrelearningOverviewComponent} from './prelearning-overview.component';
 import {SchoolsSharedModule} from '../../schools/shared/schools-shared.module';
 import {SubjectsSharedModule} from '../shared/subjects-shared.module';
+import {MatButtonModule} from '@angular/material/button';
 
 @NgModule({
   imports: [
@@ -25,6 +26,7 @@ import {SubjectsSharedModule} from '../shared/subjects-shared.module';
     CommonComponentsModule,
     ReactiveFormsModule,
 
+    MatButtonModule,
     MatCheckboxModule,
     MatIconModule,
     MatTabsModule,

@@ -4,7 +4,7 @@ import {MatSidenav} from '@angular/material/sidenav';
 @Component({
   selector: 'app-scaffold',
   template: `
-    <mat-toolbar>
+    <mat-toolbar class="mat-elevation-z10" color="primary">
       <button mat-button (click)="toggleSidebar()">
         <mat-icon>menu</mat-icon>
       </button>
@@ -15,7 +15,7 @@ import {MatSidenav} from '@angular/material/sidenav';
     </mat-toolbar>
 
     <mat-sidenav-container>
-      <mat-sidenav mode="side">
+      <mat-sidenav mode="side" class="mat-elevation-z10">
         <app-sidebar-menu></app-sidebar-menu>
       </mat-sidenav>
       <mat-sidenav-content>
