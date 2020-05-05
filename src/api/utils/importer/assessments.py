@@ -34,7 +34,7 @@ class UnitAssessment():
             try:
                 return assessment_model and assessment_model.unit_assessments.get(student_id=student.id, subject_node_id=unit.id)
             except assessment_model.DoesNotExist:
-                return None
+                pass
 
         return [
             cls(student, unit , student_rows(student), db_unit_assessment=unit_assessment_for_student(student))
@@ -44,6 +44,8 @@ class UnitAssessment():
     def __init__(self, student, unit, rows, db_unit_assessment=None):
         self.id = db_unit_assessment.id if db_unit_assessment else uuid4()
         self.db_unit_assessment = db_unit_assessment
+
+        self.student = student
 
         self.unit = unit
         self.rows = rows
@@ -58,11 +60,16 @@ class UnitAssessment():
 
     @classmethod
     def max_available_mark(cls, unit):
-        return cls.assessment_data_row[col_index('D')].value
+        return cls.assessment_data_row(unit)[col_index('D')].value
+
 
     @property
     def comment(self):
         return self.rows and self.rows[0][col_index('Q')].value
+
+    @property
+    def has_attempts(self):
+        return all(attempt.raw_mark is not None for attempt in self.attempts)
 
     @property
     def attempts(self):
@@ -169,7 +176,8 @@ class BlockAssessment():
                 for row in self.attempt_rows
             ]
         return self._attempts
-    
+
+
 class BlockAssessmentAttempt():
     def __init__(self, block_assessment, row, db_attempt=None):
         self.block_assessment = block_assessment

@@ -37,6 +37,7 @@ def create_assessments(apps, shema_editor):
 
 def create_subject_descendent_assessments(apps, import_subject):
     for import_unit in import_subject.units:
+        create_unit_assessments(apps, import_unit)
         create_unit_descendent_assessments(apps, import_unit)
 
 def create_unit_assessments(apps, import_unit):
@@ -45,7 +46,7 @@ def create_unit_assessments(apps, import_unit):
 
     schema = get_assessment_schema(apps, 'unit-assessment')
 
-    max_available_mark = importer.assessments.Unitassessment.max_available_mark(import_block)
+    max_available_mark = importer.assessments.UnitAssessment.max_available_mark(import_unit)
     set_assessment_option(apps,
         schema,
         import_unit.id,
@@ -58,12 +59,14 @@ def create_unit_assessments(apps, import_unit):
     )
 
     for import_unit_assessment in all_unit_assessments:
+        if not import_unit_assessment.has_attempts:
+            continue
 
         assessment = Assessment(
-            id=import_unit.assessment.id,
+            id=import_unit_assessment.id,
             schema=schema,
-            subject_node_id=import_block.id,
-            student_id=import_block_assessment.student.id
+            subject_node_id=import_unit.id,
+            student_id=import_unit_assessment.student.id
         )
         assessment.save()
 
@@ -73,7 +76,7 @@ def create_unit_assessments(apps, import_unit):
                 assessment=assessment,
                 rating=import_attempt.raw_mark,
                 created_at=import_attempt.date,
-                attempt_number=import_attempt.attempt_number
+                attempt_number=1
             )
             for import_attempt in import_unit_assessment.attempts
         )

@@ -19,21 +19,15 @@ from django.urls import path, include
 from rest_framework import routers
 
 from .subjects.views import SubjectViewSet
-from .schools.views import (
-	StudentViewSet,
-	TeacherViewSet,
-	ClassViewSet
-)
 
+from .schools.views import register_routes as register_schools_routes 
 from .assessments.views import register_routes as register_assessment_routes
 
 router = routers.SimpleRouter()
 router.register('subjects', SubjectViewSet)
 
-router.register('students', StudentViewSet)
-router.register('teachers', TeacherViewSet)
-router.register('classes', ClassViewSet)
 
+register_schools_routes(router)
 register_assessment_routes(router)
 
 urlpatterns = [

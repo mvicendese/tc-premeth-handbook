@@ -3,8 +3,9 @@ from uuid import UUID
 from datetime import datetime
 from django.db import models
 
+from ext.django.db.models import Document
+
 from api.base.models import (
-    Document,
     comma_delimited_models_property,
     comma_delimited_model_count_property,
     calculated_percentage_property

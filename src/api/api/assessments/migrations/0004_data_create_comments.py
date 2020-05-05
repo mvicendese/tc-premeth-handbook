@@ -10,7 +10,9 @@ def create_unit_assessment_comments(apps, schema_editor):
     for unit in subject.units:
         unit_assessments = (
             importer.assessments.UnitAssessment
-            .all_for_unit(unit, assessment_model=apps.get_model('assessments', 'Assessment'))
+            .all_for_unit(unit, 
+                student_model=apps.get_model('schools', 'Student'),
+                assessment_model=apps.get_model('assessments', 'Assessment'))
         )    
         for assessment in unit_assessments:
             if assessment.comment is not None:
@@ -18,9 +20,10 @@ def create_unit_assessment_comments(apps, schema_editor):
 
 
 def create_unit_assessment_comment(apps, import_unit_assessment):
+    Assessment = apps.get_model('assessments', 'Assessment')
     ContentType = apps.get_model('contenttypes', 'ContentType')
 
-    assessment_type = ContentType.objects.get(app_label='assessments', model='assessment')
+    assessment_type = ContentType.objects.get_for_model(Assessment)
 
     Comment = apps.get_model('base', 'Comment')
 

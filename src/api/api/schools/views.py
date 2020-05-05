@@ -18,8 +18,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
 		resolve_ids = self.request.query_params.getlist('resolve')	
 		if resolve_ids:
-			return qs.filter(id__in=resolve_ids)
-
+			qs = qs.filter(id__in=resolve_ids)
 		return qs
 
 	@action(detail=True)
@@ -52,3 +51,10 @@ class TeacherViewSet(viewsets.ModelViewSet):
 class ClassViewSet(viewsets.ModelViewSet):	
 	queryset = SubjectClass.objects.order_by('-year', 'subgroup')
 	serializer_class = SubjectClassSerializer
+
+
+def register_routes(router):
+	router.register(r'schools/teachers', TeacherViewSet)
+	router.register(r'schools/students', StudentViewSet)
+	router.register(r'schools/classes',  ClassViewSet)
+	return router

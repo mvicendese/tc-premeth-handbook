@@ -3,7 +3,9 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
+from api.base.models import Comment
 from api.base.serializers import BaseSerializer
+from api.base.serializers import CommentSerializer
 
 from api.subjects.models import SubjectNode
 
@@ -15,7 +17,6 @@ from .models import (
     AssessmentSchema
 )
 
-from api.base.serializers import CommentSerializer
 
 from .attempts.serializers import *
 from .progresses.serializers import *
@@ -66,6 +67,8 @@ class AssessmentSerializer(serializers.Serializer):
 
     is_attempted = serializers.BooleanField()
     attempted_at = serializers.DateTimeField(allow_null=True)
+
+    comments = serializers.ListSerializer(child=CommentSerializer())
 
 
     def schema_serializer(self, instance):

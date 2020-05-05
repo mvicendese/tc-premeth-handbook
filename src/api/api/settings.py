@@ -30,7 +30,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -168,6 +167,10 @@ LOGGING = {
     },
     'loggers': {
         'django.db.backends': {
+        '': {
+            'level': 'DEBUG',
+            'handlers': ['console']
+        },
             'level': 'INFO',
             'handlers': ['console']
         }

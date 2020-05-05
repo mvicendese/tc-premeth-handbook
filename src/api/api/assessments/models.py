@@ -10,7 +10,8 @@ from django.db.models import functions
 
 from django.utils.translation import gettext_lazy as _
 
-from api.base.models import BaseModel, Document, Comment
+from ext.django.db.models import BaseModel
+from api.base.models import Comment
 
 from api.schools.models import School, Student, SubjectClass
 from api.subjects.models import (
@@ -109,7 +110,7 @@ class AssessmentSchema(BaseModel):
     def get_assessment_options(self, subject_node):
         if subject_node is None:
             raise ValueError('Expected a subject node')
-        if subject_node.node_type != self.subject_node_/type:
+        if subject_node.node_type != self.subject_node_type:
             raise ValueError(f'Can only get assessment options on {self.type} for {self.subject_node_type} subject nodes')
         return AssessmentOptions.objects.get_options(self, subject_node)
 
@@ -312,9 +313,7 @@ class Assessment(BaseModel):
 
     @property
     def comments(self):
-        return Comment.objects.filter(
-            attach_to_id=self.id
-        )
+        return Comment.objects.filter(attached_to_id=self.id)
 
 
     def __getattr__(self, attr_name):

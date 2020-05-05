@@ -1,7 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-from api.base.models import BaseModel
+from ext.django.db.models import BaseModel
+
+from self.models import Person
+
 from api.subjects.models import Subject
 
 
@@ -9,28 +12,18 @@ from api.subjects.models import Subject
 class School(BaseModel):
 	name = models.CharField(max_length=1024)
 
-class Person(BaseModel):
+class SchoolPerson(Person):
+	school = models.ForeignKey(School, on_delete=models.CASCADE)
+
 	class Meta:
 		abstract = True
 
-	school = models.ForeignKey(School, on_delete=models.CASCADE)
-
-	email = models.CharField(max_length=1024)
-	first_name = models.CharField(max_length=128)
-	surname = models.CharField(max_length=128)
-
-	user = models.OneToOneField('self.User', null=True, on_delete=models.SET_NULL)
-
-	@property
-	def full_name(self):
-		return f'{self.first_name} {self.surname}'
-
-class Student(Person):
+class Student(SchoolPerson):
 	student_code = models.CharField(max_length=16)
 	year_level = models.PositiveSmallIntegerField()
 	compass_number = models.PositiveSmallIntegerField()
 
-class Teacher(Person):
+class Teacher(SchoolPerson):
 	teacher_code = models.CharField(max_length=16)
 
 

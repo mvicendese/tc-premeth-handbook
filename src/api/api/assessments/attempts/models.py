@@ -3,7 +3,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from api.base.models import BaseModel, calculated_percentage_property
+from ext.django.db.models import BaseModel
+from api.base.models import calculated_percentage_property
 
 
 
