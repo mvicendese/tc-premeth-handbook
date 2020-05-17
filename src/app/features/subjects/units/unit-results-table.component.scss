@@ -7,4 +7,108 @@
 
 table {
   @include fullbleed;
+  max-width: 1000px;
+
+  tr {
+    height: 60px;
+  }
+
+
+  tr:not(.item-detail-row) {
+    td {
+      border-bottom-width: 0;
+    }
+
+    /*
+    &:hover {
+      background: whitesmoke;
+    }
+
+    &:active {
+      background: #efefef;
+    }
+     */
+  }
+
+  tr.item-detail-row {
+    height: 0;
+  }
+}
+
+.expanded-detail {
+  overflow:hidden;
+}
+
+// Comments
+th.mat-column-comment {
+
+}
+
+td.mat-column-comment {
+
+
+}
+
+
+base-comment-section {
+  width: 60%;
+  margin-left: 40%;
+}
+
+
+.mark-input-field {
+  width: 4em;
+}
+
+.mat-column-student {
+  width: 8em;
+}
+th.mat-column-student {
+  padding: 0 16px;
+}
+
+.mat-column-grade {
+  width: 24px;
+  padding-right: 8px;
+}
+
+.mat-column-grade > .container {
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+
+  width: 20em;
+
+  > mat-icon {
+    margin-right: 1em;
+  }
+}
+
+.mat-column-date {
+  width: 15em;
+}
+
+.form-field-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  padding-right: 1em;
+}
+
+.actions-container {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mark-fraction {
+  display: inline-block;
+  min-width: 4em;
+}
+
+.percentage {
+  size: 1.2em;
+  font-weight: 300;
+  color: green;
 }

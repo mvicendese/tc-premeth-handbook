@@ -6,7 +6,6 @@ import {Unsubscribable} from 'rxjs';
 import {BlockState, provideBlockState} from './block-state';
 import {Router} from '@angular/router';
 import {LessonSchema} from '../../../common/model-types/subjects';
-import {ModelRef} from '../../../common/model-base/model-ref';
 import {SubjectNodeRouteData} from '../subject-node-route-data';
 
 
@@ -62,7 +61,7 @@ export class BlockPageComponent implements OnInit, OnDestroy {
   }
 
   lessonPanelOpened(lesson: LessonSchema): Promise<boolean> {
-    return this.router.navigate(['/subjects', 'lesson', ModelRef.id(lesson)]);
+    return this.router.navigate(['/subjects', 'lesson', lesson.id]);
 
   }
 }

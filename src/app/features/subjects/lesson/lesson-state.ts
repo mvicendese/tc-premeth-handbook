@@ -2,7 +2,6 @@ import {CompletionState, LessonPrelearningAssessment} from '../../../common/mode
 import {Injectable, Provider} from '@angular/core';
 import {combineLatest, defer, forkJoin, Observable, of, Unsubscribable} from 'rxjs';
 import {filter, first, map, shareReplay, switchMap, switchMapTo, tap, withLatestFrom} from 'rxjs/operators';
-import {ModelRef} from '../../../common/model-base/model-ref';
 import {Student} from '../../../common/model-types/schools';
 import {LessonSchema} from '../../../common/model-types/subjects';
 import {SubjectNodeRouteData} from '../subject-node-route-data';
@@ -11,9 +10,10 @@ import {StudentContextService} from '../../schools/students/student-context.serv
 import {AssessmentResolveQueue} from '../assessment-resolve-queue';
 import {provideSubjectNodeState} from '../subject-node-state';
 import {AssessmentReportLoader} from '../assessment-report-loader';
-import {AssessmentsService} from '../../../common/model-services/assessments.service';
+import {AssessmentsModelApiService} from '../../../common/model-services/assessments.service';
 import {LessonPrelearningAssessmentAttempt} from '../../../common/model-types/assessment-attempt';
 import {SubjectNodePageContainerState} from '../subject-node-page-container-state';
+import {Ref} from '../../../common/model-base/ref';
 
 export function provideLessonState(): Provider[] {
   return [
@@ -29,7 +29,7 @@ export function provideLessonState(): Provider[] {
 export class LessonState {
   constructor(
     readonly subjectNodePageState: SubjectNodePageContainerState,
-    readonly assessmentsService: AssessmentsService,
+    readonly assessmentsService: AssessmentsModelApiService,
     readonly students: StudentContextService,
     readonly nodeRouteData: SubjectNodeRouteData,
     readonly assessmentResolveQueue: AssessmentResolveQueue<LessonPrelearningAssessment>,
@@ -49,7 +49,7 @@ export class LessonState {
   ]).pipe(
     switchMap(([lesson, report]) => {
       function createInitialAssessment(candidate: Student): [string, LessonPrelearningAssessment] {
-        return [ModelRef.id(candidate), LessonPrelearningAssessment.create({lesson, student: candidate})];
+        return [candidate.id, LessonPrelearningAssessment.create({lesson, student: candidate})];
       }
       return forkJoin(
         report.candidates.map(candidate => {
@@ -67,7 +67,7 @@ export class LessonState {
   readonly prelearningAssessments$ = this.lessonPrelearningReport$.pipe(
     tap(report => {
       report.candidates.forEach(candidate =>
-        this.assessmentResolveQueue.loadAssessment(ModelRef.id(candidate))
+        this.assessmentResolveQueue.loadAssessment(candidate)
       );
     }),
     switchMapTo(this.assessmentResolveQueue.assessments$),
@@ -80,8 +80,8 @@ export class LessonState {
     })
   );
 
-  loadPrelearningAssessment(candidateId: ModelRef<Student>, options?: {force: boolean}): Observable<LessonPrelearningAssessment> {
-    return this.assessmentResolveQueue.loadAssessment(ModelRef.id(candidateId), options);
+  loadPrelearningAssessment(candidate: Ref<Student>, options?: {force: boolean}): Observable<LessonPrelearningAssessment> {
+    return this.assessmentResolveQueue.loadAssessment(candidate, options);
   }
 
   init(): Unsubscribable {
@@ -99,11 +99,9 @@ export class LessonState {
     };
   }
 
-  setPrelearningAssessmentCompletionState(student: ModelRef<Student>, completionState: CompletionState): Promise<LessonPrelearningAssessment> {
-    const studentId = ModelRef.id(student);
-
+  setPrelearningAssessmentCompletionState(student: Ref<Student>, completionState: CompletionState): Promise<LessonPrelearningAssessment> {
     return this.prelearningAssessments$.pipe(
-      map(assessments => assessments[studentId]),
+      map(assessments => assessments[student.id]),
       filter((a): a is LessonPrelearningAssessment  => a !== undefined),
       first(),
       switchMap(assessment => {
@@ -118,11 +116,11 @@ export class LessonState {
       }),
       switchMap((assessment: LessonPrelearningAssessment) =>
         this.assessmentsService.createAttempt('lesson-prelearning-assessment', {
-          assessment: assessment.id,
+          assessment,
           completionState
         } as Partial<LessonPrelearningAssessmentAttempt>)
       ),
-      switchMap(() => this.loadPrelearningAssessment(studentId, {force: true}))
+      switchMap(() => this.loadPrelearningAssessment(student, {force: true}))
     ).toPromise();
   }
 }

@@ -1,14 +1,14 @@
 import {Inject, Injectable, InjectionToken, Provider} from '@angular/core';
 import {AnyReport} from '../../common/model-types/assessment-reports';
-import {AssessmentsService} from '../../common/model-services/assessments.service';
+import {AssessmentsModelApiService} from '../../common/model-services/assessments.service';
 import {AppStateService} from '../../app-state.service';
 import {AssessmentType} from '../../common/model-types/assessments';
 import {SubjectNodeRouteData} from './subject-node-route-data';
 import {combineLatest, merge, Observable, Unsubscribable} from 'rxjs';
 import {map, scan, shareReplay, switchMap} from 'rxjs/operators';
-import {ModelRef} from '../../common/model-base/model-ref';
 import {SubjectNode} from '../../common/model-types/subjects';
 import {SubjectClass} from '../../common/model-types/schools';
+import {Ref} from '../../common/model-base/ref';
 
 export interface ReportLoaderOptions {
   readonly assessmentType: AssessmentType;
@@ -28,7 +28,7 @@ export function provideReportLoaderOptions(options: {assessmentType: AssessmentT
 @Injectable()
 export class AssessmentReportLoader<R extends AnyReport> {
   constructor(
-    readonly assessments: AssessmentsService,
+    readonly assessments: AssessmentsModelApiService,
     readonly appStateService: AppStateService,
 
     @Inject(REPORT_LOADER_OPTIONS) readonly options: ReportLoaderOptions,
@@ -73,7 +73,7 @@ export class AssessmentReportLoader<R extends AnyReport> {
     );
   }
 
-  protected loadReport(node: ModelRef<SubjectNode>, subjectClass: SubjectClass | null): Observable<R> {
+  protected loadReport(node: Ref<SubjectNode>, subjectClass: SubjectClass | null): Observable<R> {
     const params = {node, subjectClass};
     return this.assessments.fetchReport(this.assessmentType, { params });
   }
@@ -83,12 +83,12 @@ export class AssessmentReportLoader<R extends AnyReport> {
    * @param node
    * @param subjectClass
    */
-  protected loadChildReports(node: ModelRef<SubjectNode>, subjectClass: SubjectClass | null): Observable<Record<AssessmentType, {[childNodeId: string]: AnyReport}>> {
+  protected loadChildReports(node: Ref<SubjectNode>, subjectClass: SubjectClass | null): Observable<Record<AssessmentType, {[childNodeId: string]: AnyReport}>> {
 
     function loadChildReports(childType: AssessmentType): Observable<[AssessmentType, {[childId: string]: AnyReport}]> {
       const params = {node, subjectClass};
       return (this as AssessmentReportLoader<R>).assessments.queryReports(childType, { params }).pipe(
-        map(page => page.resultMap((result) => ModelRef.id(result.subjectNode))),
+        map(page => Object.fromEntries(page.results.map((report) => [report.subjectNode.id, report]))),
         map(reports => [childType, reports])
       );
     }

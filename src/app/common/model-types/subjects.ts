@@ -1,6 +1,6 @@
 import json, {JsonObjectProperties, parseError} from '../json';
 import {BaseModel, Model} from '../model-base/model';
-import {ModelRef} from '../model-base/model-ref';
+import {Ref} from '../model-base/ref';
 
 
 /********************************************
@@ -58,8 +58,8 @@ export class Subject extends BaseModel implements SubjectParams {
     this.units = params.units.map(unit => new Unit(unit, {subject: this}));
   }
 
-  getUnit(ref: ModelRef<Unit>): Unit | undefined {
-    return this.units.find(unit => unit.id === ModelRef.id(ref));
+  getUnit(ref: Ref<Unit>): Unit | undefined {
+    return this.units.find(unit => unit.id === ref.id);
   }
 
   getNode(type: SubjectNodeType, id: string): SubjectNode | undefined {
@@ -113,9 +113,8 @@ export class Unit extends BaseModel implements UnitParams {
     this.blocks = params.blocks.map(block => new Block(block, {...context, unit: this}));
   }
 
-  getBlock(block: ModelRef<Block>) {
-    const blockId = ModelRef.id(block);
-    return this.blocks.find(b => b.id === blockId) || null;
+  getBlock(block: Ref<Block>) {
+    return this.blocks.find(b => b.id === block.id) || null;
   }
 
 
@@ -166,9 +165,8 @@ export class Block extends BaseModel implements BlockParams {
     );
   }
 
-  getLesson(lesson: ModelRef<LessonSchema>): LessonSchema | undefined {
-    const lessonId = ModelRef.id(lesson);
-    return this.lessons.find(item => item.id === lessonId);
+  getLesson(lesson: Ref<LessonSchema>): LessonSchema | undefined {
+    return this.lessons.find(item => item.id === lesson.id);
   }
 
   getNode(type: SubjectNodeType, id: string): SubjectNode | undefined {

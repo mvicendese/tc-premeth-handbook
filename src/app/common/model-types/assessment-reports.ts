@@ -1,6 +1,5 @@
 import json, {Decoder} from '../json';
-import {ModelRef} from '../model-base/model-ref';
-import {School, schoolFromJson, Student, SubjectClass} from './schools';
+import {School, Student, SubjectClass} from './schools';
 import {LessonSchema, Subject, SubjectNode} from './subjects';
 import {
   Assessment,
@@ -10,23 +9,24 @@ import {
   LessonPrelearningAssessment,
   UnitAssessment
 } from './assessments';
+import {Ref, refFromJson} from '../model-base/ref';
 
 export interface Report<T extends Assessment> {
   readonly assessmentType: T['type'];
 
-  readonly school: ModelRef<School>;
-  readonly subject: ModelRef<Subject>;
-  readonly subjectNode: ModelRef<SubjectNode>;
+  readonly school: Ref<School>;
+  readonly subject: Ref<Subject>;
+  readonly subjectNode: Ref<SubjectNode>;
 
-  readonly subjectClass: ModelRef<SubjectClass> | null;
+  readonly subjectClass: Ref<SubjectClass> | null;
 
   readonly generatedAt: Date;
 
   readonly candidateCount: number;
-  readonly candidates: ReadonlyArray<ModelRef<Student>>;
+  readonly candidates: ReadonlyArray<Ref<Student>>;
 
   readonly attemptedCandidateCount: number;
-  readonly attemptedCandidates: ReadonlyArray<ModelRef<Student>>;
+  readonly attemptedCandidates: ReadonlyArray<Ref<Student>>;
 
   readonly percentAttempted: number;
 }
@@ -34,18 +34,18 @@ export interface Report<T extends Assessment> {
 export const Report = {
   properties: <A extends AssessmentType>(assessmentType: A) => ({
     assessmentType: {value: assessmentType},
-    school: ModelRef.fromJson(schoolFromJson),
-    subject: ModelRef.fromJson(Subject.fromJson),
+    school: refFromJson('school', School.fromJson),
+    subject: refFromJson('subject', Subject.fromJson),
 
-    subjectNode: ModelRef.fromJson(SubjectNode.fromJson),
+    subjectNode: refFromJson('subject-node', SubjectNode.fromJson),
 
-    subjectClass: json.nullable(ModelRef.fromJson(SubjectClass.fromJson)),
+    subjectClass: json.nullable(refFromJson('class', SubjectClass.fromJson)),
     generatedAt: json.date,
 
     candidateCount: json.number,
-    candidates: json.array(ModelRef.fromJson(Student.fromJson)),
+    candidates: json.array(refFromJson('student', Student.fromJson)),
     attemptedCandidateCount: json.number,
-    attemptedCandidates: json.array(ModelRef.fromJson(Student.fromJson)),
+    attemptedCandidates: json.array(refFromJson('student', Student.fromJson)),
 
     percentAttempted: json.number
   })
@@ -60,6 +60,7 @@ export interface UnitAssessmentReport extends Report<UnitAssessment> {
 export const UnitAssessmentReport = {
   fromJson: json.object<UnitAssessmentReport>({
     ...Report.properties('unit-assessment'),
+    assessmentType: {value: 'unit-assessment'}
   })
 };
 
@@ -75,10 +76,10 @@ export const BlockAssessmentReport = {
 export interface LessonPrelearningReport extends Report<LessonPrelearningAssessment> {
   readonly percentCompleted: number;
 
-  readonly completeCandidates: ModelRef<Student>[];
+  readonly completeCandidates: Ref<Student>[];
   readonly completeCandidateCount: number;
 
-  readonly partiallyCompleteCandidates: ModelRef<Student>[];
+  readonly partiallyCompleteCandidates: Ref<Student>[];
   readonly partiallyCompleteCandidateCount: number;
 
   readonly percentPartiallyComplete: number;
@@ -91,9 +92,9 @@ export const LessonPrelearningReport = {
   fromJson: (obj) => json.object<LessonPrelearningReport>({
     ...Report.properties('lesson-prelearning-assessment'),
     completeCandidateCount: json.number,
-    completeCandidates: json.array(ModelRef.fromJson(Student.fromJson)),
+    completeCandidates: json.array(refFromJson('student', Student.fromJson)),
     partiallyCompleteCandidateCount: json.number,
-    partiallyCompleteCandidates: json.array(ModelRef.fromJson(Student.fromJson)),
+    partiallyCompleteCandidates: json.array(refFromJson('student', Student.fromJson)),
 
     percentComplete: json.number,
     percentPartiallyComplete: json.number,
@@ -127,8 +128,8 @@ export type AnyReport = UnitAssessmentReport | BlockAssessmentReport | LessonPre
 
 export const AnyReport = {
   fromJson: (obj: unknown) => {
-    function getAssessmentType<T extends AssessmentType>(obj: unknown): T {
-      return json.object({assessmentType: AssessmentType.fromJson}, obj).assessmentType as T;
+    function getAssessmentType<T extends AssessmentType>(o: unknown): T {
+      return json.object({assessmentType: AssessmentType.fromJson}, o).assessmentType as T;
     }
 
     return json.union<AnyReport>(

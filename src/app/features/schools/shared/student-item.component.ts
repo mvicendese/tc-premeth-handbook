@@ -2,7 +2,7 @@ import {Component, Input} from '@angular/core';
 import {Student} from '../../../common/model-types/schools';
 import {StudentContextService} from '../students/student-context.service';
 import {BehaviorSubject} from 'rxjs';
-import {ModelRef} from '../../../common/model-base/model-ref';
+import {isRefModel, Ref} from '../../../common/model-base/ref';
 
 
 @Component({
@@ -23,11 +23,11 @@ export class StudentItemComponent {
   private studentSubject = new BehaviorSubject<Student | undefined>(undefined);
   readonly student$ = this.studentSubject.asObservable();
 
-  @Input() set student(value: ModelRef<Student>) {
-    if (typeof value === 'string') {
-      this.studentContext.student(value).subscribe(this.studentSubject);
-    } else {
+  @Input() set student(value: Ref<Student>) {
+    if (isRefModel(value)) {
       this.studentSubject.next(value);
+    } else {
+      this.studentContext.student(value).subscribe(this.studentSubject);
     }
   }
 

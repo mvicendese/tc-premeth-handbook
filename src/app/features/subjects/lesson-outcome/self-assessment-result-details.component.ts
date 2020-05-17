@@ -1,11 +1,11 @@
 import {Component, Inject, Input} from '@angular/core';
 import {LessonOutcome} from '../../../common/model-types/subjects';
-import {ResponsePage} from '../../../common/model-base/pagination';
 import {LessonOutcomeSelfAssessment} from '../../../common/model-types/assessments';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {shareReplay} from 'rxjs/operators';
 import {LessonState} from '../lesson/lesson-state';
 import {LessonOutcomeSelfAssessmentReport} from '../../../common/model-types/assessment-reports';
+import {ResponsePage} from '../../../common/model-api/response-page';
 
 interface OutcomeResultDialogData {
   readonly lessonContext: LessonState;

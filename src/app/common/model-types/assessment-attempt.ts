@@ -1,4 +1,3 @@
-import {ModelRef} from '../model-base/model-ref';
 import {
   AnyAssessment,
   Assessment,
@@ -9,12 +8,13 @@ import {
   UnitAssessment
 } from './assessments';
 import json, {Decoder} from '../json';
+import {Ref, refFromJson} from '../model-base/ref';
 
 
 
 export interface AssessmentAttempt<T extends Assessment = Assessment> {
   readonly assessmentType: T['type'];
-  readonly assessment: ModelRef<T>;
+  readonly assessment: Ref<T>;
   readonly attemptNumber: number;
   readonly createdAt: Date;
 }
@@ -22,7 +22,7 @@ export interface AssessmentAttempt<T extends Assessment = Assessment> {
 export const AssessmentAttempt = {
   properties: <T extends Assessment>(assessmentType: T['type']) => ({
     assessmentType: {value: assessmentType},
-    assessment: ModelRef.fromJson(AnyAssessment.fromJson as Decoder<T>),
+    assessment: refFromJson(assessmentType, AnyAssessment.fromJson as Decoder<T>),
     attemptNumber: json.number,
     createdAt: json.date
   })
@@ -53,7 +53,7 @@ export const CompletionBasedAssessmentAttempt = {
   }),
   toJson: <T extends Assessment>(obj: CompletionBasedAssessmentAttempt<T>) => ({
     assessmentType: obj.assessmentType,
-    assessment: ModelRef.id(obj.assessment),
+    assessment: obj.assessment.id,
     completionState: obj.completionState,
   }),
 };

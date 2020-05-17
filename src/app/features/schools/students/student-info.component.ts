@@ -52,7 +52,7 @@ import {Student} from '../../../common/model-types/schools';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StudentInfoComponent {
-  static readonly defaultAvatarHref = '/assets/images/avatar-male.png';
+  static readonly defaultAvatarHref = '/assets/images/avatar-student.png';
 
   @Input() student: Student;
 

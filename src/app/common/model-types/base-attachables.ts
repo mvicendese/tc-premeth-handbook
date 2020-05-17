@@ -1,37 +1,38 @@
+import json, {Decoder} from '../json';
 import {Model} from '../model-base/model';
-import {ModelRef} from '../model-base/model-ref';
-import {User} from './user';
+import {User} from '../../features/base/auth/user.model';
 import {modelMeta} from '../model-base/model-meta';
+import {Validators} from '@angular/forms';
+import {Ref, refFromJson} from '../model-base/ref';
 
 
-export interface Attachable<T extends Model> extends Model {
-  attachedToType: T['type'];
-  attachedTo: ModelRef<T>;
+export interface Attachment extends Model {
+  readonly attachedToType: string;
+  readonly attachedTo: Ref<Model>;
 
-  createdBy: ModelRef<User>;
-  createdAt: Date;
-
-  deleted: boolean;
-  deletedAt: Date | null;
+  readonly createdBy: Ref<User>;
+  readonly createdAt: Date;
 }
 
-export const Attachable = modelMeta<Attachable<any>>({
-  properties: {} as any,
-  create: (args) => {
+export const Attachment = modelMeta<Attachment>({
+  create(args: Partial<Attachment>) {
     throw new Error('not implemented');
+  },
+  properties: {
+    ...Model.properties,
+    attachedToType: json.string as Decoder<any>,
+    attachedTo: refFromJson('model', Model.fromJson),
+    createdBy: refFromJson('user', User.fromJson),
+    createdAt: json.date,
   }
 });
 
-export interface Comment<T extends Model> extends Attachable<T> {
-  replyTo: ModelRef<Comment<T>> | null;
-
-  content: string;
-  contentHtml: string;
+export const createAttachmentForm = {
+  attachedToType: ['', [Validators.required]],
+  attachedTo:     ['', [Validators.required]]
 }
 
-export const Comment = modelMeta<Comment<any>>({
-  properties: {} as any,
-  create: (args) => {
-    throw new Error('not implemented');
-  }
-});
+
+// For the moment, everything is attachable.
+export type Attachable = Model;
+export const Attachable = Model;

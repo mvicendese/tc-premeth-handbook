@@ -1,6 +1,5 @@
 import {InjectionToken, NgModule} from '@angular/core';
 import {Resolve, RouterModule, Routes} from '@angular/router';
-import {SubjectClassService} from '../../common/model-services/subject-class.service';
 import {CommonModule} from '@angular/common';
 import {StudentsOverviewPageComponent} from './students-overview-page.component';
 import {MatCardModule} from '@angular/material/card';

@@ -1,11 +1,12 @@
 import json, {Decoder, parseError} from '../json';
 
-import {ModelRef} from '../model-base/model-ref';
-import {School, schoolFromJson, Student} from './schools';
+import {Comment} from '../../features/base/comment/comment.model';
+
+import {School, Student} from './schools';
 import {Block, LessonOutcome, LessonSchema, Subject, SubjectNode, Unit} from './subjects';
 import {Model} from '../model-base/model';
 import {modelEnum, ModelEnum, modelMeta} from '../model-base/model-meta';
-import {Comment} from './base-attachables';
+import {Ref, refFromJson} from '../model-base/ref';
 
 export type AssessmentType
   = 'unit-assessment'
@@ -26,16 +27,18 @@ export const AssessmentType = modelEnum<AssessmentType>({
 export interface Assessment extends Model {
   readonly type: AssessmentType;
 
-  readonly school: ModelRef<School>;
-  readonly subject: ModelRef<Subject>;
-  readonly student: ModelRef<Student>;
+  readonly school: Ref<School>;
 
-  readonly subjectNode: ModelRef<SubjectNode>;
+  readonly subject: Ref<Subject>;
+  readonly student: Ref<Student>;
+
+  readonly subjectNode: Ref<SubjectNode>;
 
   readonly isAttempted: boolean;
   readonly attemptedAt: Date | null;
 
-  //readonly comments: Comment[];
+  readonly comments: Comment[];
+  readonly commentsCount: number;
 }
 
 export const Assessment = modelMeta<Assessment>({
@@ -43,14 +46,17 @@ export const Assessment = modelMeta<Assessment>({
     ...Model.properties,
     type: AssessmentType.fromJson,
 
-    school: ModelRef.fromJson(schoolFromJson),
-    subject: ModelRef.fromJson(Subject.fromJson),
-    student: ModelRef.fromJson(Student.fromJson),
+    school: refFromJson('school', School.fromJson),
+    subject: refFromJson('subject', Subject.fromJson),
+    student: refFromJson('student', Student.fromJson),
 
-    subjectNode: ModelRef.fromJson<SubjectNode>(SubjectNode.fromJson),
+    subjectNode: refFromJson<SubjectNode>('subject-node', SubjectNode.fromJson),
 
     isAttempted: json.bool,
     attemptedAt: json.nullable(json.date),
+
+    comments: json.array(Comment.fromJson),
+    commentsCount: json.number
   },
 
   create: (options: Partial<Assessment>) => {
@@ -76,7 +82,8 @@ export const Assessment = modelMeta<Assessment>({
       subjectNode: options.subjectNode,
       isAttempted: false,
       attemptedAt: null,
-      comments: []
+      comments: [],
+      commentsCount: 0
     };
   }
 });
@@ -113,26 +120,49 @@ export const CompletionBasedAssessment = modelMeta({
   }
 });
 
+
 export interface RatingBasedAssessment extends Assessment {
-  readonly rating: number;
+  readonly maxAvailableRating: number | null;
+  readonly rating: number | null;
+  readonly ratingPercent: number | null;
+
+  readonly grade: 'fail' | 'low-pass' | 'high-pass' | null;
 }
 
 export const RatingBasedAssessment = modelMeta<RatingBasedAssessment>({
   create(args: Partial<RatingBasedAssessment>) {
     return {
       ...Assessment.create(args),
-      rating: 0
+      maxAvailableRating: 0,
+      rating: 0,
+      ratingPercent: 0,
+      grade: null
     };
   },
   properties: {
     ...Assessment.properties,
-    rating: json.number
+    maxAvailableRating: json.nullable(json.number),
+    rating: json.nullable(json.number),
+    ratingPercent: json.nullable(json.number),
+    grade: {
+      get() {
+        if (this.ratingPercent === null) {
+          return null;
+        } else if (this.ratingPercent < 50) {
+          return 'fail';
+        } else if (this.ratingPercent < 80) {
+          return 'low-pass';
+        } else {
+          return 'high-pass';
+        }
+      }
+    }
   }
 });
 
 export interface UnitAssessment extends RatingBasedAssessment {
   readonly type: 'unit-assessment';
-  readonly unit: ModelRef<Unit>;
+  readonly unit: Ref<Unit>;
 }
 
 export const UnitAssessment = modelMeta<UnitAssessment>({
@@ -157,7 +187,7 @@ export const UnitAssessment = modelMeta<UnitAssessment>({
 
 export interface BlockAssessment extends RatingBasedAssessment {
   readonly type: 'block-assessment';
-  readonly block: ModelRef<Block>;
+  readonly block: Ref<Block>;
 }
 
 export const BlockAssessment = modelMeta<BlockAssessment>({
@@ -182,7 +212,7 @@ export const BlockAssessment = modelMeta<BlockAssessment>({
 
 export interface LessonPrelearningAssessment extends CompletionBasedAssessment {
   readonly type: 'lesson-prelearning-assessment';
-  readonly lesson: ModelRef<LessonSchema>;
+  readonly lesson: Ref<LessonSchema>;
 }
 
 export const LessonPrelearningAssessment = modelMeta<LessonPrelearningAssessment>({
@@ -214,7 +244,7 @@ export const LessonPrelearningAssessment = modelMeta<LessonPrelearningAssessment
 
 export interface LessonOutcomeSelfAssessment extends RatingBasedAssessment {
   readonly type: 'lesson-outcome-self-assessment';
-  readonly lessonOutcome: ModelRef<LessonOutcome>;
+  readonly lessonOutcome: Ref<LessonOutcome>;
 }
 
 export const LessonOutcomeSelfAssessment = modelMeta<LessonOutcomeSelfAssessment>({

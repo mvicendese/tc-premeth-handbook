@@ -7,10 +7,14 @@ import {appRoutes} from './app.routes';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {environment} from '../environments/environment';
 import {HttpClientModule} from '@angular/common/http';
-import {modelBaseProviders} from './common/model-base/base-providers';
+import {modelBaseProviders} from './common/model-api-context/base-providers';
 import {ScaffoldModule} from './scaffold/scaffold.module';
 import {AppStateService} from './app-state.service';
-import {StudentContextService} from './features/schools/students/student-context.service';
+import {studentContextProviders} from './features/schools/students/student-context.service';
+import {BaseAuthModule} from './features/base/auth/auth.module';
+import {provideUserModelLoader} from './features/base/auth/user.model-loader-service';
+import {provideStudentLoader} from './features/schools/students/student-loader.service';
+import {provideTeacherLoader} from './features/schools/teachers/teacher-context.service';
 
 @NgModule({
   declarations: [
@@ -22,12 +26,16 @@ import {StudentContextService} from './features/schools/students/student-context
     BrowserAnimationsModule,
     HttpClientModule,
 
+    BaseAuthModule.forRoot(environment.base.auth),
     ScaffoldModule
   ],
   providers: [
     ...modelBaseProviders(environment.apiBaseHref),
     AppStateService,
-    StudentContextService
+    provideUserModelLoader(),
+    provideStudentLoader(),
+    studentContextProviders(),
+    provideTeacherLoader()
   ],
   bootstrap: [AppComponent]
 })

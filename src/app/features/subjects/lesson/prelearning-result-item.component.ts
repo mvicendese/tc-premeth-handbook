@@ -2,21 +2,20 @@ import {Component, EventEmitter, Injectable, Input, OnChanges, Output, SimpleCha
 import {Assessment, CompletionState, LessonPrelearningAssessment} from '../../../common/model-types/assessments';
 import {LessonState} from './lesson-state';
 import {AppStateService} from '../../../app-state.service';
-import {ModelRef, Resolve} from '../../../common/model-base/model-ref';
 import {FormArray, FormControl, FormGroup} from '@angular/forms';
 import {MatButtonToggleChange} from '@angular/material/button-toggle';
 import {Student} from '../../../common/model-types/schools';
+import {Ref} from '../../../common/model-base/ref';
 
 export interface ChangeCompletionStateEvent {
-  readonly student: ModelRef<Student>;
-  readonly assessment: ModelRef<Assessment>;
+  readonly student: Ref<Student>;
+  readonly assessment: Ref<Assessment>;
   readonly completionState: CompletionState;
 }
 
 @Component({
   selector: 'subjects-lesson-prelearning-results-item',
   template: `
-  
   <div class="indicator-col">
     <ng-container *ngIf="_isLoading; then loadingIndicator; else trafficIndicator"></ng-container>
 
@@ -84,7 +83,7 @@ export interface ChangeCompletionStateEvent {
 export class PrelearningResultItemComponent implements OnChanges {
   _isLoading = true;
 
-  @Input() assessment: Resolve<LessonPrelearningAssessment, 'student'>;
+  @Input() assessment: LessonPrelearningAssessment;
   @Output() completionStateChange = new EventEmitter<ChangeCompletionStateEvent>();
 
   get trafficValue() {

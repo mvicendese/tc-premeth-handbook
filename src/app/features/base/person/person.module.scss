@@ -1,0 +1,29 @@
+/**
+ * Global styles for PersonModule.
+ *
+ * Note: Module styles are applied globally and are included in the application root styles
+ * regardless of whether the module is loaded.
+ */
+@import "~@angular/material/_theming";
+
+img.base-person-avatar-img {
+  // @include mat-elevation(2);
+  object-fit: contain;
+
+  border-radius: 4px;
+
+  &.base-person-avatar-large {
+    height: 128px;
+    width: 96px;
+  }
+
+  &.base-person-avatar-small {
+    height: 64px;
+    width: 48px;
+  }
+}
+
+base-person-info {
+  display: flex;
+  align-items: flex-start;
+}

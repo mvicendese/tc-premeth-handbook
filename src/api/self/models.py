@@ -21,7 +21,7 @@ class Person(BaseModel):
 		return f'{self.first_name} {self.surname}'
 
 
-class User(AbstractUser):
+class UserModel(AbstractUser):
 	id = models.UUIDField(primary_key=True, default=uuid4)
 
 	created_at = models.DateTimeField(auto_now_add=True)

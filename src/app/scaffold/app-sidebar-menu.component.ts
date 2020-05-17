@@ -5,10 +5,10 @@ import {filter, first, map, shareReplay, skipWhile, withLatestFrom} from 'rxjs/o
 import {ActivationStart, Router, UrlSegment} from '@angular/router';
 import {FlatTreeControl} from '@angular/cdk/tree';
 import {MatTreeFlatDataSource, MatTreeFlattener} from '@angular/material/tree';
-import {ModelRef} from '../common/model-base/model-ref';
 import {FormControl, FormGroup} from '@angular/forms';
 import {Block, Subject, Unit} from '../common/model-types/subjects';
 import {SubjectClass} from '../common/model-types/schools';
+import {Ref} from '../common/model-base/ref';
 
 export interface MenuNode {
   readonly name: string;
@@ -72,10 +72,10 @@ function unitsMenu(allUnits: readonly Unit[], level: number = 0): MenuNode {
   };
 }
 
-function isUnitDetailsUrl(unit: ModelRef<Unit>, url: UrlSegment[]) {
+function isUnitDetailsUrl(unit: Ref<Unit>, url: UrlSegment[]) {
   return url.length >= 2
       && url[0].path === 'units'
-      && url[1].path === ModelRef.id(unit);
+      && url[1].path === unit.id;
 }
 
 function isUnitBlockDetailsUrl(block: Block, url: UrlSegment[]) {
@@ -253,7 +253,7 @@ export class AppSidebarMenuComponent implements OnInit, OnDestroy {
         this.treeControl.collapseAll();
         activeNodes.forEach(activeNode => {
           const node = this.treeControl.dataNodes.find(n => isEqualNodes(activeNode, n));
-          if (node == undefined) {
+          if (node === undefined) {
             throw new Error('Could not find node in data')
           }
           this.treeControl.expand(node);

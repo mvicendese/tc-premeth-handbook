@@ -3,12 +3,9 @@ import {LessonState, provideLessonState} from './lesson-state';
 import {shareReplay} from 'rxjs/operators';
 import {LessonPrelearningAssessment} from '../../../common/model-types/assessments';
 import {Observable, Unsubscribable} from 'rxjs';
-import {Resolve} from '../../../common/model-base/model-ref';
-import {ChangeCompletionStateEvent} from './prelearning-result-item.component';
 import {LessonSchema} from '../../../common/model-types/subjects';
-import {SubjectNodeRouteData} from '../subject-node-route-data';
-import {BlockState} from '../blocks/block-state';
 import {AppStateService} from '../../../app-state.service';
+import {Resolve} from '@angular/router';
 
 
 @Component({
@@ -75,7 +72,7 @@ export class LessonPageComponent implements OnInit, OnDestroy {
 
   readonly activeSubjectClass$ = this.appState.activeSubjectClass$;
 
-  readonly prelearningAssessments$: Observable<{ [candidateId: string]: Resolve<LessonPrelearningAssessment, 'student'> }>;
+  readonly prelearningAssessments$: Observable<{ [candidateId: string]: LessonPrelearningAssessment }>;
 
   constructor(
     readonly appState: AppStateService,

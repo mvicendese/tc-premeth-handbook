@@ -1,27 +1,13 @@
 import {AfterViewInit, Component, ElementRef, Host, Input, OnDestroy, Renderer2, ViewChild, ViewEncapsulation} from '@angular/core';
 import * as d3 from 'd3';
-import {Set} from 'immutable';
-import {asyncScheduler, AsyncSubject, BehaviorSubject, combineLatest, defer, Observable, of, timer, Unsubscribable,} from 'rxjs';
-import {LessonOutcomeSelfAssessmentReport, Report} from '../../../common/model-types/assessment-reports';
-import {
-  debounceTime,
-  distinctUntilChanged,
-  filter,
-  first,
-  map,
-  observeOn,
-  pluck,
-  scan,
-  shareReplay,
-  switchMap,
-  withLatestFrom
-} from 'rxjs/operators';
+import {asyncScheduler, BehaviorSubject, combineLatest, defer, Observable, Unsubscribable,} from 'rxjs';
+import {LessonOutcomeSelfAssessmentReport} from '../../../common/model-types/assessment-reports';
+import {filter, map, observeOn, shareReplay} from 'rxjs/operators';
 import {Student} from '../../../common/model-types/schools';
-import {LessonOutcomeSelfAssessment} from '../../../common/model-types/assessments';
-import {ModelRef} from '../../../common/model-base/model-ref';
+import {Ref} from '../../../common/model-base/ref';
 
 interface Cell {
-  readonly candidateId: string;
+  readonly candidate: Ref<Student>;
   readonly rating: number | null;
 }
 
@@ -39,15 +25,14 @@ function histogramBinData(report: LessonOutcomeSelfAssessmentReport): Bin[] {
   const candidateScores = report.candidateRatings;
 
   report.candidates.forEach(candidate => {
-    const candidateId = ModelRef.id(candidate);
-    if (report.attemptedCandidates.includes(candidateId)) {
-      const rating = candidateScores[candidateId];
+    if (report.attemptedCandidates.includes(candidate)) {
+      const rating = candidateScores[candidate.id];
       if (rating === undefined) {
         throw new Error(`No score for attempted candidate`);
       }
-      bins[rating].cells.push({candidateId, rating});
+      bins[rating].cells.push({candidate, rating});
     } else {
-      bins[0].cells.push({candidateId, rating: null});
+      bins[0].cells.push({candidate, rating: null});
     }
   });
   return bins;
@@ -63,12 +48,12 @@ interface BinState {
 
 function isCellInHoverState({hoverRating, hoverCandidate}: BinState, cell: Cell) {
   return hoverRating && hoverRating.value === cell.rating
-      || hoverCandidate === cell.candidateId;
+      || hoverCandidate === cell.candidate.id;
 }
 
 function isCellInActiveState({activeRating, activeCandidate}: BinState, cell: Cell) {
   return activeRating && activeRating.value === cell.rating
-      || activeCandidate === cell.candidateId;
+      || activeCandidate === cell.candidate.id;
 }
 
 function isBinLabelInHoverState({hoverRating}: BinState, bin: Bin) {
@@ -87,7 +72,7 @@ function isBinLabelInActiveState({activeRating}: BinState, bin: Bin) {
 
     <mat-list class="student-card-container">
       <mat-list-item *ngFor="let candidate of (displayCandidates$ | async)">
-        <schools-student-item [student]="candidate.candidateId"
+        <schools-student-item [student]="candidate.candidate"
                               [class.active]="candidate.isActive"
                               [class.hover]="candidate.isHover">
         </schools-student-item>
@@ -129,7 +114,7 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
           const isHover = isCellInHoverState(state, cell);
 
           if (isActive || isHover) {
-            return [{ candidateId: cell.candidateId, isActive, isHover }];
+            return [{ candidateId: cell.candidate.id, isActive, isHover }];
           } else {
             return [];
           }
@@ -206,9 +191,9 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
     cells
       .on('click', (cell) => {
         console.log('click');
-        this.selectCandidate(cell.candidateId);
+        this.selectCandidate(cell.candidate.id);
       })
-      .on('mouseenter', (cell) => this.hoverCandidate(cell.candidateId))
+      .on('mouseenter', (cell) => this.hoverCandidate(cell.candidate.id))
       .on('mouseleave', () => this.hoverCandidate(null));
 
     const labels = bins
@@ -231,7 +216,7 @@ export class SelfAssessmentResultHistogramComponent implements AfterViewInit, On
     const cells = bins
       .selectAll('div.cell')
       .data((bin) => bin.cells)
-      .attr('class', function (cell) {
+      .attr('class', (cell) => {
         const classes = ['cell'];
         if (isCellInActiveState(state, cell)) {
           classes.push('active');

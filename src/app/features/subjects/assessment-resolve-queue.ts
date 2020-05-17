@@ -1,13 +1,14 @@
 import {Inject, Injectable, InjectionToken, Provider} from '@angular/core';
 import {Assessment, AssessmentType} from '../../common/model-types/assessments';
-import {AssessmentQuery, AssessmentsService} from '../../common/model-services/assessments.service';
+import {AssessmentQuery, AssessmentsModelApiService} from '../../common/model-services/assessments.service';
 import {AppStateService} from '../../app-state.service';
 import {SubjectNodeRouteData} from './subject-node-route-data';
 import {Observable, Unsubscribable} from 'rxjs';
-import {ModelResolveQueue} from '../../common/model-base/resolve-queue';
+import {ModelResolveQueue} from '../../common/model-api-context/resolve-queue';
 import {first, map, switchMap} from 'rxjs/operators';
-import {ModelRef} from '../../common/model-base/model-ref';
 import {SubjectNode} from '../../common/model-types/subjects';
+import {Ref} from '../../common/model-base/ref';
+import {Student} from '../../common/model-types/schools';
 
 export interface AssessmentResolveQueueOptions {
   readonly assessmentType: AssessmentType;
@@ -26,7 +27,7 @@ export function provideAssessmentResolveQueueOptions(options: {assessmentType: A
 export class AssessmentResolveQueue<T extends Assessment> {
 
   constructor(
-    readonly assessments: AssessmentsService,
+    readonly assessments: AssessmentsModelApiService,
     readonly appStateService: AppStateService,
     @Inject(ASSESSMENT_RESOLVE_QUEUE_OPTIONS) readonly options: AssessmentResolveQueueOptions,
     readonly subjectNodeData: SubjectNodeRouteData
@@ -42,20 +43,19 @@ export class AssessmentResolveQueue<T extends Assessment> {
   }
 
   protected readonly resolveQueue = new ModelResolveQueue<T>((candidateIds) =>
-    this.subjectNodeData.subjectNode$.pipe(first(), switchMap(node => this.resolveAssessments(node.id, candidateIds)))
+    this.subjectNodeData.subjectNode$.pipe(first(), switchMap(node => this.resolveAssessments(node, candidateIds)))
   );
 
   readonly assessments$: Observable<{ [candidateId: string]: T }> = this.resolveQueue.allResolved$;
 
-  loadAssessment(candidateId: string, options?: {force: boolean}): Observable<T> {
-    console.log('queuing ' + candidateId);
-    return this.resolveQueue.queue(candidateId, options);
+  loadAssessment(candidate: Ref<Student>, options?: {force: boolean}): Observable<T> {
+    return this.resolveQueue.queue(candidate.id, options);
   }
 
-  protected resolveAssessments(node: ModelRef<SubjectNode>, candidateIds: readonly string[]): Observable<{ [candidateId: string]: T }> {
+  protected resolveAssessments(node: Ref<SubjectNode>, candidateIds: readonly string[]): Observable<{ [candidateId: string]: T }> {
     return this.appStateService.activeSubjectClass$.pipe(first(),
       map(subjectClass => ({
-          subjectClass: subjectClass && subjectClass.id,
+          subjectClass,
           node,
           student: [...candidateIds]
         } as AssessmentQuery)
@@ -63,10 +63,9 @@ export class AssessmentResolveQueue<T extends Assessment> {
       switchMap((params: AssessmentQuery) =>
         this.assessments.queryAssessments<T>(this.assessmentType, {params})
       ),
-      map(page => {
-        console.log('page', page.results);
-        return page.resultMap(result => ModelRef.id(result.student))
-      })
+      map(page =>
+        Object.fromEntries(page.results.map(result => [result.student.id, result]))
+      )
     );
   }
 }

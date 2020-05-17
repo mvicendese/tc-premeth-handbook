@@ -1,7 +1,6 @@
-import {Model} from './model';
-import {AsyncSubject, BehaviorSubject, defer, merge, Observable, Subject, throwError, Unsubscribable} from 'rxjs';
-import {ResponsePage} from './pagination';
-import {catchError, filter, map, mapTo, mergeMap, sampleTime, scan, shareReplay, startWith, tap} from 'rxjs/operators';
+import {Model} from '../model-base/model';
+import {AsyncSubject, BehaviorSubject, forkJoin, Observable, Subject, throwError, Unsubscribable} from 'rxjs';
+import {catchError, filter, map, mergeMap, sampleTime, scan, shareReplay, startWith, tap} from 'rxjs/operators';
 
 export type ResolveFunction<T extends Model> = (batchIds: readonly string[]) => Observable<{ [batchId: string]: T }>;
 
@@ -61,11 +60,16 @@ export class ModelResolveQueue<T extends Model> {
     if (!this.isPending(id)) {
       this.queuePending(id);
     }
-    return this.pendingFetches.get(id) as Observable<T>;
+    // tslint:disable-next-line:no-non-null-assertion
+    return this.pendingFetches.get(id)!.asObservable() as Observable<T>;
   }
 
-  queueAll(ids: string[]) {
-    ids.forEach(id => this.queue(id));
+  queueAll(ids: string[]): Observable<{[id: string]: T}> {
+    return forkJoin(
+      ids.map(id => this.queue(id).pipe(map(resolved => [id, resolved])))
+    ).pipe(
+      map(Object.fromEntries)
+    );
   }
 
   protected get queueIds() {
@@ -110,7 +114,7 @@ export class ModelResolveQueue<T extends Model> {
     const batchIds = queueIds.splice(0, options.batchSize);
     this.queueIdsSubject.next(queueIds);
 
-    var time = Date.now();
+    const time = Date.now();
     console.log('sending request');
     return this.resolve(batchIds).pipe(
       tap((resolved: { [batchId: string]: T }) => {

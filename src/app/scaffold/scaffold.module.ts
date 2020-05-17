@@ -18,6 +18,7 @@ import {SubjectsSharedModule} from '../features/subjects/shared/subjects-shared.
 import {MatToolbarModule} from '@angular/material/toolbar';
 import {AppTitleComponent} from './app-title.component';
 import {AppContextMenuComponent} from './app-context-menu.component';
+import {BaseAuthModule} from '../features/base/auth/auth.module';
 
 @NgModule({
   imports: [
@@ -36,6 +37,7 @@ import {AppContextMenuComponent} from './app-context-menu.component';
     MatFormFieldModule,
     MatSelectModule,
 
+    BaseAuthModule,
     SubjectsSharedModule
   ],
   declarations: [

@@ -1,9 +1,8 @@
 import {Component} from '@angular/core';
 import {AppStateService} from '../../../app-state.service';
-import {SubjectsService} from '../../../common/model-services/subjects.service';
+import {SubjectsModelApiService} from '../../../common/model-services/subjects-model-api.service';
 import {map, shareReplay} from 'rxjs/operators';
 import {SubjectIndex} from '../../../common/model-types/subjects';
-import {ModelRef} from '../../../common/model-base/model-ref';
 
 
 @Component({
@@ -36,7 +35,7 @@ export class SelectSubjectDialogComponent {
   );
 
   constructor(
-    readonly subjectsService: SubjectsService,
+    readonly subjectsService: SubjectsModelApiService,
     readonly appState: AppStateService
   ) {}
 
@@ -44,7 +43,7 @@ export class SelectSubjectDialogComponent {
     if (value == null) {
       this.appState.setState('subject', null);
     } else {
-      this.subjectsService.fetch(ModelRef.id(value)).subscribe(
+      this.subjectsService.fetch(value).subscribe(
         (subject) => this.appState.setState('subject', subject)
       );
     }

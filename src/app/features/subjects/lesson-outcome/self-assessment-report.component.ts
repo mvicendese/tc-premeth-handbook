@@ -2,7 +2,7 @@ import {Component, Input} from '@angular/core';
 import {LessonOutcome} from '../../../common/model-types/subjects';
 import {LessonOutcomeSelfAssessmentReport} from '../../../common/model-types/assessment-reports';
 import {MatDialog} from '@angular/material/dialog';
-import {AssessmentsService} from '../../../common/model-services/assessments.service';
+import {AssessmentsModelApiService} from '../../../common/model-services/assessments.service';
 import {first, map, switchMap} from 'rxjs/operators';
 import {LessonState} from '../lesson/lesson-state';
 import {AppStateService} from '../../../app-state.service';
@@ -65,7 +65,7 @@ export class SelfAssessmentReportComponent {
     readonly appState: AppStateService,
     readonly dialog: MatDialog,
     readonly lessonContext: LessonState,
-    readonly assessmentsService: AssessmentsService
+    readonly assessmentsService: AssessmentsModelApiService
   ) {
   }
 
@@ -81,7 +81,7 @@ export class SelfAssessmentReportComponent {
           }
         })
       ),
-      map(page => page.resultMap)
+      map(page => Object.fromEntries(page.results.map(result => [result.id, result])))
     ).subscribe(assessments => {
       this.isLoadingAssessments = false;
       this.dialog.open(SelfAssessmentResultDetailsDialogComponent, {

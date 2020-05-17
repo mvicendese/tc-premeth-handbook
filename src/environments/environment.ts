@@ -9,6 +9,12 @@ export const environment = {
 
   initialAppState: {
     subject: '47183612-b6fb-44f9-b63e-b5c9001c6301'
+  },
+
+  base: {
+    auth: {
+      token: 'abcdef12345'
+    }
   }
 };
 

@@ -1,6 +1,7 @@
 {
   "extends": "tslint:recommended",
   "rules": {
+    "variable-name": false,
     "array-type": false,
     "arrow-parens": false,
     "deprecation": {
@@ -12,13 +13,27 @@
     "directive-selector": [
       true,
       "attribute",
-      ["app", "ass", "sch", "schools", "subjects"],
+      [
+        "app",
+        "baseAuth",
+        "baseComment",
+        "basePerson",
+        "schools",
+        "subjects"
+      ],
       "camelCase"
     ],
     "component-selector": [
       true,
       "element",
-      ["app", "ass", "sch", "schools", "subjects"],
+      [
+        "app",
+        "base-auth",
+        "base-person",
+        "base-comment",
+        "schools",
+        "subjects"
+      ],
       "kebab-case"
     ],
     "import-blacklist": [
@@ -57,7 +72,7 @@
       true,
       "ignore-params"
     ],
-    "no-non-null-assertion": true,
+    "no-non-null-assertion": false,
     "no-redundant-jsdoc": true,
     "no-switch-case-fall-through": true,
     "no-var-requires": false,

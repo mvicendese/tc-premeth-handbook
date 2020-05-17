@@ -1,4 +1,4 @@
-import {Inject, Injectable, InjectionToken, Provider} from '@angular/core';
+import {Inject, Injectable, InjectionToken} from '@angular/core';
 import {BehaviorSubject, combineLatest, concat, defer, merge, Observable, Subject, Unsubscribable} from 'rxjs';
 import {Student} from '../../../common/model-types/schools';
 import {ActivatedRoute} from '@angular/router';
@@ -16,16 +16,16 @@ import {
   switchMap, switchMapTo,
   tap
 } from 'rxjs/operators';
-import {AssessmentsService} from '../../../common/model-services/assessments.service';
+import {AssessmentsModelApiService} from '../../../common/model-services/assessments.service';
 import {SubjectNode} from '../../../common/model-types/subjects';
 import {
   AnyProgress,
   LessonOutcomeSelfAssessmentProgress,
   LessonPrelearningAssessmentProgress, Progress, ProgressForAssessment
 } from '../../../common/model-types/assessment-progress';
-import {ModelRef} from '../../../common/model-base/model-ref';
 import {Assessment, AssessmentType} from '../../../common/model-types/assessments';
-import {StudentService} from '../../../common/model-services/students.service';
+import {StudentModelApiService} from '../../../common/model-services/schools.service';
+import {Ref} from '../../../common/model-base/ref';
 
 export const PROGRESS_LOADER_OPTIONS = new InjectionToken<ProgressLoaderOptions>('PROGRESS_LOADER_OPTIONS');
 
@@ -36,7 +36,7 @@ export interface ProgressLoaderOptions {
 @Injectable()
 export class ProgressLoader<T extends AnyProgress> {
   constructor(
-    readonly assessments: AssessmentsService,
+    readonly assessments: AssessmentsModelApiService,
     readonly route: ActivatedRoute,
     @Inject(PROGRESS_LOADER_OPTIONS)
     readonly options: ProgressLoaderOptions
@@ -52,7 +52,7 @@ export class ProgressLoader<T extends AnyProgress> {
     ])
   );
 
-  protected loadProgress(student: ModelRef<Student>, node: ModelRef<SubjectNode> | null): Observable<T | null> {
+  protected loadProgress(student: Ref<Student>, node: Ref<SubjectNode> | null): Observable<T | null> {
     return this.assessments.fetchProgress(this.assessmentType, {
       params: {student, node}
     });
@@ -115,7 +115,7 @@ export class StudentState {
 
   constructor(
     readonly route: ActivatedRoute,
-    readonly assessments: AssessmentsService
+    readonly assessments: AssessmentsModelApiService
   ) {}
 
   init(): Unsubscribable {

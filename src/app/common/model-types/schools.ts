@@ -1,38 +1,58 @@
-import json, {JsonObject} from '../json';
+import json, {parseError} from '../json';
 import {BaseModel, Model} from '../model-base/model';
-import {ModelRef} from '../model-base/model-ref';
 import {Subject} from './subjects';
+import {modelMeta} from '../model-base/model-meta';
+import {Ref, refFromJson} from '../model-base/ref';
 
 export interface School extends Model {
   readonly type: 'school';
   readonly name: string;
 }
 
-export function schoolFromJson(obj: unknown): School {
-  return json.object({
+export const School = modelMeta<School>({
+  properties: {
     ...Model.properties,
     type: {value: 'school'},
     name: json.string
-  }, obj);
-}
+  },
+  create: () => { throw new Error('not implemented'); }
+})
 
 
 export interface Person extends Model {
-  readonly school: ModelRef<School>;
+  readonly school: Ref<School>;
   readonly firstName: string;
   readonly surname: string;
   readonly fullName: string;
   readonly email: string;
+  readonly avatarHref: string | null;
 }
 
-const personProperties = {
-  ...Model.properties,
-  firstName: json.string,
-  surname: json.string,
-  fullName: json.string,
-  email: json.string,
-  school: ModelRef.fromJson(schoolFromJson)
-};
+export const Person = modelMeta<Person>({
+  create() {
+    throw new Error('not implemented');
+  },
+  properties: {
+    ...Model.properties,
+    firstName: json.string,
+    surname: json.string,
+    fullName: json.string,
+    email: json.string,
+    school: refFromJson('school', School.fromJson),
+    avatarHref: json.nullable(json.string)
+  },
+  fromJson(obj: unknown) {
+    function fromType(o: unknown): 'student' | 'teacher' {
+      const type = json.object({type: json.string}, o).type;
+      if (['student', 'teacher'].includes(type)) {
+        return type as 'student' | 'teacher';
+      }
+      throw parseError('Expected either \'student\' or \'teacher\'');
+    }
+
+    return json.union(fromType, { student: Student.fromJson, teacher: Teacher.fromJson }, obj);
+  }
+});
 
 export interface StudentParams extends Person {
   readonly type: 'student';
@@ -42,10 +62,9 @@ export interface StudentParams extends Person {
   readonly compassNumber: number;
 }
 
-
 function studentParamsFromJson(obj: unknown): StudentParams {
   return json.object<StudentParams>({
-    ...personProperties,
+    ...Person.properties,
     type: { value: 'student' },
     studentCode: json.string,
     yearLevel: json.number,
@@ -60,7 +79,7 @@ export class Student extends BaseModel implements StudentParams {
   }
 
   readonly type = 'student';
-  readonly school: ModelRef<School>;
+  readonly school: Ref<School>;
 
   readonly firstName: string;
   readonly yearLevel: number;
@@ -107,7 +126,7 @@ export interface Teacher extends Person {
 
 export const Teacher = {
   fromJson: json.object<Teacher>({
-    ...personProperties,
+    ...Person.properties,
     type: { value: 'teacher' },
     teacherCode: json.string
   })
@@ -115,26 +134,41 @@ export const Teacher = {
 
 export interface SubjectClass extends Model {
   readonly type: 'class';
-  readonly subject: ModelRef<Subject>;
+  readonly subject: Ref<Subject>;
 
   readonly year: number;
-  readonly teacher: ModelRef<Teacher>;
+  readonly teacher: Ref<Teacher>;
   readonly subgroup: string;
   readonly classCode: string;
 
   readonly students: Student[];
+
+  hasStudent(ref: Ref<Student>): boolean;
 }
 
-export const SubjectClass = {
-  fromJson: json.object<SubjectClass>({
+export const SubjectClass = modelMeta<SubjectClass>({
+  create(args: Partial<SubjectClass>) {
+    throw new Error('not implemented');
+  },
+  properties: {
     ...Model.properties,
     type: { value: 'class' },
-    subject: ModelRef.fromJson(Subject.fromJson),
+    subject: refFromJson('subject', Subject.fromJson),
     year: json.number,
-    teacher: ModelRef.fromJson(Teacher.fromJson),
+    teacher: refFromJson('teacher', Teacher.fromJson),
     subgroup: json.string,
     classCode: json.string,
-    students: json.array(Student.fromJson)
-  })
-};
+    students: json.array(Student.fromJson),
+
+    hasStudent: {
+      value(student: Ref<Student>) {
+        return this.students.map(s => s.id).includes(student.id);
+      },
+      enumerable: true
+    }
+  },
+  fromJson: (obj: unknown): SubjectClass => {
+    return json.object(SubjectClass.properties, obj);
+  }
+});
 

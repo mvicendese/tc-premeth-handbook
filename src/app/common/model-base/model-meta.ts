@@ -1,6 +1,7 @@
 import {Model} from './model';
 import {ModelDocument} from './document';
 import json, {JsonObjectProperties, JsonObjectProperty} from '../json';
+import {Observable} from 'rxjs';
 
 export interface ModelEnum<T extends string> {
   readonly values: ReadonlyArray<T>;
@@ -41,11 +42,12 @@ export interface ModelMeta<T extends Model> {
 export function modelMeta<T extends Model>(params: {
   properties: { [K in keyof T]: JsonObjectProperty<T, K>};
   create: (args: Partial<T>) => T;
+  fromJson?: (obj: unknown) => T;
 }): ModelMeta<T> {
   return {
     properties: params.properties,
     create: params.create,
-    fromJson: json.object<T>(params.properties)
+    fromJson: params.fromJson || json.object<T>(params.properties)
   };
 }
 

@@ -7,7 +7,12 @@ export type TrafficIndicatorValue = 'indeterminate' | 'stop' | 'wait' | 'go';
 @Component({
   selector: 'app-traffic-light',
   template: `
-    <div class="indicator" [ngClass]="'indicator-status-' + _value"></div>
+    <div [ngSwitch]="_value" [ngClass]="'indicator-status-' + _value">
+      <mat-icon *ngSwitchCase="'indeterminate'">add_circle</mat-icon>
+      <mat-icon *ngSwitchCase="'stop'">error</mat-icon>
+      <mat-icon *ngSwitchCase="'wait'">warning</mat-icon>
+      <mat-icon *ngSwitchCase="'go'">check_circle</mat-icon>
+    </div>
   `,
   styles: [`
     :host {
@@ -25,14 +30,18 @@ export type TrafficIndicatorValue = 'indeterminate' | 'stop' | 'wait' | 'go';
       border-radius: 0.2em;
     }
 
-    .indicator-status-stop {
-      background-color: red;
+    .indicator-status-indeterminate > * {
+      color: #d5d5d5;
     }
-    .indicator-status-wait {
-      background-color: orange;
+
+    .indicator-status-stop > * {
+      color: red;
     }
-    .indicator-status-go {
-      background-color: green;
+    .indicator-status-wait > * {
+      color: orange;
+    }
+    .indicator-status-go > * {
+      color: green;
     }
   `]
 })
@@ -49,5 +58,4 @@ export class TrafficLightComponent {
   get hostFontSize() {
     return indicatorFontSize(this.size || 'inline');
   }
-
 }

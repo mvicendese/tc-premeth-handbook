@@ -1,11 +1,8 @@
 import {Injectable} from '@angular/core';
 import {BehaviorSubject, combineLatest, defer, Observable, Unsubscribable} from 'rxjs';
 import {distinctUntilChanged, filter, map, pluck, switchMap} from 'rxjs/operators';
-import {ModelRef} from './common/model-base/model-ref';
-import {SubjectClassService} from './common/model-services/subject-class.service';
-import {User} from './common/model-types/user';
-import {StudentService} from './common/model-services/students.service';
-import {ModelFetchQueue} from './common/model-base/fetch-queue';
+import {User} from './features/base/auth/user.model';
+import {SubjectClassModelApiService} from './common/model-services/schools.service';
 import {Subject} from './common/model-types/subjects';
 import {Student, SubjectClass} from './common/model-types/schools';
 
@@ -33,7 +30,7 @@ export class AppStateService {
   });
 
   constructor(
-    readonly subjectClassService: SubjectClassService
+    readonly subjectClassService: SubjectClassModelApiService
   ) {}
 
   get user$(): Observable<User | null> {
@@ -114,7 +111,7 @@ export class AppStateService {
       if (subject == null) {
         throw new Error('subject is null');
       }
-      classes = classes.map(cls => ({...cls, subject: subject}));
+      classes = classes.map(cls => ({...cls, subject}));
       this.setState('allSubjectClasses', classes);
     });
 
