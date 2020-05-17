@@ -24,11 +24,14 @@ class Person(BaseModel):
 class User(AbstractUser):
 	id = models.UUIDField(primary_key=True, default=uuid4)
 
+	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
+
 	type = models.CharField(max_length=64)
 
 	@property
 	def person(self):
-		if not type in {'teacher', 'student'}:
+		if self.type not in {'teacher', 'student'}:
 			raise ValueError(f'Unrecognised user type: {self.type}')
 
 		return getattr(self, self.type)
