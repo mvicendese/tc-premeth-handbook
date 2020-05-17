@@ -323,8 +323,8 @@ class Assessment(BaseModel):
             print('using assessment property implementation', attr_name)
             prop = schema_props[attr_name]
             return prop.__get__(self)
-
-        raise AttributeError(f'{type(self)} has no attribute {attr_name}')
+        else:
+            raise AttributeError(f'{type(self)} has no attribute {attr_name}')
 
     class QuerySet(models.QuerySet):
         def filter_node(self, subject_node, include_descendants=False):

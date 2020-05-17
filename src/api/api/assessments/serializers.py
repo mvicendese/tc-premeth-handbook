@@ -68,7 +68,8 @@ class AssessmentSerializer(serializers.Serializer):
     is_attempted = serializers.BooleanField()
     attempted_at = serializers.DateTimeField(allow_null=True)
 
-    comments = serializers.ListSerializer(child=CommentSerializer())
+    comments = CommentSerializer(many=True)
+    comments_count = serializers.IntegerField(read_only=True, source='comments.count')
 
 
     def schema_serializer(self, instance):
@@ -127,11 +128,16 @@ class RatingsBasedAssessmentSerializer(AssessmentSerializer):
     is_attempted = serializers.BooleanField()
     attempted_at = serializers.DateTimeField()
 
-    max_available_rating = serializers.IntegerField()
-    rating          = serializers.IntegerField()
-    #percent_rating  = serializers.FloatField()
+    max_available_rating    = serializers.IntegerField()
+    rating                  = serializers.IntegerField()
+    rating_percent          = serializers.FloatField(allow_null=True)
 
     attempts = RatedAttemptSerializer(many=True, read_only=True, source='attempt_set')
+
+    def to_representation(self, instance):
+        if instance is None:
+            import pdb; pdb.set_trace()
+        return super().to_representation(instance)
 
 class UnitAssessmentSerializer(RatingsBasedAssessmentSerializer):
     unit = serializers.UUIDField(source='schema.unit.id', read_only=True)

@@ -263,7 +263,7 @@ class Attempt(BaseModel):
             return CompletionBasedAttempt.objects
         elif attempt_type == AttemptType.RATED:
             return RatedAttempt.objects
-        elif marking_type == AttemptType.GRADED:
+        elif attempt_type == AttemptType.GRADED:
             return GradedAttempt.objects
         else:
             raise ValueError(f'Unrecognised attempt type: {attempt_type}')
@@ -364,17 +364,11 @@ class CompletionBasedAttempt(Attempt):
 class RatedAttempt(Attempt):
 
     rating = RatingField(max_rating_field='max_available_rating')
-    #rating_percent = calculated_percentage_property('rating', 'max_available_rating')
+    rating_percent = calculated_percentage_property('rating', 'max_available_rating')
 
     class Manager(Attempt.Manager):
         def __init__(self, **kwargs):
             super().__init__(AttemptType.RATED, attempt_parameters={'max_available_rating': 'ratedattempt_max_available_rating'}, **kwargs)
-
-        def get_queryset(self):
-            return (super().get_queryset()
-                .annotate(
-                   rating_percent=models.F('rating') / models.F('max_available_rating')
-                ))
 
         def max_available_rating(self):
             return self.assessment.get_option('ratedattempt_max_available_rating')

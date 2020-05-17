@@ -125,6 +125,7 @@ class AssessmentViewSet(SaveableModelViewSet):
         report_serializer = ReportSerializer.for_attempt_type(schema.attempt_type, reports, many=True)
         return Response({
             'count': len(page_nodes),
+            'page_number': 1,
             'results': report_serializer.data
          })
 
@@ -153,6 +154,7 @@ class AssessmentViewSet(SaveableModelViewSet):
         progress_serializer = ProgressSerializer.for_attempt_type(schema.attempt_type, progress)
         return Response({
             'count': 1, 
+            'page_number': 1,
             'results': [progress_serializer.data]
         })
 
