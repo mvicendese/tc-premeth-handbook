@@ -13,6 +13,7 @@ def create_users_for_teachers(apps, schema_editor):
 
 	for teacher in teachers:
 		user = User.objects.create(
+			type='teacher',
 			username=teacher.email,
 			password=make_password('temp')
 		)

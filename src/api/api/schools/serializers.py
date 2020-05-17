@@ -1,20 +1,9 @@
 from rest_framework import serializers
 
 from api.base.serializers import BaseSerializer
+from self.serializers import PersonSerializer
 
 from .models import Student, Teacher, SubjectClass
-
-class PersonSerializer(BaseSerializer):
-	school = serializers.UUIDField(source='school.id')
-
-	class Meta:
-		fields = BaseSerializer.Meta.fields + (
-					'first_name',
-					'surname',
-					'full_name',
-					'email',
-					'school'
-				 )
 
 
 class TeacherSerializer(PersonSerializer):

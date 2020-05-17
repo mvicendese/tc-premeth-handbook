@@ -19,6 +19,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 		resolve_ids = self.request.query_params.getlist('resolve')	
 		if resolve_ids:
 			qs = qs.filter(id__in=resolve_ids)
+
 		return qs
 
 	@action(detail=True)
