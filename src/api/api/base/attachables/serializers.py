@@ -10,7 +10,7 @@ from .models import Comment
 
 class AttachmentSerializer(serializers.ModelSerializer):
 	attached_to_type = serializers.CharField(source='attached_to_type.model')
-	attached_to_id   = serializers.PrimaryKeyRelatedField(read_only=True)
+	attached_to = serializers.PrimaryKeyRelatedField(read_only=True)
 
 	created_by = serializers.PrimaryKeyRelatedField(queryset=User.objects.all)
 
@@ -19,7 +19,7 @@ class AttachmentSerializer(serializers.ModelSerializer):
 			'id', 
 			'created_at',
 			'attached_to_type',
-			'attached_to_id',
+			'attached_to',
 			'created_by',
 			'created_at'
 		)

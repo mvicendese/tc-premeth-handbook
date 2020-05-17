@@ -11,6 +11,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from ext.django.db.models import ObservableModel
 
+
 class Attachable(ObservableModel):
     attached_to_type    = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     attached_to_id      = models.UUIDField()
@@ -18,7 +19,6 @@ class Attachable(ObservableModel):
     attached_to         = GenericForeignKey('attached_to_type', 'attached_to_id')
 
     created_by = models.ForeignKey('self.User', on_delete=models.CASCADE)
-
 
 
 class Comment(Attachable):
