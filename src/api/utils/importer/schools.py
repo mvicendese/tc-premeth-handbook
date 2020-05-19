@@ -37,7 +37,7 @@ class Teacher():
 	@classmethod
 	def eraw_teacher(cls, teacher_model=None):
 		db_teacher = teacher_model and teacher_model.objects.get(teacher_code='ERAW')
-		return Teacher('ERAW', 'Unknown', 'UNKNOWN', db_teacher=db_teacher)
+		return Teacher('ERAW', 'Ekta', 'RAWAL', db_teacher=db_teacher)
 
 	@classmethod
 	def all(cls, teacher_model=None):
