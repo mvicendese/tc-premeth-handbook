@@ -9,8 +9,10 @@ from rest_framework import status, generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from api.base.views import SaveableModelViewSet
+from api.base.attachables.views import CommentableModelMixin
 
 from api.subjects.models import SubjectNode
 from api.schools.models import SubjectClass, Student
@@ -38,7 +40,7 @@ def filter_student_params(assessment_set, query_params):
     return qs
 
 
-class AssessmentViewSet(SaveableModelViewSet):
+class AssessmentViewSet(SaveableModelViewSet, CommentableModelMixin):
     def get_assessment_type(self):
         raw_type = self.request.query_params.get('type', None)
 
@@ -178,6 +180,14 @@ class AssessmentViewSet(SaveableModelViewSet):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, 
+            methods=['get', 'put', 'post'],
+            permission_classes=[IsAuthenticated])
+    def comments(self, request, **kwargs):
+        if request.method == 'get':
+            return self.list_comments(request, **kwargs)
+        else:
+            return self.create_comment(request, **kwargs)
 
 def register_routes(router):
     router.register('assessments', AssessmentViewSet, basename='')

@@ -120,7 +120,12 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'ext.rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 24
+    'PAGE_SIZE': 24,
+
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication'
+    ]
 }
 
 

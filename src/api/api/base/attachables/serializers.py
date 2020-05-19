@@ -1,6 +1,8 @@
 from django.conf import settings
 
 from rest_framework import serializers
+
+from ext.rest_framework.fields import RefField
 from ext.markdown.serializer_fields import MarkdownField
 
 from self.models import User
@@ -9,25 +11,26 @@ from .models import Comment
 
 
 class AttachmentSerializer(serializers.ModelSerializer):
-	attached_to_type = serializers.CharField(source='attached_to_type.model')
-	attached_to = serializers.PrimaryKeyRelatedField(read_only=True)
 
-	created_by = serializers.PrimaryKeyRelatedField(queryset=User.objects.all)
+	attached_to = RefField()
+	created_by = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
 	class Meta:
 		fields = (
 			'id', 
 			'created_at',
-			'attached_to_type',
 			'attached_to',
 			'created_by',
 			'created_at'
 		)
 
+	def create(self, validated_data):
+		attached_to = validated_data.get('attached_to')
+
 
 class CommentSerializer(AttachmentSerializer):
 	content = serializers.CharField()
-	html_content = MarkdownField(source='content')
+	html_content = MarkdownField(source='content', read_only=True)
 
 	class Meta:
 		model = Comment
