@@ -33,5 +33,11 @@ register_assessment_routes(router)
 register_auth_routes(router)
 
 urlpatterns = [
-	path(r'api/', include(router.urls)),
+	path(r'api/', [
+		path(r'assessments/', include('assessments.urls')),
+		path(r'schools/', include('schools.urls')),
+		path(r'subjects/', include('subject.urls')),
+		path(r'users', include('users.urls'))
+	]),
+	path(r'auth', include('django.contrib.auth.urls'))
 ]

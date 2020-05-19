@@ -45,10 +45,10 @@ INSTALLED_APPS = [
 
     'self',
 
-    'api.base',
-    'api.subjects',
-    'api.schools',
-    'api.assessments'
+    'base',
+    'subjects',
+    'schools',
+    'assessments'
 
 ]
 
