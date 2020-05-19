@@ -15,7 +15,7 @@ import os
 # For paths relative to the server root
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# For paths relative to the project root
+# For paths relative to the (angular) project root
 PROJECT_DIR = os.path.dirname(os.path.dirname(BASE_DIR))
 
 
@@ -42,17 +42,18 @@ INSTALLED_APPS = [
     'django_extensions',
     'rest_framework',
     'corsheaders',
-
-    'self',
+    'oauth2_provider',
 
     'base',
+    'users',
+
     'subjects',
     'schools',
     'assessments'
 
 ]
 
-AUTH_USER_MODEL = 'self.User'
+AUTH_USER_MODEL = 'users.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -65,12 +66,14 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'api.urls'
+ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'users/templates')
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -83,7 +86,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'api.wsgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database

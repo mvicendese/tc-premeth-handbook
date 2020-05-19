@@ -4,7 +4,7 @@ from django.conf import settings
 
 def create_premeth_subject_tree(apps, schema_editor):
 	Subject = apps.get_model('subjects', 'Subject')
-	from api.subjects.models import SubjectNode
+	from subjects.models import SubjectNode
 
 	premeth_subject = Subject.objects.get(name='PreMeth')
 

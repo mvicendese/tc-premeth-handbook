@@ -14,20 +14,20 @@ class Person(BaseModel):
 	first_name = models.CharField(max_length=128)
 	surname = models.CharField(max_length=128)
 
-	user = models.OneToOneField('self.User', null=True, on_delete=models.SET_NULL)
+	user = models.OneToOneField('users.User', null=True, on_delete=models.SET_NULL)
 
 	@property
 	def full_name(self):
 		return f'{self.first_name} {self.surname}'
 
 
-class UserModel(AbstractUser):
+class User(AbstractUser):
 	id = models.UUIDField(primary_key=True, default=uuid4)
 
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 
-	type = models.CharField(max_length=64)
+	user_type = models.CharField(max_length=64)
 
 	@property
 	def person(self):

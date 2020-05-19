@@ -11,11 +11,11 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from api.base.views import SaveableModelViewSet
-from api.base.attachables.views import CommentableModelMixin
+from base.views import SaveableModelViewSet
+from base.attachables.views import CommentableModelMixin
 
-from api.subjects.models import SubjectNode
-from api.schools.models import SubjectClass, Student
+from subjects.models import SubjectNode
+from schools.models import SubjectClass, Student
 
 from .models import (
     Assessment, 

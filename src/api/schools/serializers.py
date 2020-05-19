@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from api.base.serializers import BaseSerializer
-from self.serializers import PersonSerializer
+from base.serializers import BaseSerializer
+from users.serializers import PersonSerializer
 
 from .models import Student, Teacher, SubjectClass
 

@@ -1,8 +1,8 @@
 
 from django.db import migrations
 
-from api.subjects.models import SubjectNodeType
-from api.assessments.models import AttemptType
+from subjects.models import SubjectNodeType
+from assessments.models import AttemptType
 
 from utils.importer import (
     get_tc_school,

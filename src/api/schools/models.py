@@ -3,9 +3,8 @@ from django.contrib.auth.models import User
 
 from ext.django.db.models import BaseModel
 
-from self.models import Person
-
-from api.subjects.models import Subject
+from users.models import Person
+from subjects.models import Subject
 
 
 

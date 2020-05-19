@@ -18,7 +18,7 @@ class Attachable(ObservableModel):
 
     attached_to         = GenericForeignKey('attached_to_type', 'attached_to_id')
 
-    created_by = models.ForeignKey('self.User', on_delete=models.CASCADE)
+    created_by = models.ForeignKey('users.User', on_delete=models.CASCADE)
 
 
 class Comment(Attachable):

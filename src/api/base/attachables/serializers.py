@@ -5,7 +5,7 @@ from rest_framework import serializers
 from ext.rest_framework.fields import RefField
 from ext.markdown.serializer_fields import MarkdownField
 
-from self.models import User
+from users.models import User
 
 from .models import Comment
 

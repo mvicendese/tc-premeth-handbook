@@ -11,10 +11,10 @@ from django.db.models import functions
 from django.utils.translation import gettext_lazy as _
 
 from ext.django.db.models import BaseModel
-from api.base.models import Comment
+from base.models import Comment
 
-from api.schools.models import School, Student, SubjectClass
-from api.subjects.models import (
+from schools.models import School, Student, SubjectClass
+from subjects.models import (
     SubjectNode, 
     SubjectNodeType, 
     SubjectNodeTypeField,
@@ -25,7 +25,7 @@ from api.subjects.models import (
     LessonOutcome
 )
 
-from api.base.models import Comment
+from base.models import Comment
 
 from .attempts.models import *
 from .progresses.models import *

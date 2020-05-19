@@ -7,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from treebeard.mp_tree import MP_Node
 
 from ext.django.db.models import BaseModel
-from api.base.models import model_typename
+from base.models import model_typename
 
 class SubjectNodeType(models.TextChoices):
     SUBJECT             = 'subject',             _('Subject')

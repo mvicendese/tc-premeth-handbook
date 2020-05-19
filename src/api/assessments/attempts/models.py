@@ -4,7 +4,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from ext.django.db.models import BaseModel
-from api.base.models import calculated_percentage_property
+from base.models import calculated_percentage_property
 
 
 

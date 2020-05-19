@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
-from api.base.serializers import DocumentSerializer
+from base.serializers import DocumentSerializer
 
-from api.schools.models import SubjectClass
-from api.subjects.models import SubjectNode
+from schools.models import SubjectClass
+from subjects.models import SubjectNode
 
 from ..models import AttemptType
 

@@ -2,8 +2,8 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework import viewsets
 
-from api.assessments.models import Assessment, Progress
-from api.assessments.serializers import ProgressSerializer
+from assessments.models import Assessment, Progress
+from assessments.serializers import ProgressSerializer
 
 # Create your views here.
 from .models import Student, Teacher, SubjectClass

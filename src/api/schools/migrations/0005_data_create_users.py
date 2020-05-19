@@ -7,13 +7,13 @@ from utils.importer import get_teachers
 
 
 def create_users_for_teachers(apps, schema_editor):
-	User = apps.get_model('self', 'User')
+	User = apps.get_model('users', 'User')
 
 	teachers = get_teachers(apps)
 
 	for teacher in teachers:
 		user = User.objects.create(
-			type='teacher',
+			user_type='teacher',
 			username=teacher.email,
 			password=make_password('temp')
 		)
@@ -21,7 +21,7 @@ def create_users_for_teachers(apps, schema_editor):
 		teacher.db_teacher.save()
 
 def create_users_for_students(apps, schema_editor):
-	User = apps.get_model('self', 'User')
+	User = apps.get_model('users', 'User')
 	students = importer.schools.Student.all(student_model=apps.get_model('schools', 'Student'))
 
 	for student in students:
@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
 
 	dependencies = [
 		('schools', '0004_data_set_class_year_subgroup'),
-		('self', '0002_auto_20200428_1853')
+		('users', '0003_user_user_type')
 	]
 
 	operations = [

@@ -3,14 +3,14 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from api.base.models import Comment
-from api.base.serializers import BaseSerializer
-from api.base.serializers import CommentSerializer
+from base.models import Comment
+from base.serializers import BaseSerializer
+from base.serializers import CommentSerializer
 
-from api.subjects.models import SubjectNode
+from subjects.models import SubjectNode
 
-from api.schools.models import Student
-from api.schools.serializers import StudentSerializer
+from schools.models import Student
+from schools.serializers import StudentSerializer
 
 from .models import (
     Assessment, 

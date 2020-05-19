@@ -5,7 +5,7 @@ from uuid import uuid4
 from django.db import migrations
 from django.conf import settings
 
-from api.assessments.models import AttemptType
+from assessments.models import AttemptType
 
 from utils import importer
 
@@ -147,7 +147,7 @@ def create_prelearning_assessment(apps, import_lesson):
         assessment.save()
 
         # enum class, safe to import.
-        from api.assessments.models import CompletionState
+        from assessments.models import CompletionState
         if (prelearning_assessment.rating or 0) == 0:
             completion_state = CompletionState.NONE
         elif prelearning_assessment.rating < 4:

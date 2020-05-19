@@ -2,10 +2,10 @@ from django.db import models
 
 from ext.django.db.models import Document
 
-from api.subjects.models import SubjectNode
-from api.schools.models import Student
+from subjects.models import SubjectNode
+from schools.models import Student
 
-from api.base.models import (
+from base.models import (
     comma_delimited_models_property,
     comma_delimited_model_count_property,
     calculated_percentage_property
