@@ -1,8 +1,9 @@
 from uuid import uuid4
 
 from django.db import models
-
 from django.contrib.auth.models import AbstractUser
+
+from rest_framework.decorators import action
 
 from ext.django.db.models import BaseModel
 
@@ -20,9 +21,14 @@ class Person(BaseModel):
 	def full_name(self):
 		return f'{self.first_name} {self.surname}'
 
+class AdminPerson(Person):
+	pass
+
 
 class User(AbstractUser):
 	id = models.UUIDField(primary_key=True, default=uuid4)
+
+	email = models.EmailField(unique=True)
 
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
@@ -31,7 +37,11 @@ class User(AbstractUser):
 
 	@property
 	def person(self):
-		if self.type not in {'teacher', 'student'}:
-			raise ValueError(f'Unrecognised user type: {self.type}')
+		if self.user_type not in {'teacher', 'student', 'adminperson'}:
+			raise ValueError(f'Unrecognised user type: {self.user_type}')
 
-		return getattr(self, self.type)
+		return getattr(self, self.user_type)
+
+	def get_full_name(self):
+		return self.person.full_name
+

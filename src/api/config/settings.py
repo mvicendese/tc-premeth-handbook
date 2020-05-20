@@ -195,3 +195,12 @@ MARKDOWN = {
     },
     'output_format': 'html5'
 }
+
+LOGIN_URL = '/auth/login'
+
+OAUTH2_PROVIDER = {
+    'SCOPES': {
+        'read': 'Read scope', 
+        'write': 'Write scope',
+    }
+}

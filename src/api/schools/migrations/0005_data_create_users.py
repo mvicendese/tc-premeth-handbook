@@ -15,6 +15,7 @@ def create_users_for_teachers(apps, schema_editor):
 		user = User.objects.create(
 			user_type='teacher',
 			username=teacher.email,
+			email=teacher.email,
 			password=make_password('temp')
 		)
 		teacher.db_teacher.user = user
@@ -27,6 +28,7 @@ def create_users_for_students(apps, schema_editor):
 	for student in students:
 		user = User.objects.create(
 			username=student.email,
+			email=student.email,
 			password=make_password('temp')
 		)
 		student.db_student.user = user
@@ -36,7 +38,7 @@ class Migration(migrations.Migration):
 
 	dependencies = [
 		('schools', '0004_data_set_class_year_subgroup'),
-		('users', '0003_user_user_type')
+		('users', '0008_adminperson')
 	]
 
 	operations = [

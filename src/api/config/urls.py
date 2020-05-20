@@ -16,13 +16,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+from django.contrib import admin
+
 urlpatterns = [
 	path(r'api/', include([
 		path(r'assessments/', include('assessments.urls')),
 		path(r'schools/', include('schools.urls')),
 		path(r'subjects/', include('subjects.urls')),
 		path(r'users/', include('users.urls')),
+		path(r'auth/', include('oauth2_provider.urls', namespace='oauth2_provider'))
 	])),
 	path(r'auth/', include('django.contrib.auth.urls')),
-	path(r'admin/', include('django.contrib.admin.urls')),
+	path(r'admin/', admin.site.urls),
 ]

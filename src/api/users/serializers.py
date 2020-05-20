@@ -33,8 +33,6 @@ class PersonField(serializers.Serializer):
 		else:
 			raise ValueError(f'Not a person: {instance}')
 
-
-
 class PublicUserSerializer(BaseModelSerializer):
 	person = PersonField()
 
@@ -44,3 +42,10 @@ class PublicUserSerializer(BaseModelSerializer):
 			'id',
 			'person',
 		)
+
+class PrivateUserSerializer(PublicUserSerializer):
+	"""
+	An extension of the public user serializer, providing API access to 
+	sensitive user data that is only intended to be seen by the login user.
+	"""
+	pass
