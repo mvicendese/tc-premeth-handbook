@@ -1,5 +1,5 @@
 import {Model} from '../model-base/model';
-import {BehaviorSubject, Observable, Unsubscribable} from 'rxjs';
+import {BehaviorSubject, Observable, of, Unsubscribable} from 'rxjs';
 import {ModelFetchQueue} from './fetch-queue';
 
 import {Set} from 'immutable';
@@ -8,8 +8,12 @@ import {Ref} from '../model-base/ref';
 import {AbstractModelApiService} from '../model-api/abstract-model-api-service';
 
 export interface ModelLoader<T extends Model> {
-  load<U extends T>(ref: Ref<U>, options?: {force?: true}): Observable<U>;
+  load<U extends T>(ref: Ref<U>, options?: {force: boolean}): Observable<U>;
+  load<U extends T>(ref: Ref<U> | null, options?: {force: boolean}): Observable<U | null>;
+
   isLoading<U extends T>(ref: Ref<U>): Observable<boolean>;
+
+  loadWith<U extends T>(ref: Ref<U>, value: U): void;
 
   init(): Unsubscribable;
 }
@@ -26,9 +30,17 @@ export abstract class _ModelLoader<T extends Model> implements ModelLoader<T> {
 
   protected readonly fetchQueue = new ModelFetchQueue(this.apiService);
 
-  load<U extends T>(ref: Ref<U>, options: {force} = {force: false}): Observable<U> {
+  load<U extends T>(ref: Ref<U>, options?: {force: boolean}): Observable<U>;
+  load<U extends T>(ref: Ref<U> | null, options?: {force: boolean}): Observable<U | null>;
+
+  load<U extends T>(ref: Ref<U> | null, options: {force} = {force: false}): Observable<U | null> {
+    if (ref == null) { return of(null); }
     this.loadingIdsSubject.next(this.loadingIdsSubject.value.add(ref.id))
     return this.fetchQueue.queueFetch(ref, {force: options.force});
+  }
+
+  loadWith<U extends T>(value: U): void {
+    this.fetchQueue.queueFetch(value);
   }
 
   isLoading<U extends T>(ref: Ref<U>): Observable<boolean> {

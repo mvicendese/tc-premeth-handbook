@@ -1,5 +1,6 @@
 import json, {JsonObjectProperties, parseError} from '../json';
 import {BaseModel, Model} from '../model-base/model';
+import {modelEnum} from '../model-base/model-meta';
 import {Ref} from '../model-base/ref';
 
 
@@ -300,6 +301,11 @@ export class LessonOutcome extends BaseModel implements LessonOutcomeParams {
 
 export type SubjectNode = Subject | Unit | Block | LessonSchema | LessonOutcome;
 export type SubjectNodeType = SubjectNode['type'];
+export const SubjectNodeType = modelEnum<SubjectNodeType>({
+  name: 'subject-node-type',
+  values: ['subject', 'unit', 'block', 'lesson', 'lesson-outcome']
+});
+
 
 export const SubjectNode = {
   fromJson: (obj: unknown): SubjectNode => {

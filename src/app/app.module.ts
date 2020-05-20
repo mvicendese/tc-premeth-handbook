@@ -12,7 +12,7 @@ import {ScaffoldModule} from './scaffold/scaffold.module';
 import {AppStateService} from './app-state.service';
 import {studentContextProviders} from './features/schools/students/student-context.service';
 import {BaseAuthModule} from './features/base/auth/auth.module';
-import {provideUserModelLoader} from './features/base/auth/user.model-loader-service';
+import {provideUserModelLoader} from './features/base/auth/user.model-loader.service';
 import {provideStudentLoader} from './features/schools/students/student-loader.service';
 import {provideTeacherLoader} from './features/schools/teachers/teacher-context.service';
 

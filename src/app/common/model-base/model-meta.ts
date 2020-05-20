@@ -11,6 +11,14 @@ export interface ModelEnum<T extends string> {
   fromJson(obj: unknown): T;
 }
 
+export function isModelEnum(obj: unknown): obj is ModelEnum<any> {
+  if (typeof obj === 'object' && obj !== null) {
+    const {values} = obj as any;
+    return Array.isArray(values) && values.every(item => typeof item === 'string');
+  }
+  return false;
+}
+
 export function modelEnum<T extends string>(params: {
   name: string,
   values: ReadonlyArray<T>

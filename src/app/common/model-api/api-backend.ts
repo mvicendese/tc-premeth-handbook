@@ -1,4 +1,4 @@
-import {Inject, Injectable, InjectionToken} from '@angular/core';
+import {Inject, Injectable, InjectionToken, Injector} from '@angular/core';
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import {isJsonObject, JsonObject} from '../json';
 import {Observable, of, OperatorFunction, throwError} from 'rxjs';
@@ -7,13 +7,26 @@ import {map, switchMap} from 'rxjs/operators';
 
 export const API_BASE_HREF = new InjectionToken<string>('API_BASE_HREF');
 
+export abstract class ApiAuthenticationBackend {
+  abstract authorizeHeaders(headers: HttpHeaders): HttpHeaders;
+}
+
 @Injectable({providedIn: 'root'})
 export class ApiBackend {
   constructor(
+    readonly injector: Injector,
     readonly http: HttpClient,
     @Inject(API_BASE_HREF)
     readonly apiBaseHref: string
   ) {
+  }
+
+  get authentication(): ApiAuthenticationBackend {
+    return this.injector.get(ApiAuthenticationBackend);
+  }
+
+  apiUrl(path: readonly string[], params?: HttpParams | {[k: string]: string | readonly string[]}): string {
+    return `${this.buildUrl(path)}?${this.asHttpParams(params)}`;
   }
 
   protected buildUrl(path: readonly string[]) {
@@ -29,16 +42,21 @@ export class ApiBackend {
     if (!(params instanceof HttpParams)) {
       params = new HttpParams({fromObject: params});
     }
-    return params
-      .set('format', 'json');
+    return params;
   }
 
-  protected buildHeaders(headers?: HttpHeaders | { [k: string]: string | readonly string[] }) {
+  protected buildHeaders(
+    headers?: HttpHeaders | { [k: string]: string | readonly string[] },
+  ): HttpHeaders {
     if (!(headers instanceof HttpHeaders)) {
       headers = new HttpHeaders({...headers} as { [k: string]: string[] });
     }
-    return headers
-      .set('x-requested-with', 'XMLHttpRequest');
+
+    headers = headers.set('x-requested-with', 'XMLHttpRequest');
+    if (!headers.has('authorize')) {
+      headers = this.authentication.authorizeHeaders(headers);
+    }
+    return headers;
   }
 
   get(path: readonly string[], options: {
@@ -56,14 +74,14 @@ export class ApiBackend {
     );
   }
 
-  post(path: readonly string[], body: JsonObject, options: {
+  post(path: readonly string[], body: JsonObject | string, options: {
     params?: HttpParams | { [k: string]: string | readonly string[] };
     headers?: HttpHeaders | { [k: string]: string | readonly string[] };
-  }): Observable<JsonObject> {
+  } = {}): Observable<JsonObject> {
     return this.http.post(this.buildUrl(path), body, {
       observe: 'body',
-      params: this.asHttpParams(options && options.params),
-      headers: this.buildHeaders(options && options.headers),
+      params: this.asHttpParams(options.params),
+      headers: this.buildHeaders(options.headers),
       responseType: 'json'
     }).pipe(
       checkIsJsonObjectResponse(),
@@ -74,11 +92,11 @@ export class ApiBackend {
   put(path: readonly string[], body: JsonObject, options: {
     headers?: HttpHeaders | { [k: string]: string | readonly string[] },
     params?: HttpParams | { [k: string]: string | readonly string[] },
-  }): Observable<JsonObject> {
+  } = {}): Observable<JsonObject> {
     return this.http.put(this.buildUrl(path), body, {
       observe: 'body',
-      params: this.asHttpParams(options && options.params),
-      headers: this.buildHeaders(options && options.headers),
+      params: this.asHttpParams(options.params),
+      headers: this.buildHeaders(options.headers),
       responseType: 'json'
     }).pipe(
       checkIsJsonObjectResponse(),

@@ -4,7 +4,7 @@ import {DomSanitizer} from '@angular/platform-browser';
 import {Comment} from './comment.model';
 import {Person} from '../person/person.model';
 import {BehaviorSubject, defer, ObservableInput} from 'rxjs';
-import {UserModelLoader} from '../auth/user.model-loader-service';
+import {UserModelLoader} from '../auth/user.model-loader.service';
 import {map} from 'rxjs/operators';
 
 

@@ -2,13 +2,13 @@
 <table mat-table
        [dataSource]="dataSource" multiTemplateDataRows>
   <ng-container matColumnDef="student">
-    <th mat-header-cell *matHeaderCellDef> Student</th>
+    <th mat-header-cell *matHeaderCellDef mat-sort-header> Student</th>
     <td mat-cell *matCellDef="let item">
       <a mat-button [routerLink]="['/students', item.student.id]">{{item.student.fullName}}</a>
     </td>
   </ng-container>
 
-  <ng-container matColumnDef="student-class">
+  <ng-container matColumnDef="student-class" mat-sort-header>
     <th mat-header-cell *matHeaderCellDef> Class </th>
     <td mat-cell *matCellDef="let item">
 
@@ -22,7 +22,7 @@
     </td>
   </ng-container>
 
-  <ng-container matColumnDef="date">
+  <ng-container matColumnDef="date" mat-sort-header>
     <th mat-header-cell *matHeaderCellDef> Date</th>
     <td mat-cell *matCellDef="let item">
       <ng-container *ngIf="item.isAttempted">
@@ -39,7 +39,7 @@
   </ng-container>
 
   <ng-container matColumnDef="mark">
-    <th mat-header-cell *matHeaderCellDef> Mark</th>
+    <th mat-header-cell *matHeaderCellDef mat-sort-header> Mark</th>
     <td mat-cell *matCellDef="let item">
 
       <ng-container *ngIf="item.isAttempted">
@@ -58,7 +58,7 @@
   </ng-container>
 
   <ng-container matColumnDef="comment">
-    <th mat-header-cell *matHeaderCellDef> Comment</th>
+    <th mat-header-cell *matHeaderCellDef> Comment </th>
     <td mat-cell *matCellDef="let item">
 
       <ng-container *ngIf="item.isAttempted">

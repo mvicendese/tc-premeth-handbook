@@ -6,7 +6,7 @@ import {StudentModelApiService} from './common/model-services/schools.service';
 import {StudentContextService} from './features/schools/students/student-context.service';
 import {TeacherLoader} from './features/schools/teachers/teacher-context.service';
 import {StudentLoader} from './features/schools/students/student-loader.service';
-import {UserModelLoader} from './features/base/auth/user.model-loader-service';
+import {UserModelLoader} from './features/base/auth/user.model-loader.service';
 
 @Component({
   selector: 'app-root',

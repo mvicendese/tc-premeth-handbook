@@ -1,6 +1,6 @@
 import json, {Decoder} from '../json';
 import {School, Student, SubjectClass} from './schools';
-import {LessonSchema, Subject, SubjectNode} from './subjects';
+import {LessonSchema, Subject, SubjectNode, SubjectNodeType} from './subjects';
 import {
   Assessment,
   AssessmentType,
@@ -37,7 +37,7 @@ export const Report = {
     school: refFromJson('school', School.fromJson),
     subject: refFromJson('subject', Subject.fromJson),
 
-    subjectNode: refFromJson('subject-node', SubjectNode.fromJson),
+    subjectNode: refFromJson(SubjectNodeType, SubjectNode.fromJson),
 
     subjectClass: json.nullable(refFromJson('class', SubjectClass.fromJson)),
     generatedAt: json.date,

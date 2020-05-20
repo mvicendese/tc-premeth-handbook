@@ -86,7 +86,8 @@ function isUnitBlockDetailsUrl(block: Block, url: UrlSegment[]) {
 }
 
 function isClassDetailsUrl(cls: SubjectClass, url: UrlSegment[]) {
-  return url[0].path === 'classes'
+  return url.length >= 2
+      && url[0].path === 'classes'
       && url[1].path === cls.id;
 }
 

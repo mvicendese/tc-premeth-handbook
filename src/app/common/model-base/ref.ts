@@ -1,10 +1,9 @@
 import {Model} from './model';
 import json, {Decoder, isJsonObject, parseError} from '../json';
-
+import {isModelEnum, ModelEnum} from './model-meta';
 
 export interface Id<T extends Model> {
-  readonly isModel?: boolean;
-  readonly type: T['type'];
+  readonly type: T['type'] | ModelEnum<T['type']>;
   readonly id: string;
 }
 
@@ -15,17 +14,26 @@ export function ref<T extends Model>(type: T['type'], id: string): Ref<T> {
 }
 
 export function isRef(obj: unknown): obj is Ref<any> {
-  return isJsonObject(obj) && typeof obj.type === 'string' && typeof obj.id === 'string';
+  if (isJsonObject(obj)) {
+    return (typeof obj.type === 'string' || isModelEnum(obj.type))
+      && typeof obj.id === 'string';
+  }
+  return false;
 }
 
 export function isRefModel<T extends Model>(obj: Ref<T>): obj is T {
-  return obj.isModel as boolean;
+  return isRef(obj) && Object.keys(obj).some(k => k !== 'type' && k !== 'id');
 }
 
-export function refFromJson<T extends Model>(typeOrSubtype: string, modelFromJson?: Decoder<T>): Decoder<Ref<T>>;
-export function refFromJson<T extends Model>(typeOrSubtype: string, modelFromJson: Decoder<T>, obj: unknown): Ref<T>;
+// FIXME: Remove this in favour of refFromJson2.
+//        For the moment, the server still thinks most references are string | T.
+export function refFromJson<T extends Model>(type: T['type'] | ModelEnum<T['type']>, modelFromJson?: Decoder<T>): Decoder<Ref<T>>;
+export function refFromJson<T extends Model>(type: T['type'] | ModelEnum<T['type']>, modelFromJson: Decoder<T>, obj: unknown): Ref<T>;
 
-export function refFromJson<T extends Model>(type: string, modelFromJson?: Decoder<T>, obj?: unknown): Ref<T> | Decoder<Ref<T>> {
+export function refFromJson<T extends Model>(
+  type: T['type'] | ModelEnum<T['type']>,
+  modelFromJson?: Decoder<T>, obj?: unknown
+): Ref<T> | Decoder<Ref<T>> {
   if (arguments.length > 2) {
     if (typeof obj === 'string') {
       return {type, id: obj};

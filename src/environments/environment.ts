@@ -13,7 +13,12 @@ export const environment = {
 
   base: {
     auth: {
-      token: 'abcdef12345'
+      token: 'abcdef12345',
+
+      app: {
+        clientId: 'evYtyQ30HaHgvFbayTR1jZskZydLJ2jju86eWiiH',
+        clientSecret: 'PDs7PLTHgq0c7FC12UVNYJyjihLq7qpu4VWb80R7JUlZSHuxewIibbkUzUIkJNPW3G3X3YXcw2EK9xBxc34tNEy88z3XsZuVPtAudqCLhYpmO2Z4MWiC6FvnoRZiSxFH'
+      }
     }
   }
 };

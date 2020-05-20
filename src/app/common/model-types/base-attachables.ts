@@ -7,7 +7,6 @@ import {Ref, refFromJson} from '../model-base/ref';
 
 
 export interface Attachment extends Model {
-  readonly attachedToType: string;
   readonly attachedTo: Ref<Model>;
 
   readonly createdBy: Ref<User>;
@@ -20,8 +19,10 @@ export const Attachment = modelMeta<Attachment>({
   },
   properties: {
     ...Model.properties,
-    attachedToType: json.string as Decoder<any>,
-    attachedTo: refFromJson('model', Model.fromJson),
+    attachedTo: json.object({
+      type: json.string,
+      id: json.string
+    }),
     createdBy: refFromJson('user', User.fromJson),
     createdAt: json.date,
   }

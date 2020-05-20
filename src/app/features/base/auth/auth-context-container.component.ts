@@ -2,7 +2,7 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {Subscription, Unsubscribable} from 'rxjs';
 import {User} from './user.model';
 import {ModelLoader} from '../../../common/model-api-context/model-loader';
-import {UserModelLoader} from './user.model-loader-service';
+import {UserModelLoader} from './user.model-loader.service';
 
 
 @Component({

@@ -45,8 +45,6 @@ function assessmentQueryToParams(type: AssessmentType, query: AssessmentQuery): 
   return params;
 }
 
-
-
 @Injectable({providedIn: 'root'})
 export class AssessmentsModelApiService extends AbstractModelApiService<Assessment>
   implements CommentableService<Assessment> {

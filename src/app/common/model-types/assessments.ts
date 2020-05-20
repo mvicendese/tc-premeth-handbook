@@ -3,7 +3,7 @@ import json, {Decoder, parseError} from '../json';
 import {Comment} from '../../features/base/comment/comment.model';
 
 import {School, Student} from './schools';
-import {Block, LessonOutcome, LessonSchema, Subject, SubjectNode, Unit} from './subjects';
+import {Block, LessonOutcome, LessonSchema, Subject, SubjectNode, SubjectNodeType, Unit} from './subjects';
 import {Model} from '../model-base/model';
 import {modelEnum, ModelEnum, modelMeta} from '../model-base/model-meta';
 import {Ref, refFromJson} from '../model-base/ref';
@@ -50,7 +50,7 @@ export const Assessment = modelMeta<Assessment>({
     subject: refFromJson('subject', Subject.fromJson),
     student: refFromJson('student', Student.fromJson),
 
-    subjectNode: refFromJson<SubjectNode>('subject-node', SubjectNode.fromJson),
+    subjectNode: refFromJson<SubjectNode>(SubjectNodeType, SubjectNode.fromJson),
 
     isAttempted: json.bool,
     attemptedAt: json.nullable(json.date),

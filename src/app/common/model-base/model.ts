@@ -1,9 +1,8 @@
 import {v4 as uuid4} from 'uuid';
-import json, {JsonObject, JsonObjectProperties} from '../json';
+import json from '../json';
 import {modelMeta} from './model-meta';
 
 export interface Model {
-  readonly isModel: true;
   readonly type: string;
   readonly id: string;
 
@@ -12,7 +11,6 @@ export interface Model {
 }
 
 export abstract class BaseModel implements Model {
-  readonly isModel = true;
 
   readonly type: string;
   readonly id: string;
@@ -30,7 +28,6 @@ export abstract class BaseModel implements Model {
 
 export const Model = modelMeta<Model>({
   properties: {
-    isModel: { value: true, enumerable: true },
     type: json.string,
     id: json.string,
     createdAt: json.date,
@@ -43,7 +40,6 @@ export const Model = modelMeta<Model>({
       throw new Error(`A 'type' is required`);
     }
     return {
-      isModel: true,
       type,
       id: uuid4(),
       createdAt: null,

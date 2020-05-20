@@ -11,7 +11,7 @@ import {
 } from './assessments';
 import {ModelDocument} from '../model-base/document';
 import {Student} from './schools';
-import {Subject, SubjectNode} from './subjects';
+import {Subject, SubjectNode, SubjectNodeType} from './subjects';
 import {ModelDocumentMeta, modelDocumentMeta} from '../model-base/model-meta';
 import {Ref, refFromJson} from '../model-base/ref';
 
@@ -41,7 +41,7 @@ export const Progress = modelDocumentMeta<Progress<any>>({
 
     student: refFromJson('student', Student.fromJson),
     subject: refFromJson('subject', Subject.fromJson),
-    subjectNode: json.nullable(refFromJson('subject-node', SubjectNode.fromJson)),
+    subjectNode: json.nullable(refFromJson(SubjectNodeType, SubjectNode.fromJson)),
 
     assessmentCount: json.number,
     assessments: json.array(AnyAssessment.fromJson),
@@ -60,7 +60,7 @@ export interface PassFailProgress<T extends Assessment = AnyAssessment> extends 
 export const PassFailProgress = modelDocumentMeta<PassFailProgress>({
   properties: {
     ...Progress.properties,
-    passedAssessments: json.array(refFromJson('assessment', AnyAssessment.fromJson))
+    passedAssessments: json.array(refFromJson(AssessmentType, AnyAssessment.fromJson))
   }
 });
 
@@ -77,9 +77,9 @@ export const CompletionBasedProgress = modelDocumentMeta<CompletionBasedProgress
   properties: {
     ...Progress.properties,
     completeAssessmentCount: json.number,
-    completeAssessments: json.array(refFromJson('assessment', AnyAssessment.fromJson)),
+    completeAssessments: json.array(refFromJson(AssessmentType, AnyAssessment.fromJson)),
     partiallyCompleteAssessmentCount: json.number,
-    partiallyCompleteAssessments: json.array(refFromJson('assessment', AnyAssessment.fromJson))
+    partiallyCompleteAssessments: json.array(refFromJson(AssessmentType, AnyAssessment.fromJson))
   },
 });
 

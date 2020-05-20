@@ -8,7 +8,7 @@ export type TrafficIndicatorValue = 'indeterminate' | 'stop' | 'wait' | 'go';
   selector: 'app-traffic-light',
   template: `
     <div [ngSwitch]="_value" [ngClass]="'indicator-status-' + _value">
-      <mat-icon *ngSwitchCase="'indeterminate'">add_circle</mat-icon>
+      <mat-icon *ngSwitchCase="'indeterminate'">help</mat-icon>
       <mat-icon *ngSwitchCase="'stop'">error</mat-icon>
       <mat-icon *ngSwitchCase="'wait'">warning</mat-icon>
       <mat-icon *ngSwitchCase="'go'">check_circle</mat-icon>
